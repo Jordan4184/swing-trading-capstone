@@ -1,0 +1,26 @@
+# Virtual environment
+venv/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Data files (we'll re-download, don't commit)
+data/raw/
+data/processed/
+*.csv
+*.parquet
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
+
+# Outputs we don't want versioned
+results/*.png
+results/*.html
+results/cache/
