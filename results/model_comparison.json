@@ -1,0 +1,23 @@
+{
+  "LogisticRegression": {
+    "mean_auc": 0.5950044417780516,
+    "mean_accuracy": 0.6086395511921459,
+    "mean_precision": 0.34643810652859214,
+    "mean_recall": 0.4713312574519753,
+    "mean_f1": 0.3937624791424429
+  },
+  "RandomForest": {
+    "mean_auc": 0.595360019573608,
+    "mean_accuracy": 0.5831136044880785,
+    "mean_precision": 0.3299227373884511,
+    "mean_recall": 0.5018123129808573,
+    "mean_f1": 0.3961337034853479
+  },
+  "lightGBM": {
+    "mean_auc": 0.574335423940227,
+    "mean_accuracy": 0.5939971949509116,
+    "mean_precision": 0.3139822441977352,
+    "mean_recall": 0.41236166571804544,
+    "mean_f1": 0.3552150136937095
+  }
+}
