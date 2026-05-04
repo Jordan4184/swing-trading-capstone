@@ -64,5 +64,121 @@ Walk-forward validation is critical. Random k-fold on time-series data leaks fut
 ## Project Structure
 
 ```
-
+swing-trading-capstone/
+├── README.md                         # This file
+├── requirements.txt                  # Python dependencies
+├── src/                              # Reproducible pipeline (CLI-runnable)
+│   ├── data_loader.py                # OHLCV download + caching
+│   ├── features.py                   # Feature engineering
+│   ├── models.py                     # Walk-forward training + comparison
+│   ├── backtest.py                   # Strategy simulation with costs
+│   └── pipeline.py                   # End-to-end CLI orchestration
+├── notebooks/
+│   └── 01_eda.ipynb                  # Exploratory data analysis (separate from pipeline)
+├── docs/
+│   └── roadmap/
+│       └── 01_crowd_consensus_meter.md  # Future enhancement: contrarian-sentiment indicator
+├── results/                          # Generated artifacts (plots, JSONs, predictions)
+└── data/                             # Cached data (gitignored)
 ```
+
+The notebook is intentionally separated from the pipeline — exploration is iterative and messy by design, while the pipeline is reproducible and deployable.
+
+## Quick Start
+
+### Setup
+
+```bash
+git clone https://github.com/Jordan4184/swing-trading-capstone.git
+cd swing-trading-capstone
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
+### Run the full pipeline
+
+```bash
+python -m src.pipeline --all
+```
+
+This downloads data, builds features, trains models, and runs the backtest. Takes ~2-3 minutes end-to-end.
+
+### Run individual steps
+
+```bash
+python -m src.pipeline --download-data    # just refresh data
+python -m src.pipeline --train            # retrain models
+python -m src.pipeline --backtest         # rerun backtest only
+```
+
+### Explore in a notebook
+
+```bash
+jupyter notebook notebooks/01_eda.ipynb
+```
+
+## Key Visualizations
+
+Generated to `results/` after running the pipeline:
+
+- `01_price_performance.png` — normalized price chart of the universe
+- `02_target_distribution.png` — distribution of forward returns
+- `03_autocorrelation.png` — autocorrelation by ticker and lag
+- `04_correlation_matrix.png` — return correlation heatmap
+- `05_feature_importance.png` — LightGBM feature importance
+- `06_equity_curve.png` — strategy vs. benchmarks (the headline chart)
+- `07_drawdown.png` — strategy drawdown over time
+
+## Findings
+
+### What worked
+
+- Cross-sectional ranking is more learnable than absolute return prediction
+- Volatility regime is the strongest single feature (top by importance)
+- Multi-horizon returns capture both mean reversion and momentum
+- Walk-forward validation produces honest performance estimates
+- The strategy delivers ~5pp of annualized alpha vs. an equal-weight benchmark of the same universe
+
+### What didn't
+
+- Daily-horizon features rank lowest in importance — daily price action is dominated by noise
+- Linear and non-linear models perform similarly, suggesting the signal lives in feature engineering rather than complex interactions
+- The strategy's higher max drawdown (-54% vs. -32% for equal-weight) is the explicit cost of concentration
+
+### Honest caveats
+
+- Yahoo Finance is an unofficial data source; production deployment would use Polygon or similar
+- 11-ticker universe is small; results may not generalize to broader universes
+- 6.4-year period covers an exceptional bull market for tech; performance in a different regime is unknown
+- Transaction costs may be optimistic — real slippage on small accounts can be larger
+
+## Future Work
+
+- **Crowd Consensus Meter** (designed in `docs/roadmap/01_crowd_consensus_meter.md`): a sentiment indicator combining Reddit, StockTwits, and Google Trends data to identify when crowd positioning is extreme — used as a filter on model signals to flag contrarian setups vs. consensus trades
+- **Real-time deployment**: streaming OHLCV via Polygon WebSocket, paper-trading via Alpaca API
+- **AI agent layer**: when the model surfaces a candidate, an LLM call summarizes recent news/SEC filings to provide qualitative context
+- **Universe expansion**: scale from 11 to ~500 names (S&P 500); evaluate whether selection edge persists at scale
+- **Regime-aware modeling**: separate models for trending vs. mean-reverting regimes, switching based on volatility/breadth indicators
+
+## Stack
+
+- **Python 3.12** — core language
+- **pandas / numpy / pyarrow** — data manipulation
+- **scikit-learn** — Logistic Regression, Random Forest, walk-forward CV, pipeline tooling
+- **lightgbm** — gradient boosted trees
+- **matplotlib / seaborn** — visualization
+- **yfinance** — data source
+- **Jupyter** — exploratory analysis
+
+## Author
+
+Jordan Donaldson
+
+- Capstone project for Institute of Data — Data Science & AI program
+- Background in Neuroscience; transitioning to ML/AI engineering
+- [GitHub](https://github.com/Jordan4184) | itsjordandonaldson@gmail.com
+
+## License
+
+Educational project. Not financial advice. Past performance does not guarantee future results.
