@@ -3,8 +3,6 @@ Feature engineering for swing trading capstone.
 
 Each feature family is motivated by a market phenomenon documented in EDA
 or financial literature. See README for details.
-
-Author: Jordan Donaldson
 """
 
 import numpy as np
