@@ -1,0 +1,36 @@
+{
+  "strategy": {
+    "total_return": 5.61190018371018,
+    "annualized_return": 0.3408840712149208,
+    "sharpe_ratio": 0.9506650717231405,
+    "max_drawdown": -0.5407746906023844,
+    "hit_rate": 0.5476923076923077,
+    "n_periods": 325.0,
+    "n_years": 6.44
+  },
+  "spy": {
+    "total_return": 1.5086515519480446,
+    "annualized_return": 0.1535340959971041,
+    "sharpe_ratio": 0.8066488608934899,
+    "max_drawdown": -0.33717254951465175,
+    "hit_rate": 0.554595928439235,
+    "n_periods": 1621.0,
+    "n_years": 6.44
+  },
+  "equal_weight": {
+    "total_return": 4.127239457706622,
+    "annualized_return": 0.2889622989373477,
+    "sharpe_ratio": 1.2169021531643112,
+    "max_drawdown": -0.3209506338548912,
+    "hit_rate": 0.5663170882171499,
+    "n_periods": 1621.0,
+    "n_years": 6.44
+  },
+  "config": {
+    "top_n": 2,
+    "holding_days": 5,
+    "commission_per_trade_bps": 5.0,
+    "slippage_per_trade_bps": 5.0,
+    "initial_capital": 10000
+  }
+}
