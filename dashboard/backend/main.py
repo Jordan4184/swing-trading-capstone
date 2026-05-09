@@ -19,7 +19,6 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
-# Alpaca SDK
 from alpaca.data.historical import StockHistoricalDataClient
 from alpaca.data.requests import StockLatestQuoteRequest
 from alpaca.trading.client import TradingClient
@@ -28,7 +27,7 @@ from alpaca.trading.client import TradingClient
 # Environment + Alpaca clients
 # ---------------------------------------------------------------------------
 
-load_dotenv()  # reads .env into os.environ
+load_dotenv()
 
 ALPACA_API_KEY = os.getenv("ALPACA_API_KEY")
 ALPACA_API_SECRET = os.getenv("ALPACA_API_SECRET")
@@ -36,14 +35,12 @@ ALPACA_API_SECRET = os.getenv("ALPACA_API_SECRET")
 if not ALPACA_API_KEY or not ALPACA_API_SECRET:
     print("WARNING: Alpaca credentials missing. Live data endpoints will fail.")
 
-# Data client = market data (quotes, bars, trades)
 data_client = (
     StockHistoricalDataClient(ALPACA_API_KEY, ALPACA_API_SECRET)
     if ALPACA_API_KEY and ALPACA_API_SECRET
     else None
 )
 
-# Trading client = account info, orders, positions
 trading_client = (
     TradingClient(ALPACA_API_KEY, ALPACA_API_SECRET, paper=True)
     if ALPACA_API_KEY and ALPACA_API_SECRET
@@ -57,7 +54,7 @@ trading_client = (
 app = FastAPI(
     title="Swing Trading Dashboard API",
     description="Backend for the ML-based cross-sectional swing trading dashboard",
-    version="0.2.0",
+    version="0.3.0",
 )
 
 app.add_middleware(
@@ -102,6 +99,7 @@ def _load_backtest_summary() -> dict:
 
 PREDICTIONS = _load_predictions()
 BACKTEST = _load_backtest_summary()
+UNIVERSE = sorted(PREDICTIONS["ticker"].unique().tolist())
 
 # ---------------------------------------------------------------------------
 # Endpoints — capstone data (existing)
@@ -120,6 +118,7 @@ def root():
             "/api/tickers",
             "/api/equity-curve",
             "/api/live-price/{ticker}",
+            "/api/live-prices",
             "/api/account",
         ],
     }
@@ -132,8 +131,7 @@ def get_summary():
 
 @app.get("/api/tickers")
 def get_tickers():
-    tickers = sorted(PREDICTIONS["ticker"].unique().tolist())
-    return {"tickers": tickers, "count": len(tickers)}
+    return {"tickers": UNIVERSE, "count": len(UNIVERSE)}
 
 
 @app.get("/api/predictions/latest")
@@ -213,19 +211,32 @@ def get_equity_curve(top_n: int = 2, holding_days: int = 5, cost_bps: float = 10
     }
 
 # ---------------------------------------------------------------------------
-# Endpoints — Alpaca live data (NEW)
+# Endpoints — Alpaca live data
 # ---------------------------------------------------------------------------
+
+def _format_quote(ticker: str, quote) -> dict:
+    """Format an Alpaca quote object into a JSON-friendly dict."""
+    bid = float(quote.bid_price) if quote.bid_price else None
+    ask = float(quote.ask_price) if quote.ask_price else None
+    mid = (bid + ask) / 2 if (bid and ask) else (bid or ask)
+    return {
+        "ticker": ticker,
+        "bid_price": bid,
+        "ask_price": ask,
+        "mid_price": round(mid, 2) if mid else None,
+        "bid_size": int(quote.bid_size) if quote.bid_size else None,
+        "ask_size": int(quote.ask_size) if quote.ask_size else None,
+        "timestamp": quote.timestamp.isoformat() if quote.timestamp else None,
+    }
+
 
 @app.get("/api/live-price/{ticker}")
 def get_live_price(ticker: str):
-    """
-    Fetch the latest quote (bid/ask) for a single ticker from Alpaca.
-    Returns the most recent price data available on the paper account's data feed.
-    """
+    """Latest quote for a single ticker."""
     if data_client is None:
         raise HTTPException(
             status_code=503,
-            detail="Alpaca client not configured. Check .env file for ALPACA_API_KEY and ALPACA_API_SECRET.",
+            detail="Alpaca client not configured.",
         )
 
     ticker = ticker.upper()
@@ -239,35 +250,49 @@ def get_live_price(ticker: str):
                 detail=f"No quote data returned for '{ticker}'.",
             )
 
-        quote = response[ticker]
-        return {
-            "ticker": ticker,
-            "bid_price": float(quote.bid_price) if quote.bid_price else None,
-            "ask_price": float(quote.ask_price) if quote.ask_price else None,
-            "bid_size": int(quote.bid_size) if quote.bid_size else None,
-            "ask_size": int(quote.ask_size) if quote.ask_size else None,
-            "timestamp": quote.timestamp.isoformat() if quote.timestamp else None,
-        }
+        return _format_quote(ticker, response[ticker])
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Alpaca request failed: {str(e)}",
-        )
+        raise HTTPException(status_code=500, detail=f"Alpaca request failed: {str(e)}")
 
 
-@app.get("/api/account")
-def get_account():
+@app.get("/api/live-prices")
+def get_live_prices():
     """
-    Get current paper trading account info: buying power, equity, cash, positions count.
-    Useful for verifying the Alpaca connection works.
+    Latest quotes for the entire universe in one batch call.
+    Used by the frontend to populate the ticker tape and watchlist.
     """
-    if trading_client is None:
+    if data_client is None:
         raise HTTPException(
             status_code=503,
             detail="Alpaca client not configured.",
         )
+
+    try:
+        request = StockLatestQuoteRequest(symbol_or_symbols=UNIVERSE)
+        response = data_client.get_stock_latest_quote(request)
+
+        quotes = {}
+        for ticker in UNIVERSE:
+            if ticker in response:
+                quotes[ticker] = _format_quote(ticker, response[ticker])
+            else:
+                quotes[ticker] = {"ticker": ticker, "bid_price": None, "ask_price": None}
+
+        return {
+            "count": len(UNIVERSE),
+            "quotes": quotes,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Alpaca request failed: {str(e)}")
+
+
+@app.get("/api/account")
+def get_account():
+    """Paper trading account info."""
+    if trading_client is None:
+        raise HTTPException(status_code=503, detail="Alpaca client not configured.")
     try:
         account = trading_client.get_account()
         return {
@@ -281,7 +306,4 @@ def get_account():
             "currency": account.currency,
         }
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Alpaca account request failed: {str(e)}",
-        )
+        raise HTTPException(status_code=500, detail=f"Alpaca account request failed: {str(e)}")
