@@ -78,6 +78,21 @@ type Account = {
   currency: string;
 };
 
+type Bar = {
+  date: string;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+};
+
+type BarsResponse = {
+  ticker: string;
+  n_bars: number;
+  data: Bar[];
+};
+
 const API_BASE = "http://localhost:8000";
 
 // ---------------------------------------------------------------------------
@@ -95,12 +110,12 @@ const fmtPct = (n: number, withSign = true) => {
 const fmtPrice = (n: number | null | undefined) =>
   n == null ? "—" : n.toFixed(2);
 
-// Compute a fake daily change from the mid price (we don't have prev close yet)
-// Markets closed on weekends — we just show the latest known
-const computeChange = (q: Quote | undefined): { abs: number | null; pct: number | null } => {
-  if (!q || !q.mid_price) return { abs: null, pct: null };
-  // Without prev close from API, we'll show 0 for now — placeholder
-  return { abs: 0, pct: 0 };
+// Compute period change from bars
+const computeBarChange = (bars: Bar[] | undefined): { abs: number; pct: number } | null => {
+  if (!bars || bars.length < 2) return null;
+  const first = bars[0].close;
+  const last = bars[bars.length - 1].close;
+  return { abs: last - first, pct: (last - first) / first };
 };
 
 // ---------------------------------------------------------------------------
@@ -116,16 +131,19 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [selectedTicker, setSelectedTicker] = useState<string>("NVDA");
   const [tickerPredictions, setTickerPredictions] = useState<Prediction[]>([]);
+  const [selectedBars, setSelectedBars] = useState<BarsResponse | null>(null);
+  const [spyBars, setSpyBars] = useState<BarsResponse | null>(null);
 
   // Initial load
   useEffect(() => {
     async function loadInitial() {
       try {
-        const [summaryRes, latestRes, equityRes, accountRes] = await Promise.all([
+        const [summaryRes, latestRes, equityRes, accountRes, spyBarsRes] = await Promise.all([
           fetch(`${API_BASE}/api/summary`),
           fetch(`${API_BASE}/api/predictions/latest?top_n=10`),
           fetch(`${API_BASE}/api/equity-curve`),
           fetch(`${API_BASE}/api/account`),
+          fetch(`${API_BASE}/api/historical-bars/SPY?days=90`),
         ]);
 
         if (!summaryRes.ok) throw new Error("summary failed");
@@ -137,6 +155,7 @@ export default function DashboardPage() {
         setLatest(await latestRes.json());
         setEquityCurve(await equityRes.json());
         setAccount(await accountRes.json());
+        if (spyBarsRes.ok) setSpyBars(await spyBarsRes.json());
       } catch (err) {
         setError(err instanceof Error ? err.message : "Unknown error");
       }
@@ -150,9 +169,7 @@ export default function DashboardPage() {
       const res = await fetch(`${API_BASE}/api/live-prices`);
       if (!res.ok) return;
       setLivePrices(await res.json());
-    } catch {
-      // silent fail on polling
-    }
+    } catch {}
   }, []);
 
   useEffect(() => {
@@ -161,14 +178,21 @@ export default function DashboardPage() {
     return () => clearInterval(interval);
   }, [fetchLivePrices]);
 
-  // Load ticker-specific predictions when selection changes
+  // Load ticker-specific predictions AND historical bars when selection changes
   useEffect(() => {
     async function loadTickerData() {
       try {
-        const res = await fetch(`${API_BASE}/api/predictions/${selectedTicker}`);
-        if (!res.ok) return;
-        const data = await res.json();
-        setTickerPredictions(data.data || []);
+        const [predRes, barsRes] = await Promise.all([
+          fetch(`${API_BASE}/api/predictions/${selectedTicker}`),
+          fetch(`${API_BASE}/api/historical-bars/${selectedTicker}?days=90`),
+        ]);
+        if (predRes.ok) {
+          const data = await predRes.json();
+          setTickerPredictions(data.data || []);
+        }
+        if (barsRes.ok) {
+          setSelectedBars(await barsRes.json());
+        }
       } catch {}
     }
     loadTickerData();
@@ -196,15 +220,16 @@ export default function DashboardPage() {
   const s = summary.strategy;
   const ew = summary.equal_weight;
 
-  // Selected ticker data
   const selectedQuote = livePrices?.quotes[selectedTicker];
   const selectedPrediction = latest.predictions.find((p) => p.ticker === selectedTicker);
   const selectedRank = latest.predictions.findIndex((p) => p.ticker === selectedTicker) + 1;
 
-  // Universe ordered by signal probability (top first)
   const universeOrdered = latest.predictions
     .map((p) => p.ticker)
     .filter((t) => livePrices?.quotes[t]);
+
+  const selectedChange = computeBarChange(selectedBars?.data);
+  const spyChange = computeBarChange(spyBars?.data);
 
   return (
     <div className="layout">
@@ -216,7 +241,6 @@ export default function DashboardPage() {
         <div className="ticker-tape">
           {universeOrdered.map((ticker) => {
             const q = livePrices?.quotes[ticker];
-            const ch = computeChange(q);
             return (
               <div
                 key={ticker}
@@ -226,9 +250,6 @@ export default function DashboardPage() {
               >
                 <span className="tape-sym">{ticker}</span>
                 <span className="tape-price">{fmtPrice(q?.mid_price)}</span>
-                <span className={`tape-chg ${ch.pct && ch.pct >= 0 ? "up" : "dn"}`}>
-                  {ch.pct == null ? "—" : fmtPct(ch.pct)}
-                </span>
               </div>
             );
           })}
@@ -324,17 +345,21 @@ export default function DashboardPage() {
 
         {/* 2x2 chart grid */}
         <div className="chart-grid">
-          <ChartCell
+          <PriceChart
             symbol={selectedTicker}
-            name={`Selected · 1D`}
+            name="Selected · 90D"
             quote={selectedQuote}
-            placeholder
+            bars={selectedBars?.data}
+            change={selectedChange}
+            color="#4ADE80"
           />
-          <ChartCell
+          <PriceChart
             symbol="SPY"
-            name="S&P 500 ETF · 1D"
+            name="S&P 500 · 90D"
             quote={livePrices?.quotes["SPY"]}
-            placeholder
+            bars={spyBars?.data}
+            change={spyChange}
+            color="#60A5FA"
           />
           <EquityChartCell equityCurve={equityCurve} />
           <SignalsTable predictions={latest.predictions} onSelect={setSelectedTicker} selectedTicker={selectedTicker} />
@@ -415,9 +440,11 @@ export default function DashboardPage() {
               <div className="td-price">
                 {fmtPrice(selectedQuote?.mid_price)}
               </div>
-              <div className="td-change" style={{ color: "var(--text-muted)", fontSize: 11 }}>
-                last: {selectedQuote?.timestamp ? new Date(selectedQuote.timestamp).toLocaleString() : "—"}
-              </div>
+              {selectedChange && (
+                <div className={`td-change ${selectedChange.pct >= 0 ? "up" : "dn"}`} style={{ fontSize: 11 }}>
+                  90d: {fmtPct(selectedChange.pct)}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -431,7 +458,6 @@ export default function DashboardPage() {
         </div>
 
         <div className="detail-body">
-          {/* Quote stats */}
           <div className="detail-section">
             <div className="quote-stats">
               <QSCell label="Bid" value={fmtPrice(selectedQuote?.bid_price)} />
@@ -444,10 +470,15 @@ export default function DashboardPage() {
               } />
               <QSCell label="Bid Size" value={selectedQuote?.bid_size?.toString() ?? "—"} />
               <QSCell label="Ask Size" value={selectedQuote?.ask_size?.toString() ?? "—"} />
+              {selectedBars?.data.length ? (
+                <>
+                  <QSCell label="90d High" value={`$${Math.max(...selectedBars.data.map((b) => b.high)).toFixed(2)}`} />
+                  <QSCell label="90d Low" value={`$${Math.min(...selectedBars.data.map((b) => b.low)).toFixed(2)}`} />
+                </>
+              ) : null}
             </div>
           </div>
 
-          {/* ML Signal Detail */}
           <div className="detail-section">
             <div className="detail-section-header">
               <span>ML Signal Detail</span>
@@ -483,7 +514,6 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Prediction history */}
           <div className="detail-section">
             <div className="detail-section-header">
               <span>Prediction History</span>
@@ -516,7 +546,6 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Placeholder sections */}
           <div className="detail-section">
             <div className="detail-section-header">
               <span>Options Chain</span>
@@ -562,7 +591,7 @@ export default function DashboardPage() {
           UNIVERSE: 11 tickers
         </div>
         <div className="status-item" style={{ marginLeft: "auto" }}>
-          v0.3 · paper account · {account?.account_status ?? "—"}
+          v0.4 · paper account · {account?.account_status ?? "—"}
         </div>
       </footer>
 
@@ -614,8 +643,6 @@ export default function DashboardPage() {
         .tape-item:hover { background: var(--bg-row); }
         .tape-sym { font-weight: 600; color: var(--text-primary); }
         .tape-price { color: var(--text-secondary); font-feature-settings: "tnum"; }
-        .tape-chg.up { color: var(--green); }
-        .tape-chg.dn { color: var(--red); }
         .market-clock {
           padding: 0 12px;
           display: flex; gap: 10px; align-items: center;
@@ -768,6 +795,11 @@ export default function DashboardPage() {
           font-weight: 700;
           letter-spacing: -0.02em;
         }
+        .td-change {
+          font-size: 12px;
+          font-weight: 600;
+          margin-top: -2px;
+        }
         .detail-tabs {
           display: flex;
           overflow-x: auto;
@@ -852,7 +884,25 @@ function StatCell({ label, value, sub, accent }: { label: string; value: string;
   );
 }
 
-function ChartCell({ symbol, name, quote, placeholder }: { symbol: string; name: string; quote?: Quote; placeholder?: boolean }) {
+function PriceChart({
+  symbol,
+  name,
+  quote,
+  bars,
+  change,
+  color,
+}: {
+  symbol: string;
+  name: string;
+  quote?: Quote;
+  bars?: Bar[];
+  change: { abs: number; pct: number } | null;
+  color: string;
+}) {
+  const gradId = `grad-${symbol}`;
+  const lastClose = bars && bars.length > 0 ? bars[bars.length - 1].close : null;
+  const displayPrice = quote?.mid_price ?? lastClose;
+
   return (
     <div style={{ background: "var(--bg-base)", display: "flex", flexDirection: "column", overflow: "hidden" }}>
       <div style={{ background: "var(--bg-panel)", borderBottom: "1px solid var(--border)", padding: "5px 8px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -860,12 +910,52 @@ function ChartCell({ symbol, name, quote, placeholder }: { symbol: string; name:
           <span style={{ fontSize: 12, fontWeight: 700 }}>{symbol}</span>
           <span style={{ fontSize: 9, color: "var(--text-muted)" }}>{name}</span>
         </div>
-        <div style={{ display: "flex", gap: 6, alignItems: "baseline" }}>
-          <span style={{ fontSize: 12, fontWeight: 700 }}>{fmtPrice(quote?.mid_price)}</span>
+        <div style={{ display: "flex", gap: 8, alignItems: "baseline" }}>
+          <span style={{ fontSize: 12, fontWeight: 700 }}>{fmtPrice(displayPrice)}</span>
+          {change && (
+            <span style={{ fontSize: 10, fontWeight: 600 }} className={change.pct >= 0 ? "up" : "dn"}>
+              {fmtPct(change.pct)}
+            </span>
+          )}
         </div>
       </div>
-      <div style={{ flex: 1, position: "relative", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-faint)", fontSize: 11 }}>
-        {placeholder ? "Chart data — wire historical bars endpoint next" : ""}
+      <div style={{ flex: 1, minHeight: 0, position: "relative" }}>
+        {!bars || bars.length === 0 ? (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "var(--text-faint)", fontSize: 10 }}>
+            Loading bars...
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height="100%">
+            <ComposedChart data={bars} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+              <defs>
+                <linearGradient id={gradId} x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="0%" stopColor={color} stopOpacity={0.35} />
+                  <stop offset="100%" stopColor={color} stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="#1F2533" />
+              <XAxis
+                dataKey="date"
+                stroke="#6A7488"
+                tick={{ fontSize: 8 }}
+                tickFormatter={(d: string) => d.slice(5)}
+                interval={Math.max(0, Math.floor(bars.length / 5))}
+              />
+              <YAxis
+                stroke="#6A7488"
+                tick={{ fontSize: 8 }}
+                domain={["auto", "auto"]}
+                tickFormatter={(v: number) => `$${v.toFixed(0)}`}
+                width={40}
+              />
+              <Tooltip
+                contentStyle={{ backgroundColor: "#11151D", border: "1px solid #1F2533", fontSize: 10 }}
+                formatter={(v: number) => [`$${v.toFixed(2)}`, "Close"]}
+              />
+              <Area type="monotone" dataKey="close" stroke={color} strokeWidth={1.5} fill={`url(#${gradId})`} />
+            </ComposedChart>
+          </ResponsiveContainer>
+        )}
       </div>
     </div>
   );
@@ -887,7 +977,7 @@ function EquityChartCell({ equityCurve }: { equityCurve: EquityCurveResponse }) 
       </div>
       <div style={{ flex: 1, minHeight: 0 }}>
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={equityCurve.data} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
+          <ComposedChart data={equityCurve.data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
             <defs>
               <linearGradient id="strat-grad" x1="0" x2="0" y1="0" y2="1">
                 <stop offset="0%" stopColor="#4ADE80" stopOpacity={0.35} />
@@ -906,6 +996,7 @@ function EquityChartCell({ equityCurve }: { equityCurve: EquityCurveResponse }) 
               stroke="#6A7488"
               tick={{ fontSize: 9 }}
               tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`}
+              width={40}
             />
             <Tooltip
               contentStyle={{ backgroundColor: "#11151D", border: "1px solid #1F2533", fontSize: 10 }}

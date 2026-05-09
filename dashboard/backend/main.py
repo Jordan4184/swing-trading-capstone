@@ -3,7 +3,7 @@ FastAPI backend for the swing-trading dashboard.
 
 Loads precomputed results from the capstone (predictions, backtest summary)
 and exposes them via REST endpoints. Also integrates Alpaca for live market
-data (paper trading account).
+data + historical bars (paper trading account).
 
 Run:
     uvicorn main:app --reload --port 8000
@@ -11,6 +11,7 @@ Run:
 
 import json
 import os
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional
 
@@ -20,7 +21,8 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from alpaca.data.historical import StockHistoricalDataClient
-from alpaca.data.requests import StockLatestQuoteRequest
+from alpaca.data.requests import StockLatestQuoteRequest, StockBarsRequest
+from alpaca.data.timeframe import TimeFrame
 from alpaca.trading.client import TradingClient
 
 # ---------------------------------------------------------------------------
@@ -54,7 +56,7 @@ trading_client = (
 app = FastAPI(
     title="Swing Trading Dashboard API",
     description="Backend for the ML-based cross-sectional swing trading dashboard",
-    version="0.3.0",
+    version="0.4.0",
 )
 
 app.add_middleware(
@@ -102,7 +104,7 @@ BACKTEST = _load_backtest_summary()
 UNIVERSE = sorted(PREDICTIONS["ticker"].unique().tolist())
 
 # ---------------------------------------------------------------------------
-# Endpoints — capstone data (existing)
+# Endpoints — capstone data
 # ---------------------------------------------------------------------------
 
 @app.get("/")
@@ -119,6 +121,7 @@ def root():
             "/api/equity-curve",
             "/api/live-price/{ticker}",
             "/api/live-prices",
+            "/api/historical-bars/{ticker}",
             "/api/account",
         ],
     }
@@ -215,7 +218,6 @@ def get_equity_curve(top_n: int = 2, holding_days: int = 5, cost_bps: float = 10
 # ---------------------------------------------------------------------------
 
 def _format_quote(ticker: str, quote) -> dict:
-    """Format an Alpaca quote object into a JSON-friendly dict."""
     bid = float(quote.bid_price) if quote.bid_price else None
     ask = float(quote.ask_price) if quote.ask_price else None
     mid = (bid + ask) / 2 if (bid and ask) else (bid or ask)
@@ -232,12 +234,8 @@ def _format_quote(ticker: str, quote) -> dict:
 
 @app.get("/api/live-price/{ticker}")
 def get_live_price(ticker: str):
-    """Latest quote for a single ticker."""
     if data_client is None:
-        raise HTTPException(
-            status_code=503,
-            detail="Alpaca client not configured.",
-        )
+        raise HTTPException(status_code=503, detail="Alpaca client not configured.")
 
     ticker = ticker.upper()
     try:
@@ -245,10 +243,7 @@ def get_live_price(ticker: str):
         response = data_client.get_stock_latest_quote(request)
 
         if ticker not in response:
-            raise HTTPException(
-                status_code=404,
-                detail=f"No quote data returned for '{ticker}'.",
-            )
+            raise HTTPException(status_code=404, detail=f"No quote data for '{ticker}'.")
 
         return _format_quote(ticker, response[ticker])
     except HTTPException:
@@ -259,15 +254,8 @@ def get_live_price(ticker: str):
 
 @app.get("/api/live-prices")
 def get_live_prices():
-    """
-    Latest quotes for the entire universe in one batch call.
-    Used by the frontend to populate the ticker tape and watchlist.
-    """
     if data_client is None:
-        raise HTTPException(
-            status_code=503,
-            detail="Alpaca client not configured.",
-        )
+        raise HTTPException(status_code=503, detail="Alpaca client not configured.")
 
     try:
         request = StockLatestQuoteRequest(symbol_or_symbols=UNIVERSE)
@@ -288,9 +276,58 @@ def get_live_prices():
         raise HTTPException(status_code=500, detail=f"Alpaca request failed: {str(e)}")
 
 
+@app.get("/api/historical-bars/{ticker}")
+def get_historical_bars(ticker: str, days: int = 90):
+    """
+    Fetch daily OHLC bars for a ticker over the past N days.
+    Returns data formatted for charting.
+    """
+    if data_client is None:
+        raise HTTPException(status_code=503, detail="Alpaca client not configured.")
+
+    ticker = ticker.upper()
+    days = max(1, min(days, 365))  # clamp 1-365
+
+    try:
+        # Alpaca free tier requires data >= 15 min old, so we use a small offset
+        end = datetime.now() - timedelta(minutes=20)
+        start = end - timedelta(days=days)
+
+        request = StockBarsRequest(
+            symbol_or_symbols=[ticker],
+            timeframe=TimeFrame.Day,
+            start=start,
+            end=end,
+        )
+        response = data_client.get_stock_bars(request)
+
+        if ticker not in response.data:
+            return {"ticker": ticker, "n_bars": 0, "data": []}
+
+        bars = response.data[ticker]
+        formatted = [
+            {
+                "date": b.timestamp.strftime("%Y-%m-%d"),
+                "open": round(float(b.open), 2),
+                "high": round(float(b.high), 2),
+                "low": round(float(b.low), 2),
+                "close": round(float(b.close), 2),
+                "volume": int(b.volume),
+            }
+            for b in bars
+        ]
+
+        return {
+            "ticker": ticker,
+            "n_bars": len(formatted),
+            "data": formatted,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Alpaca bars request failed: {str(e)}")
+
+
 @app.get("/api/account")
 def get_account():
-    """Paper trading account info."""
     if trading_client is None:
         raise HTTPException(status_code=503, detail="Alpaca client not configured.")
     try:
