@@ -24,3 +24,7 @@ data/processed/
 results/*.png
 results/*.html
 results/cache/
+
+# Autonomous trader local database
+dashboard/backend/auto_trader.db
+dashboard/backend/auto_trader.db-journal
