@@ -30,6 +30,9 @@ from alpaca.trading.requests import MarketOrderRequest, GetOrdersRequest
 from alpaca.trading.enums import OrderSide, TimeInForce, QueryOrderStatus
 
 import llm_analyzer
+import auto_trader_db
+import position_manager
+import auto_scheduler
 
 # ---------------------------------------------------------------------------
 # Environment + Alpaca clients
@@ -72,7 +75,20 @@ MAX_NOTIONAL_PER_ORDER = 10_000
 # App setup
 # ---------------------------------------------------------------------------
 
-app = FastAPI(title="Swing Trading Dashboard API", version="0.8.0")
+app = FastAPI(title="Swing Trading Dashboard API", version="0.9.0")
+
+
+@app.on_event("startup")
+def _startup_autoscheduler():
+    """Auto-start scheduler if AUTO_TRADER_ENABLED=true in env."""
+    try:
+        result = auto_scheduler.start_scheduler()
+        if result.get("started"):
+            print(f"Auto-trader scheduler: {result.get('reason')}")
+        else:
+            print(f"Auto-trader scheduler NOT started: {result.get('reason')}")
+    except Exception as e:
+        print(f"Auto-trader scheduler startup failed: {e}")
 
 app.add_middleware(
     CORSMiddleware,
@@ -141,6 +157,11 @@ def root():
             "/api/news/{ticker}",
             "/api/intelligence/{ticker}",
             "/api/intelligence/stats",
+            "/api/autotrader/status",
+            "/api/autotrader/trades",
+            "/api/autotrader/runs",
+            "/api/autotrader/entry-cycle (POST)",
+            "/api/autotrader/exit-cycle (POST)",
         ],
     }
 
@@ -445,6 +466,59 @@ def get_ticker_intelligence(ticker: str, force_refresh: bool = False):
         "metadata": result["metadata"],
         "n_articles": len(formatted_articles),
     }
+
+# ---------------------------------------------------------------------------
+# Endpoints — Autonomous Trader
+# ---------------------------------------------------------------------------
+
+@app.get("/api/autotrader/status")
+def autotrader_status():
+    """Current state of the autonomous trader: scheduler, capacity, stats."""
+    return {
+        "scheduler": auto_scheduler.get_scheduler_status(),
+        "portfolio": position_manager.summarize_portfolio(),
+        "config": {
+            "max_concurrent_positions": position_manager.MAX_CONCURRENT_POSITIONS,
+            "min_signal_proba": position_manager.MIN_SIGNAL_PROBA,
+            "max_position_pct": position_manager.MAX_POSITION_PCT_OF_PORTFOLIO,
+            "default_holding_days": position_manager.DEFAULT_HOLDING_DAYS,
+        },
+    }
+
+
+@app.get("/api/autotrader/trades")
+def autotrader_trades(limit: int = 50):
+    """Recent autonomous trader trades from the local DB."""
+    return {
+        "recent": auto_trader_db.get_recent_trades(limit=limit),
+        "open_positions": auto_trader_db.get_open_positions(),
+        "performance": auto_trader_db.get_performance_stats(),
+    }
+
+
+@app.get("/api/autotrader/runs")
+def autotrader_runs(limit: int = 20):
+    """Scheduler run history."""
+    return {"runs": auto_trader_db.get_recent_runs(limit=limit)}
+
+
+@app.post("/api/autotrader/entry-cycle")
+def autotrader_entry(dry_run: bool = True):
+    """
+    Manually trigger the entry cycle.
+    Defaults to dry_run=True for safety. Set dry_run=false to actually place orders.
+    """
+    return auto_scheduler.run_entry_cycle(dry_run=dry_run)
+
+
+@app.post("/api/autotrader/exit-cycle")
+def autotrader_exit(dry_run: bool = True):
+    """
+    Manually trigger the exit cycle.
+    Defaults to dry_run=True for safety. Set dry_run=false to actually exit positions.
+    """
+    return auto_scheduler.run_exit_cycle(dry_run=dry_run)
+
 
 # ---------------------------------------------------------------------------
 # Endpoints — Trading (PAPER ONLY)

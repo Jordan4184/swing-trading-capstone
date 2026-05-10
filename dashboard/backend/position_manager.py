@@ -24,6 +24,7 @@ MAX_CONCURRENT_POSITIONS = 5
 MAX_POSITION_PCT_OF_PORTFOLIO = 0.20  # 20% max per position
 MIN_SIGNAL_PROBA = 0.55  # Don't trade signals below this
 DEFAULT_HOLDING_DAYS = 5
+MAX_SIGNAL_AGE_DAYS = 3  # Refuse to trade signals older than this
 
 
 class PositionManagerError(Exception):
@@ -117,17 +118,46 @@ def select_signals_to_trade(predictions: list, max_new: Optional[int] = None) ->
     if available <= 0:
         return []
 
+    today = date.today()
     selected = []
     for pred in predictions:
         if len(selected) >= available:
             break
         ticker = pred.get("ticker")
         proba = pred.get("y_proba", 0)
+
+        # Freshness check: refuse stale signals
+        signal_date_str = pred.get("signal_date")
+        if signal_date_str:
+            try:
+                signal_date = datetime.strptime(signal_date_str, "%Y-%m-%d").date()
+                age_days = (today - signal_date).days
+                if age_days > MAX_SIGNAL_AGE_DAYS:
+                    continue  # Skip stale signal silently (logged at higher level)
+            except (ValueError, TypeError):
+                continue  # Malformed date, skip
+
         allowed, reason = can_open_position(ticker, proba)
         if allowed:
             selected.append((pred, "ok"))
 
     return selected
+
+
+def get_latest_signal_age() -> Optional[int]:
+    """Returns days since the latest model prediction, or None if unavailable."""
+    try:
+        from pathlib import Path
+        import pandas as pd
+        backend_dir = Path(__file__).parent
+        project_root = backend_dir.parent.parent
+        pred_path = project_root / "results" / "predictions.parquet"
+        df = pd.read_parquet(pred_path)
+        df["date"] = pd.to_datetime(df["date"])
+        latest = df["date"].max().date()
+        return (date.today() - latest).days
+    except Exception:
+        return None
 
 
 def summarize_portfolio() -> dict:
@@ -136,12 +166,15 @@ def summarize_portfolio() -> dict:
     stats = db.get_performance_stats()
     exits_due = get_exits_due()
     open_positions = db.get_open_positions()
+    signal_age = get_latest_signal_age()
 
     return {
         "capacity": capacity,
         "stats": stats,
         "exits_due_today": len(exits_due),
         "exits_due_tickers": [p["ticker"] for p in exits_due],
+        "signal_age_days": signal_age,
+        "signal_is_fresh": signal_age is not None and signal_age <= MAX_SIGNAL_AGE_DAYS,
         "open_positions_detail": [
             {
                 "ticker": p["ticker"],
