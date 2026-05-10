@@ -130,12 +130,17 @@ Examples:
     parser.add_argument(
         "--backtest", action="store_true", help="Run backtest on saved predictions"
     )
+    parser.add_argument(
+        "--retrain-final",
+        action="store_true",
+        help="Refresh data + train a new versioned production model",
+    )
 
     args = parser.parse_args()
 
     # If no flags given, show help
     if not any(
-        [args.all, args.download_data, args.features, args.train, args.backtest]
+        [args.all, args.download_data, args.features, args.train, args.backtest, args.retrain_final]
     ):
         parser.print_help()
         return 0
@@ -152,6 +157,8 @@ Examples:
 
         if args.all or args.backtest:
             run_backtest()
+        if args.retrain_final:
+            run_retrain_final()
 
         print("\n" + "=" * 60)
         print("PIPELINE COMPLETE")
@@ -164,6 +171,88 @@ Examples:
 
         traceback.print_exc()
         return 1
+
+
+
+
+def run_retrain_final() -> dict:
+    """
+    Retrain a production model on all available data (no walk-forward).
+
+    Refreshes the OHLCV cache to today, rebuilds features, trains a single
+    model, saves as a new versioned file, and compares to the current model.
+    Does NOT promote the new model automatically.
+    """
+    import pandas as pd
+    from datetime import datetime
+    from src.data_loader import download_data, get_universe, DATA_DIR
+    from src.features import build_features
+    from src.models import (
+        next_model_version,
+        train_final_model,
+        save_model,
+        compare_to_current_production,
+        PRODUCTION_MODEL_DIR,
+    )
+
+    print("\n" + "=" * 60)
+    print("RETRAIN: refresh data + train v_next production model")
+    print("=" * 60)
+
+    # 1. Refresh OHLCV cache to today
+    today = datetime.now()
+    print(f"\nFetching market data through {today.date()}...")
+    fresh = download_data(get_universe(), start="2018-01-01", end=today.strftime("%Y-%m-%d"))
+
+    cache_path = DATA_DIR / "ohlcv.parquet"
+    if cache_path.exists():
+        cached = pd.read_parquet(cache_path)
+        cached["date"] = pd.to_datetime(cached["date"])
+        fresh["date"] = pd.to_datetime(fresh["date"])
+        combined = pd.concat([cached, fresh], ignore_index=True)
+        combined = combined.drop_duplicates(subset=["ticker", "date"], keep="last")
+        combined = combined.sort_values(["ticker", "date"]).reset_index(drop=True)
+        combined.to_parquet(cache_path, index=False)
+        delta = len(combined) - len(cached)
+        print(f"Cache: {len(cached):,} cached + {len(fresh):,} fresh -> {len(combined):,} total ({delta:+,} new rows)")
+    else:
+        combined = fresh
+        fresh.to_parquet(cache_path, index=False)
+        print(f"Created new cache: {len(combined):,} rows")
+
+    # 2. Rebuild features over full history
+    print("\nBuilding features over full history...")
+    df = build_features(combined)
+    print(f"Feature matrix: {len(df):,} rows / 11 features")
+
+    # 3. Train new versioned model
+    new_version = next_model_version("rf")
+    print(f"\nTraining {new_version}...")
+    new_model = train_final_model(df)
+    new_path = PRODUCTION_MODEL_DIR / f"{new_version}.joblib"
+    save_model(new_model, path=new_path)
+
+    # 4. Compare to current production model
+    print("\nComparing new model to current production model (5-fold walk-forward)...")
+    comparison = compare_to_current_production(new_model, df)
+    print(f"\n=== Comparison Result ===")
+    for k, v in comparison.items():
+        print(f"  {k}: {v}")
+
+    # 5. Output instructions
+    print(f"\n=== Next Steps ===")
+    print(f"New model saved at: {new_path}")
+    print(f"Current production: models/rf_v1.joblib")
+    print(f"To PROMOTE {new_version} to production:")
+    print(f"  cp {new_path} models/rf_v1.joblib")
+    print(f"  (This is a manual step - no auto-promotion.)")
+
+    return {
+        "new_version": new_version,
+        "new_model_path": str(new_path),
+        "n_training_rows": len(df),
+        "comparison": comparison,
+    }
 
 
 if __name__ == "__main__":

@@ -330,3 +330,80 @@ def load_model(path: Path = None) -> dict:
         raise FileNotFoundError(f"Model not found at {path}. Train it first with --train-final")
     payload = joblib.load(path)
     return payload
+
+
+# ---------------------------------------------------------------------------
+# Model versioning + retrain helpers
+# ---------------------------------------------------------------------------
+
+def next_model_version(base_name: str = "rf") -> str:
+    """
+    Returns the next version string for a new trained model.
+    Scans existing files in models/ to find the highest version number.
+
+    Example: if models/ contains rf_v1.joblib and rf_v2.joblib, returns "rf_v3".
+    """
+    import re
+    PRODUCTION_MODEL_DIR.mkdir(exist_ok=True)
+    pattern = re.compile(rf"^{re.escape(base_name)}_v(\d+)\.joblib$")
+    max_v = 0
+    for f in PRODUCTION_MODEL_DIR.iterdir():
+        m = pattern.match(f.name)
+        if m:
+            v = int(m.group(1))
+            if v > max_v:
+                max_v = v
+    return f"{base_name}_v{max_v + 1}"
+
+
+def compare_to_current_production(new_model, df: pd.DataFrame) -> dict:
+    """
+    Compare a freshly trained model against the current production model.
+    Both models are evaluated on the SAME walk-forward CV splits for fairness.
+
+    Returns a dict with side-by-side metrics.
+    """
+    from sklearn.model_selection import TimeSeriesSplit
+    from sklearn.metrics import roc_auc_score, accuracy_score
+    from sklearn.base import clone
+
+    try:
+        current_payload = load_model()
+        current_model = current_payload["model"]
+    except FileNotFoundError:
+        return {"comparison": "no_baseline", "reason": "No current production model to compare against"}
+
+    X, y, _ = prepare_xy(df)
+    tscv = TimeSeriesSplit(n_splits=5)
+
+    metrics = {"new": [], "current": []}
+    for fold_idx, (train_idx, test_idx) in enumerate(tscv.split(X)):
+        X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
+        y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
+
+        for label, m in [("new", clone(new_model)), ("current", clone(current_model))]:
+            m.fit(X_train, y_train)
+            proba = m.predict_proba(X_test)[:, 1]
+            pred = (proba >= 0.5).astype(int)
+            metrics[label].append({
+                "fold": fold_idx,
+                "auc": float(roc_auc_score(y_test, proba)),
+                "accuracy": float(accuracy_score(y_test, pred)),
+            })
+
+    new_mean_auc = sum(m["auc"] for m in metrics["new"]) / len(metrics["new"])
+    cur_mean_auc = sum(m["auc"] for m in metrics["current"]) / len(metrics["current"])
+
+    return {
+        "comparison": "ok",
+        "new_mean_auc": round(new_mean_auc, 4),
+        "current_mean_auc": round(cur_mean_auc, 4),
+        "auc_delta": round(new_mean_auc - cur_mean_auc, 4),
+        "recommendation": (
+            "PROMOTE: new model meaningfully better" if new_mean_auc - cur_mean_auc > 0.01
+            else "KEEP CURRENT: no significant improvement" if abs(new_mean_auc - cur_mean_auc) <= 0.01
+            else "INVESTIGATE: new model worse"
+        ),
+        "n_folds": 5,
+        "train_size": len(X),
+    }
