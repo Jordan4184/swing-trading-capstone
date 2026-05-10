@@ -63,21 +63,10 @@ type Quote = {
   timestamp?: string | null;
 };
 
-type LivePricesResponse = {
-  count: number;
-  quotes: Record<string, Quote>;
-};
+type LivePricesResponse = { count: number; quotes: Record<string, Quote> };
 
-type PrevClose = {
-  ticker: string;
-  prev_close: number | null;
-  date: string | null;
-};
-
-type PrevClosesResponse = {
-  count: number;
-  data: Record<string, PrevClose>;
-};
+type PrevClose = { ticker: string; prev_close: number | null; date: string | null };
+type PrevClosesResponse = { count: number; data: Record<string, PrevClose> };
 
 type Account = {
   account_status: string;
@@ -90,20 +79,8 @@ type Account = {
   currency: string;
 };
 
-type BarRow = {
-  date: string;
-  open: number;
-  high: number;
-  low: number;
-  close: number;
-  volume: number;
-};
-
-type BarsResponse = {
-  ticker: string;
-  n_bars: number;
-  data: BarRow[];
-};
+type BarRow = { date: string; open: number; high: number; low: number; close: number; volume: number };
+type BarsResponse = { ticker: string; n_bars: number; data: BarRow[] };
 
 type Order = {
   order_id: string;
@@ -116,7 +93,6 @@ type Order = {
   submitted_at: string | null;
   filled_at: string | null;
 };
-
 type OrdersResponse = { count: number; orders: Order[] };
 
 type Position = {
@@ -130,13 +106,21 @@ type Position = {
   unrealized_pl: number | null;
   unrealized_plpc: number | null;
 };
-
 type PositionsResponse = { count: number; positions: Position[] };
 
 type FlashState = "up" | "dn" | null;
 type Toast = { type: "success" | "error" | "info"; message: string };
 type OrderModalState = { ticker: string; side: "buy" | "sell" } | null;
 type ChartType = "candle" | "area";
+type LayoutMode = "1x1" | "2x1" | "2x2" | "3x2" | "3x3";
+
+const LAYOUT_CONFIG: Record<LayoutMode, { cols: number; rows: number; cells: number }> = {
+  "1x1": { cols: 1, rows: 1, cells: 1 },
+  "2x1": { cols: 2, rows: 1, cells: 2 },
+  "2x2": { cols: 2, rows: 2, cells: 4 },
+  "3x2": { cols: 3, rows: 2, cells: 6 },
+  "3x3": { cols: 3, rows: 3, cells: 9 },
+};
 
 const API_BASE = "http://localhost:8000";
 const POLL_INTERVAL_MS = 5_000;
@@ -150,12 +134,10 @@ const MAX_NOTIONAL_PER_ORDER = 10_000;
 // ---------------------------------------------------------------------------
 
 const fmtMoney = (n: number) => (n >= 1000 ? `$${(n / 1000).toFixed(1)}k` : `$${n.toFixed(2)}`);
-
 const fmtPct = (n: number, withSign = true) => {
   const v = (n * 100).toFixed(2);
   return withSign && n > 0 ? `+${v}%` : `${v}%`;
 };
-
 const fmtPrice = (n: number | null | undefined) => (n == null ? "—" : n.toFixed(2));
 
 const computeBarChange = (bars: BarRow[] | undefined): { abs: number; pct: number } | null => {
@@ -165,17 +147,10 @@ const computeBarChange = (bars: BarRow[] | undefined): { abs: number; pct: numbe
   return { abs: last - first, pct: (last - first) / first };
 };
 
-const computeDailyChange = (
-  current: number | null | undefined,
-  prevClose: number | null | undefined
-): { abs: number; pct: number } | null => {
+const computeDailyChange = (current: number | null | undefined, prevClose: number | null | undefined): { abs: number; pct: number } | null => {
   if (current == null || prevClose == null || prevClose === 0) return null;
   return { abs: current - prevClose, pct: (current - prevClose) / prevClose };
 };
-
-// ---------------------------------------------------------------------------
-// Custom hook: track price changes and flash
-// ---------------------------------------------------------------------------
 
 function usePriceFlash(prices: Record<string, number | null | undefined>) {
   const previousRef = useRef<Record<string, number | null>>({});
@@ -185,7 +160,6 @@ function usePriceFlash(prices: Record<string, number | null | undefined>) {
   useEffect(() => {
     const newFlashes: Record<string, FlashState> = {};
     let anyChanged = false;
-
     Object.entries(prices).forEach(([ticker, current]) => {
       const prev = previousRef.current[ticker];
       if (prev != null && current != null && current !== prev) {
@@ -198,22 +172,19 @@ function usePriceFlash(prices: Record<string, number | null | undefined>) {
       }
       previousRef.current[ticker] = current ?? null;
     });
-
     if (anyChanged) setFlashes((f) => ({ ...f, ...newFlashes }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [JSON.stringify(prices)]);
 
   useEffect(() => {
-    return () => {
-      Object.values(timeoutsRef.current).forEach(clearTimeout);
-    };
+    return () => Object.values(timeoutsRef.current).forEach(clearTimeout);
   }, []);
 
   return flashes;
 }
 
 // ---------------------------------------------------------------------------
-// Main Component
+// Main
 // ---------------------------------------------------------------------------
 
 export default function DashboardPage() {
@@ -235,6 +206,9 @@ export default function DashboardPage() {
   const [orderModal, setOrderModal] = useState<OrderModalState>(null);
   const [toast, setToast] = useState<Toast | null>(null);
   const [chartType, setChartType] = useState<ChartType>("candle");
+  const [layout, setLayout] = useState<LayoutMode>("2x2");
+  const [cellTickers, setCellTickers] = useState<Record<number, string>>({});
+  const [allBars, setAllBars] = useState<Record<string, BarsResponse>>({});
 
   const priceMap: Record<string, number | null | undefined> = {};
   if (livePrices) Object.entries(livePrices.quotes).forEach(([t, q]) => { priceMap[t] = q.mid_price; });
@@ -342,6 +316,39 @@ export default function DashboardPage() {
     loadTickerData();
   }, [selectedTicker]);
 
+  // Fetch bars for any ticker shown in a cell that we don't have
+  useEffect(() => {
+    if (!latest) return;
+    const cfg = LAYOUT_CONFIG[layout];
+    const universe = latest.predictions.map((p) => p.ticker);
+    const needed = new Set<string>();
+    for (let i = 0; i < cfg.cells; i++) {
+      let t = cellTickers[i];
+      if (!t) {
+        // Default ticker for this cell
+        if (i === 0) t = selectedTicker;
+        else if (i === 1) t = "SPY";
+        else {
+          const remaining = universe.filter((x) => x !== selectedTicker && x !== "SPY");
+          const idx = i - 2;
+          if (idx < remaining.length) t = remaining[idx];
+        }
+      }
+      if (t && t !== selectedTicker && t !== "SPY" && !allBars[t]) {
+        needed.add(t);
+      }
+    }
+    needed.forEach(async (ticker) => {
+      try {
+        const res = await fetch(`${API_BASE}/api/historical-bars/${ticker}?days=90`);
+        if (res.ok) {
+          const data = await res.json();
+          setAllBars((prev) => ({ ...prev, [ticker]: data }));
+        }
+      } catch {}
+    });
+  }, [layout, cellTickers, selectedTicker, latest, allBars]);
+
   async function handlePlaceOrder(ticker: string, side: "buy" | "sell", qty: number) {
     try {
       const res = await fetch(`${API_BASE}/api/orders/place`, {
@@ -381,10 +388,24 @@ export default function DashboardPage() {
   const selectedPrediction = latest.predictions.find((p) => p.ticker === selectedTicker);
   const selectedRank = latest.predictions.findIndex((p) => p.ticker === selectedTicker) + 1;
   const universeOrdered = latest.predictions.map((p) => p.ticker).filter((t) => livePrices?.quotes[t]);
+  const universe = latest.predictions.map((p) => p.ticker);
   const selectedPrevClose = prevCloses?.data[selectedTicker]?.prev_close;
   const selectedDailyChange = computeDailyChange(selectedQuote?.mid_price, selectedPrevClose);
   const selected90dChange = computeBarChange(selectedBars?.data);
   const spyDailyChange = computeDailyChange(livePrices?.quotes["SPY"]?.mid_price, prevCloses?.data["SPY"]?.prev_close);
+
+  const cfg = LAYOUT_CONFIG[layout];
+
+  // Resolve which ticker (or null) goes in each cell
+  const resolveCellTicker = (i: number): string | null => {
+    if (cellTickers[i]) return cellTickers[i];
+    if (i === 0) return selectedTicker;
+    if (i === 1 && cfg.cells >= 2) return "SPY";
+    const remaining = universe.filter((t) => t !== selectedTicker && t !== "SPY");
+    const idx = i - 2;
+    if (idx >= 0 && idx < remaining.length) return remaining[idx];
+    return null;
+  };
 
   return (
     <div className="layout">
@@ -448,10 +469,11 @@ export default function DashboardPage() {
         <div className="toolbar">
           <div className="toolbar-section">
             <span className="toolbar-text"><strong>Layout</strong></span>
-            <button className="layout-btn">1×1</button>
-            <button className="layout-btn">2×1</button>
-            <button className="layout-btn active">2×2</button>
-            <button className="layout-btn">3×2</button>
+            {(["1x1", "2x1", "2x2", "3x2", "3x3"] as LayoutMode[]).map((l) => (
+              <button key={l} className={`layout-btn ${layout === l ? "active" : ""}`} onClick={() => setLayout(l)}>
+                {l.replace("x", "×")}
+              </button>
+            ))}
           </div>
           <div className="toolbar-section">
             <span className="toolbar-text"><strong>Chart</strong></span>
@@ -468,11 +490,49 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className="chart-grid">
-          <PriceChart symbol={selectedTicker} name="Selected · 90D" quote={selectedQuote} bars={selectedBars?.data} change={selectedDailyChange} color="#4ADE80" flash={flashes[selectedTicker]} chartType={chartType} />
-          <PriceChart symbol="SPY" name="S&P 500 · 90D" quote={livePrices?.quotes["SPY"]} bars={spyBars?.data} change={spyDailyChange} color="#60A5FA" flash={flashes["SPY"]} chartType={chartType} />
-          <EquityChartCell equityCurve={equityCurve} />
-          <SignalsTable predictions={latest.predictions} onSelect={setSelectedTicker} selectedTicker={selectedTicker} />
+        <div style={{ display: "grid", gridTemplateColumns: `repeat(${cfg.cols}, 1fr)`, gridTemplateRows: `repeat(${cfg.rows}, 1fr)`, gap: 1, background: "var(--border)", overflow: "hidden" }}>
+          {Array.from({ length: cfg.cells }).map((_, i) => {
+            const t = resolveCellTicker(i);
+            // Special slot logic for layouts with 4+ cells: last 2 cells get equity + signals if no ticker
+            const isLast = i === cfg.cells - 1;
+            const isSecondToLast = i === cfg.cells - 2;
+            const noTicker = t === null;
+
+            // For 2x2: cells 2 and 3 are equity + signals (preserves original layout)
+            if (layout === "2x2" && i === 2) return <EquityChartCell key={`cell-${i}`} equityCurve={equityCurve} />;
+            if (layout === "2x2" && i === 3) return <SignalsTable key={`cell-${i}`} predictions={latest.predictions} onSelect={setSelectedTicker} selectedTicker={selectedTicker} />;
+
+            if (noTicker) {
+              if (isSecondToLast && cfg.cells >= 4) return <EquityChartCell key={`cell-${i}`} equityCurve={equityCurve} />;
+              if (isLast && cfg.cells >= 4) return <SignalsTable key={`cell-${i}`} predictions={latest.predictions} onSelect={setSelectedTicker} selectedTicker={selectedTicker} />;
+              return <div key={`cell-${i}`} style={{ background: "var(--bg-base)" }} />;
+            }
+
+            const q = livePrices?.quotes[t];
+            const prev = prevCloses?.data[t]?.prev_close;
+            const dc = computeDailyChange(q?.mid_price, prev);
+            const bars = t === selectedTicker ? selectedBars?.data : t === "SPY" ? spyBars?.data : allBars[t]?.data;
+            const color = i === 0 ? "#4ADE80" : i === 1 ? "#60A5FA" : "#A78BFA";
+
+            return (
+              <PriceChartCell
+                key={`cell-${i}`}
+                cellIndex={i}
+                symbol={t}
+                universe={universe}
+                quote={q}
+                bars={bars}
+                change={dc}
+                color={color}
+                flash={flashes[t]}
+                chartType={chartType}
+                onTickerChange={(newTicker) => {
+                  setCellTickers((prev) => ({ ...prev, [i]: newTicker }));
+                  if (i === 0) setSelectedTicker(newTicker);
+                }}
+              />
+            );
+          })}
         </div>
 
         <div className="bottom-row">
@@ -603,7 +663,7 @@ export default function DashboardPage() {
         <div className="status-item">POLLING: {POLL_INTERVAL_MS / 1000}s · {pollCount} polls</div>
         <div className="status-item">UNIVERSE: 11 tickers</div>
         <div className="status-item">PAPER · {orders?.count ?? 0} orders · {positions?.count ?? 0} positions</div>
-        <div className="status-item" style={{ marginLeft: "auto" }}>v0.7 · {account?.account_status ?? "—"}</div>
+        <div className="status-item" style={{ marginLeft: "auto" }}>v0.8 · {account?.account_status ?? "—"}</div>
       </footer>
 
       {orderModal && (
@@ -653,7 +713,6 @@ export default function DashboardPage() {
         .layout-btn { background: var(--bg-elevated); border: 1px solid var(--border); color: var(--text-secondary); padding: 3px 7px; border-radius: 3px; cursor: pointer; font-size: 10px; font-family: inherit; }
         .layout-btn:hover { background: var(--bg-row); color: var(--text-primary); }
         .layout-btn.active { background: var(--green-bg); color: var(--green); border-color: var(--green); }
-        .chart-grid { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 1px; background: var(--border); overflow: hidden; }
         .bottom-row { background: var(--bg-panel); border-top: 1px solid var(--border); display: grid; grid-template-columns: 1.5fr 1fr 1.5fr; gap: 1px; background: var(--border); }
         .right-panel { grid-column: 3; grid-row: 2; background: var(--bg-panel); border-left: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
         .ticker-detail-header { padding: 10px 12px; border-bottom: 1px solid var(--border); background: linear-gradient(180deg, var(--bg-elevated) 0%, var(--bg-panel) 100%); }
@@ -691,26 +750,13 @@ export default function DashboardPage() {
 // Candlestick rendering
 // ---------------------------------------------------------------------------
 
-// Candle shape - uses the bar's pixel height to derive the y-scale via the close price.
-// Recharts gives us x, y, width, height for a bar where:
-//   - bar represents value `close` (because dataKey="close")
-//   - y is the pixel position of close
-//   - height extends from y down to the baseline (0)
-// We pass dataMin/dataMax/yMin/yMax through props so we can compute pixel positions for O/H/L.
 function CandleShape(props: any) {
   const { x, y, width, height, payload, yMin, yMax, chartHeight } = props;
   if (!payload || yMin == null || yMax == null || !chartHeight) return null;
   const { open, high, low, close } = payload as BarRow;
-
-  // Linear scale: value -> pixel y-coordinate
-  // y=0 is at the top of the chart, y=chartHeight at the bottom
   const valueRange = yMax - yMin;
   if (valueRange <= 0) return null;
-  const valueToY = (v: number) => {
-    // Normalize: yMax maps to top (0), yMin maps to bottom (chartHeight)
-    const ratio = (yMax - v) / valueRange;
-    return ratio * chartHeight;
-  };
+  const valueToY = (v: number) => ((yMax - v) / valueRange) * chartHeight;
 
   const yOpen = valueToY(open);
   const yClose = valueToY(close);
@@ -722,7 +768,6 @@ function CandleShape(props: any) {
   const bodyTop = Math.min(yOpen, yClose);
   const bodyBottom = Math.max(yOpen, yClose);
   const bodyHeight = Math.max(1, bodyBottom - bodyTop);
-
   const candleWidth = Math.max(2, Math.min(width * 0.7, 8));
   const cx = x + width / 2;
 
@@ -748,23 +793,27 @@ function StatCell({ label, value, sub, accent }: { label: string; value: string;
   );
 }
 
-function PriceChart({ symbol, name, quote, bars, change, color, flash, chartType }: { symbol: string; name: string; quote?: Quote; bars?: BarRow[]; change: { abs: number; pct: number } | null; color: string; flash?: FlashState; chartType: ChartType }) {
-  const gradId = `grad-${symbol}`;
+function PriceChartCell({ cellIndex, symbol, universe, quote, bars, change, color, flash, chartType, onTickerChange }: { cellIndex: number; symbol: string; universe: string[]; quote?: Quote; bars?: BarRow[]; change: { abs: number; pct: number } | null; color: string; flash?: FlashState; chartType: ChartType; onTickerChange: (newTicker: string) => void }) {
   const lastClose = bars && bars.length > 0 ? bars[bars.length - 1].close : null;
   const displayPrice = quote?.mid_price ?? lastClose;
-
-  // Compute Y domain manually so candles aren't clipped at the top/bottom.
-  // We need the YAxis to span min(low) to max(high), not just min/max of close.
   const yDomain: [number | string, number | string] = bars && bars.length > 0
     ? [Math.min(...bars.map((b) => b.low)) * 0.995, Math.max(...bars.map((b) => b.high)) * 1.005]
     : ["auto", "auto"];
 
+  const allTickers = universe.includes("SPY") ? universe : [...universe, "SPY"];
+
   return (
     <div style={{ background: "var(--bg-base)", display: "flex", flexDirection: "column", overflow: "hidden" }}>
       <div className={flash === "up" ? "flash-up" : flash === "dn" ? "flash-dn" : ""} style={{ background: "var(--bg-panel)", borderBottom: "1px solid var(--border)", padding: "5px 8px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div style={{ display: "flex", gap: 8, alignItems: "baseline" }}>
-          <span style={{ fontSize: 12, fontWeight: 700 }}>{symbol}</span>
-          <span style={{ fontSize: 9, color: "var(--text-muted)" }}>{name}</span>
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <select
+            value={symbol}
+            onChange={(e) => onTickerChange(e.target.value)}
+            style={{ background: "var(--bg-elevated)", color: "var(--text-primary)", border: "1px solid var(--border-strong)", borderRadius: 3, padding: "2px 6px", fontSize: 11, fontFamily: "inherit", fontWeight: 700, cursor: "pointer", outline: "none" }}
+          >
+            {allTickers.map((t) => <option key={t} value={t}>{t}</option>)}
+          </select>
+          <span style={{ fontSize: 9, color: "var(--text-muted)" }}>· 90D</span>
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "baseline" }}>
           <span style={{ fontSize: 12, fontWeight: 700 }}>{fmtPrice(displayPrice)}</span>
@@ -778,7 +827,7 @@ function PriceChart({ symbol, name, quote, bars, change, color, flash, chartType
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart data={bars} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
               <defs>
-                <linearGradient id={gradId} x1="0" x2="0" y1="0" y2="1">
+                <linearGradient id={`grad-${cellIndex}-${symbol}`} x1="0" x2="0" y1="0" y2="1">
                   <stop offset="0%" stopColor={color} stopOpacity={0.35} />
                   <stop offset="100%" stopColor={color} stopOpacity={0} />
                 </linearGradient>
@@ -786,28 +835,21 @@ function PriceChart({ symbol, name, quote, bars, change, color, flash, chartType
               <CartesianGrid strokeDasharray="3 3" stroke="#1F2533" />
               <XAxis dataKey="date" stroke="#6A7488" tick={{ fontSize: 8 }} tickFormatter={(d: string) => d.slice(5)} interval={Math.max(0, Math.floor(bars.length / 5))} />
               <YAxis stroke="#6A7488" tick={{ fontSize: 8 }} domain={yDomain} tickFormatter={(v: number) => `$${v.toFixed(0)}`} width={40} />
-              <Tooltip
-                contentStyle={{ backgroundColor: "#11151D", border: "1px solid #1F2533", fontSize: 10 }}
-                formatter={(v: number, name: string, props: any) => {
-                  if (chartType === "candle" && props?.payload) {
-                    const p = props.payload as BarRow;
-                    return [`O ${p.open.toFixed(2)} H ${p.high.toFixed(2)} L ${p.low.toFixed(2)} C ${p.close.toFixed(2)}`, ""];
-                  }
-                  return [`$${v.toFixed(2)}`, "Close"];
-                }}
-              />
+              <Tooltip contentStyle={{ backgroundColor: "#11151D", border: "1px solid #1F2533", fontSize: 10 }} formatter={(v: number, name: string, props: any) => {
+                if (chartType === "candle" && props?.payload) {
+                  const p = props.payload as BarRow;
+                  return [`O ${p.open.toFixed(2)} H ${p.high.toFixed(2)} L ${p.low.toFixed(2)} C ${p.close.toFixed(2)}`, ""];
+                }
+                return [`$${v.toFixed(2)}`, "Close"];
+              }} />
               {chartType === "candle" ? (
-                <Bar
-                  dataKey="close"
-                  shape={(p: any) => <CandleShape {...p} yMin={Math.min(...bars.map((b) => b.low)) * 0.995} yMax={Math.max(...bars.map((b) => b.high)) * 1.005} chartHeight={p.background?.height ?? 200} />}
-                  isAnimationActive={false}
-                >
+                <Bar dataKey="close" shape={(p: any) => <CandleShape {...p} yMin={Math.min(...bars.map((b) => b.low)) * 0.995} yMax={Math.max(...bars.map((b) => b.high)) * 1.005} chartHeight={p.background?.height ?? 200} />} isAnimationActive={false}>
                   {bars.map((entry, idx) => (
                     <Cell key={idx} fill={entry.close >= entry.open ? "#4ADE80" : "#F87171"} />
                   ))}
                 </Bar>
               ) : (
-                <Area type="monotone" dataKey="close" stroke={color} strokeWidth={1.5} fill={`url(#${gradId})`} />
+                <Area type="monotone" dataKey="close" stroke={color} strokeWidth={1.5} fill={`url(#grad-${cellIndex}-${symbol})`} />
               )}
             </ComposedChart>
           </ResponsiveContainer>
@@ -900,12 +942,7 @@ function SignalRow({ rank, prediction, quote, prevClose, selected, flash, onClic
         <div style={{ height: "100%", width: `${prediction.y_proba * 100}%`, background: rank <= 2 ? "linear-gradient(90deg, var(--green), var(--cyan))" : "var(--text-muted)", borderRadius: 2 }}></div>
       </div>
       <span style={{ fontWeight: 600, textAlign: "right" }}>{prediction.y_proba.toFixed(3)}</span>
-      <button
-        onClick={(e) => { e.stopPropagation(); onTrade(prediction.y_proba >= 0.50 ? "buy" : "sell"); }}
-        style={{ fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 3, background: prediction.y_proba >= 0.55 ? "var(--green-bg)" : prediction.y_proba >= 0.50 ? "rgba(251,191,36,0.1)" : "var(--bg-row)", color: prediction.y_proba >= 0.55 ? "var(--green)" : prediction.y_proba >= 0.50 ? "var(--amber)" : "var(--text-muted)", border: "1px solid transparent", cursor: "pointer", fontFamily: "inherit" }}
-        onMouseOver={(e) => (e.currentTarget.style.borderColor = "currentColor")}
-        onMouseOut={(e) => (e.currentTarget.style.borderColor = "transparent")}
-      >TRADE</button>
+      <button onClick={(e) => { e.stopPropagation(); onTrade(prediction.y_proba >= 0.50 ? "buy" : "sell"); }} style={{ fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 3, background: prediction.y_proba >= 0.55 ? "var(--green-bg)" : prediction.y_proba >= 0.50 ? "rgba(251,191,36,0.1)" : "var(--bg-row)", color: prediction.y_proba >= 0.55 ? "var(--green)" : prediction.y_proba >= 0.50 ? "var(--amber)" : "var(--text-muted)", border: "1px solid transparent", cursor: "pointer", fontFamily: "inherit" }} onMouseOver={(e) => (e.currentTarget.style.borderColor = "currentColor")} onMouseOut={(e) => (e.currentTarget.style.borderColor = "transparent")}>TRADE</button>
     </div>
   );
 }
