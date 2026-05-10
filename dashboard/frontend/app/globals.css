@@ -53,3 +53,22 @@ body {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.4; }
 }
+
+/* Price flash animations — applied for ~700ms when price changes */
+@keyframes flash-up {
+  0% { background-color: rgba(74, 222, 128, 0.4); }
+  100% { background-color: transparent; }
+}
+
+@keyframes flash-dn {
+  0% { background-color: rgba(248, 113, 113, 0.4); }
+  100% { background-color: transparent; }
+}
+
+.flash-up {
+  animation: flash-up 700ms ease-out;
+}
+
+.flash-dn {
+  animation: flash-dn 700ms ease-out;
+}

@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import {
   ComposedChart,
   Area,
-  Line,
   XAxis,
   YAxis,
   Tooltip,
@@ -67,6 +66,17 @@ type LivePricesResponse = {
   quotes: Record<string, Quote>;
 };
 
+type PrevClose = {
+  ticker: string;
+  prev_close: number | null;
+  date: string | null;
+};
+
+type PrevClosesResponse = {
+  count: number;
+  data: Record<string, PrevClose>;
+};
+
 type Account = {
   account_status: string;
   buying_power: number;
@@ -93,7 +103,11 @@ type BarsResponse = {
   data: Bar[];
 };
 
+type FlashState = "up" | "dn" | null;
+
 const API_BASE = "http://localhost:8000";
+const POLL_INTERVAL_MS = 5_000;
+const PREV_CLOSE_REFRESH_MS = 60_000;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -110,13 +124,67 @@ const fmtPct = (n: number, withSign = true) => {
 const fmtPrice = (n: number | null | undefined) =>
   n == null ? "—" : n.toFixed(2);
 
-// Compute period change from bars
 const computeBarChange = (bars: Bar[] | undefined): { abs: number; pct: number } | null => {
   if (!bars || bars.length < 2) return null;
   const first = bars[0].close;
   const last = bars[bars.length - 1].close;
   return { abs: last - first, pct: (last - first) / first };
 };
+
+// Daily change from current mid vs yesterday's close
+const computeDailyChange = (
+  current: number | null | undefined,
+  prevClose: number | null | undefined
+): { abs: number; pct: number } | null => {
+  if (current == null || prevClose == null || prevClose === 0) return null;
+  return {
+    abs: current - prevClose,
+    pct: (current - prevClose) / prevClose,
+  };
+};
+
+// ---------------------------------------------------------------------------
+// Custom hook: track price changes and flash
+// ---------------------------------------------------------------------------
+
+function usePriceFlash(prices: Record<string, number | null | undefined>) {
+  const previousRef = useRef<Record<string, number | null>>({});
+  const [flashes, setFlashes] = useState<Record<string, FlashState>>({});
+  const timeoutsRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+
+  useEffect(() => {
+    const newFlashes: Record<string, FlashState> = {};
+    let anyChanged = false;
+
+    Object.entries(prices).forEach(([ticker, current]) => {
+      const prev = previousRef.current[ticker];
+      if (prev != null && current != null && current !== prev) {
+        newFlashes[ticker] = current > prev ? "up" : "dn";
+        anyChanged = true;
+        // Clear flash after animation completes
+        if (timeoutsRef.current[ticker]) clearTimeout(timeoutsRef.current[ticker]);
+        timeoutsRef.current[ticker] = setTimeout(() => {
+          setFlashes((f) => ({ ...f, [ticker]: null }));
+        }, 700);
+      }
+      previousRef.current[ticker] = current ?? null;
+    });
+
+    if (anyChanged) {
+      setFlashes((f) => ({ ...f, ...newFlashes }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [JSON.stringify(prices)]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      Object.values(timeoutsRef.current).forEach(clearTimeout);
+    };
+  }, []);
+
+  return flashes;
+}
 
 // ---------------------------------------------------------------------------
 // Main Component
@@ -128,22 +196,34 @@ export default function DashboardPage() {
   const [equityCurve, setEquityCurve] = useState<EquityCurveResponse | null>(null);
   const [account, setAccount] = useState<Account | null>(null);
   const [livePrices, setLivePrices] = useState<LivePricesResponse | null>(null);
+  const [prevCloses, setPrevCloses] = useState<PrevClosesResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selectedTicker, setSelectedTicker] = useState<string>("NVDA");
   const [tickerPredictions, setTickerPredictions] = useState<Prediction[]>([]);
   const [selectedBars, setSelectedBars] = useState<BarsResponse | null>(null);
   const [spyBars, setSpyBars] = useState<BarsResponse | null>(null);
+  const [pollCount, setPollCount] = useState(0);
+
+  // Build a map of {ticker: mid_price} for the flash hook
+  const priceMap: Record<string, number | null | undefined> = {};
+  if (livePrices) {
+    Object.entries(livePrices.quotes).forEach(([t, q]) => {
+      priceMap[t] = q.mid_price;
+    });
+  }
+  const flashes = usePriceFlash(priceMap);
 
   // Initial load
   useEffect(() => {
     async function loadInitial() {
       try {
-        const [summaryRes, latestRes, equityRes, accountRes, spyBarsRes] = await Promise.all([
+        const [summaryRes, latestRes, equityRes, accountRes, spyBarsRes, prevClosesRes] = await Promise.all([
           fetch(`${API_BASE}/api/summary`),
           fetch(`${API_BASE}/api/predictions/latest?top_n=10`),
           fetch(`${API_BASE}/api/equity-curve`),
           fetch(`${API_BASE}/api/account`),
           fetch(`${API_BASE}/api/historical-bars/SPY?days=90`),
+          fetch(`${API_BASE}/api/prev-closes`),
         ]);
 
         if (!summaryRes.ok) throw new Error("summary failed");
@@ -156,6 +236,7 @@ export default function DashboardPage() {
         setEquityCurve(await equityRes.json());
         setAccount(await accountRes.json());
         if (spyBarsRes.ok) setSpyBars(await spyBarsRes.json());
+        if (prevClosesRes.ok) setPrevCloses(await prevClosesRes.json());
       } catch (err) {
         setError(err instanceof Error ? err.message : "Unknown error");
       }
@@ -163,22 +244,37 @@ export default function DashboardPage() {
     loadInitial();
   }, []);
 
-  // Live prices polling — every 30s
+  // Live prices polling
   const fetchLivePrices = useCallback(async () => {
     try {
       const res = await fetch(`${API_BASE}/api/live-prices`);
       if (!res.ok) return;
       setLivePrices(await res.json());
+      setPollCount((c) => c + 1);
     } catch {}
   }, []);
 
   useEffect(() => {
     fetchLivePrices();
-    const interval = setInterval(fetchLivePrices, 30_000);
+    const interval = setInterval(fetchLivePrices, POLL_INTERVAL_MS);
     return () => clearInterval(interval);
   }, [fetchLivePrices]);
 
-  // Load ticker-specific predictions AND historical bars when selection changes
+  // Refresh prev closes periodically (handles transitions across days)
+  const fetchPrevCloses = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/prev-closes`);
+      if (!res.ok) return;
+      setPrevCloses(await res.json());
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    const interval = setInterval(fetchPrevCloses, PREV_CLOSE_REFRESH_MS);
+    return () => clearInterval(interval);
+  }, [fetchPrevCloses]);
+
+  // Load ticker-specific data when selection changes
   useEffect(() => {
     async function loadTickerData() {
       try {
@@ -228,8 +324,13 @@ export default function DashboardPage() {
     .map((p) => p.ticker)
     .filter((t) => livePrices?.quotes[t]);
 
-  const selectedChange = computeBarChange(selectedBars?.data);
-  const spyChange = computeBarChange(spyBars?.data);
+  const selectedPrevClose = prevCloses?.data[selectedTicker]?.prev_close;
+  const selectedDailyChange = computeDailyChange(selectedQuote?.mid_price, selectedPrevClose);
+  const selected90dChange = computeBarChange(selectedBars?.data);
+  const spyDailyChange = computeDailyChange(
+    livePrices?.quotes["SPY"]?.mid_price,
+    prevCloses?.data["SPY"]?.prev_close
+  );
 
   return (
     <div className="layout">
@@ -241,15 +342,21 @@ export default function DashboardPage() {
         <div className="ticker-tape">
           {universeOrdered.map((ticker) => {
             const q = livePrices?.quotes[ticker];
+            const prev = prevCloses?.data[ticker]?.prev_close;
+            const dc = computeDailyChange(q?.mid_price, prev);
+            const flash = flashes[ticker];
             return (
               <div
                 key={ticker}
-                className="tape-item"
+                className={`tape-item ${flash === "up" ? "flash-up" : flash === "dn" ? "flash-dn" : ""}`}
                 onClick={() => setSelectedTicker(ticker)}
                 style={{ cursor: "pointer" }}
               >
                 <span className="tape-sym">{ticker}</span>
                 <span className="tape-price">{fmtPrice(q?.mid_price)}</span>
+                <span className={`tape-chg ${dc && dc.pct >= 0 ? "up" : "dn"}`}>
+                  {dc ? fmtPct(dc.pct) : "—"}
+                </span>
               </div>
             );
           })}
@@ -336,6 +443,11 @@ export default function DashboardPage() {
             <button className="layout-btn active">Symbol</button>
             <button className="layout-btn">Timeframe</button>
           </div>
+          <div className="toolbar-section">
+            <span className="toolbar-text">Polls:</span>
+            <span className="toolbar-text"><strong>{pollCount}</strong></span>
+            <span className="toolbar-text" style={{ color: "var(--text-faint)" }}>· every {POLL_INTERVAL_MS / 1000}s</span>
+          </div>
           <div className="toolbar-section" style={{ marginLeft: "auto" }}>
             <span className="toolbar-text">
               Selected: <strong>{selectedTicker}</strong>
@@ -350,16 +462,18 @@ export default function DashboardPage() {
             name="Selected · 90D"
             quote={selectedQuote}
             bars={selectedBars?.data}
-            change={selectedChange}
+            change={selectedDailyChange}
             color="#4ADE80"
+            flash={flashes[selectedTicker]}
           />
           <PriceChart
             symbol="SPY"
             name="S&P 500 · 90D"
             quote={livePrices?.quotes["SPY"]}
             bars={spyBars?.data}
-            change={spyChange}
+            change={spyDailyChange}
             color="#60A5FA"
+            flash={flashes["SPY"]}
           />
           <EquityChartCell equityCurve={equityCurve} />
           <SignalsTable predictions={latest.predictions} onSelect={setSelectedTicker} selectedTicker={selectedTicker} />
@@ -375,7 +489,9 @@ export default function DashboardPage() {
                   rank={idx + 1}
                   prediction={p}
                   quote={livePrices?.quotes[p.ticker]}
+                  prevClose={prevCloses?.data[p.ticker]?.prev_close}
                   selected={p.ticker === selectedTicker}
+                  flash={flashes[p.ticker]}
                   onClick={() => setSelectedTicker(p.ticker)}
                 />
               ))}
@@ -440,9 +556,14 @@ export default function DashboardPage() {
               <div className="td-price">
                 {fmtPrice(selectedQuote?.mid_price)}
               </div>
-              {selectedChange && (
-                <div className={`td-change ${selectedChange.pct >= 0 ? "up" : "dn"}`} style={{ fontSize: 11 }}>
-                  90d: {fmtPct(selectedChange.pct)}
+              {selectedDailyChange && (
+                <div className={`td-change ${selectedDailyChange.pct >= 0 ? "up" : "dn"}`} style={{ fontSize: 13 }}>
+                  {fmtPct(selectedDailyChange.pct)} today
+                </div>
+              )}
+              {selected90dChange && (
+                <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 2 }}>
+                  90d: <span className={selected90dChange.pct >= 0 ? "up" : "dn"}>{fmtPct(selected90dChange.pct)}</span>
                 </div>
               )}
             </div>
@@ -463,13 +584,17 @@ export default function DashboardPage() {
               <QSCell label="Bid" value={fmtPrice(selectedQuote?.bid_price)} />
               <QSCell label="Ask" value={fmtPrice(selectedQuote?.ask_price)} />
               <QSCell label="Mid" value={fmtPrice(selectedQuote?.mid_price)} />
+              <QSCell label="Prev Close" value={fmtPrice(selectedPrevClose)} />
               <QSCell label="Spread" value={
                 selectedQuote?.bid_price && selectedQuote?.ask_price
                   ? `$${(selectedQuote.ask_price - selectedQuote.bid_price).toFixed(2)}`
                   : "—"
               } />
-              <QSCell label="Bid Size" value={selectedQuote?.bid_size?.toString() ?? "—"} />
-              <QSCell label="Ask Size" value={selectedQuote?.ask_size?.toString() ?? "—"} />
+              <QSCell label="Day Change" value={
+                selectedDailyChange
+                  ? `${selectedDailyChange.abs >= 0 ? "+" : ""}$${selectedDailyChange.abs.toFixed(2)}`
+                  : "—"
+              } />
               {selectedBars?.data.length ? (
                 <>
                   <QSCell label="90d High" value={`$${Math.max(...selectedBars.data.map((b) => b.high)).toFixed(2)}`} />
@@ -585,13 +710,13 @@ export default function DashboardPage() {
           API: ALPACA · {livePrices ? "LIVE" : "CONNECTING"}
         </div>
         <div className="status-item">
-          POLLING: {livePrices ? "30s" : "—"}
+          POLLING: {POLL_INTERVAL_MS / 1000}s · {pollCount} polls
         </div>
         <div className="status-item">
           UNIVERSE: 11 tickers
         </div>
         <div className="status-item" style={{ marginLeft: "auto" }}>
-          v0.4 · paper account · {account?.account_status ?? "—"}
+          v0.5 · paper account · {account?.account_status ?? "—"}
         </div>
       </footer>
 
@@ -643,6 +768,9 @@ export default function DashboardPage() {
         .tape-item:hover { background: var(--bg-row); }
         .tape-sym { font-weight: 600; color: var(--text-primary); }
         .tape-price { color: var(--text-secondary); font-feature-settings: "tnum"; }
+        .tape-chg { font-feature-settings: "tnum"; font-weight: 500; }
+        .tape-chg.up { color: var(--green); }
+        .tape-chg.dn { color: var(--red); }
         .market-clock {
           padding: 0 12px;
           display: flex; gap: 10px; align-items: center;
@@ -891,6 +1019,7 @@ function PriceChart({
   bars,
   change,
   color,
+  flash,
 }: {
   symbol: string;
   name: string;
@@ -898,6 +1027,7 @@ function PriceChart({
   bars?: Bar[];
   change: { abs: number; pct: number } | null;
   color: string;
+  flash?: FlashState;
 }) {
   const gradId = `grad-${symbol}`;
   const lastClose = bars && bars.length > 0 ? bars[bars.length - 1].close : null;
@@ -905,7 +1035,10 @@ function PriceChart({
 
   return (
     <div style={{ background: "var(--bg-base)", display: "flex", flexDirection: "column", overflow: "hidden" }}>
-      <div style={{ background: "var(--bg-panel)", borderBottom: "1px solid var(--border)", padding: "5px 8px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <div
+        className={flash === "up" ? "flash-up" : flash === "dn" ? "flash-dn" : ""}
+        style={{ background: "var(--bg-panel)", borderBottom: "1px solid var(--border)", padding: "5px 8px", display: "flex", justifyContent: "space-between", alignItems: "center" }}
+      >
         <div style={{ display: "flex", gap: 8, alignItems: "baseline" }}>
           <span style={{ fontSize: 12, fontWeight: 700 }}>{symbol}</span>
           <span style={{ fontSize: 9, color: "var(--text-muted)" }}>{name}</span>
@@ -1070,13 +1203,15 @@ function BottomCell({ title, meta, children }: { title: string; meta: string; ch
   );
 }
 
-function SignalRow({ rank, prediction, quote, selected, onClick }: { rank: number; prediction: Prediction; quote?: Quote; selected: boolean; onClick: () => void }) {
+function SignalRow({ rank, prediction, quote, prevClose, selected, flash, onClick }: { rank: number; prediction: Prediction; quote?: Quote; prevClose?: number | null; selected: boolean; flash?: FlashState; onClick: () => void }) {
+  const dailyChange = computeDailyChange(quote?.mid_price, prevClose);
   return (
     <div
       onClick={onClick}
+      className={flash === "up" ? "flash-up" : flash === "dn" ? "flash-dn" : ""}
       style={{
         display: "grid",
-        gridTemplateColumns: "24px 60px 70px 1fr 50px 50px",
+        gridTemplateColumns: "24px 60px 70px 60px 1fr 50px 50px",
         gap: 8,
         padding: "5px 10px",
         alignItems: "center",
@@ -1089,6 +1224,9 @@ function SignalRow({ rank, prediction, quote, selected, onClick }: { rank: numbe
       <span style={{ width: 18, height: 18, borderRadius: "50%", background: rank <= 2 ? "var(--green-bg-strong)" : "var(--bg-row)", color: rank <= 2 ? "var(--green)" : "var(--text-secondary)", fontSize: 9, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>{rank}</span>
       <span style={{ fontWeight: 600 }}>{prediction.ticker}</span>
       <span style={{ fontSize: 10, color: "var(--text-muted)", textAlign: "right" }}>{fmtPrice(quote?.mid_price)}</span>
+      <span style={{ fontSize: 10, textAlign: "right", fontWeight: 500 }} className={dailyChange && dailyChange.pct >= 0 ? "up" : dailyChange ? "dn" : ""}>
+        {dailyChange ? fmtPct(dailyChange.pct) : "—"}
+      </span>
       <div style={{ height: 4, background: "var(--bg-row)", borderRadius: 2 }}>
         <div style={{ height: "100%", width: `${prediction.y_proba * 100}%`, background: rank <= 2 ? "linear-gradient(90deg, var(--green), var(--cyan))" : "var(--text-muted)", borderRadius: 2 }}></div>
       </div>
