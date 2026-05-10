@@ -3,7 +3,7 @@ FastAPI backend for the swing-trading dashboard.
 
 Loads precomputed results from the capstone (predictions, backtest summary)
 and exposes them via REST endpoints. Also integrates Alpaca for live market
-data + historical bars (paper trading account).
+data + historical bars + paper trading orders.
 
 Run:
     uvicorn main:app --reload --port 8000
@@ -19,11 +19,14 @@ import pandas as pd
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel, Field, field_validator
 
 from alpaca.data.historical import StockHistoricalDataClient
 from alpaca.data.requests import StockLatestQuoteRequest, StockBarsRequest
 from alpaca.data.timeframe import TimeFrame
 from alpaca.trading.client import TradingClient
+from alpaca.trading.requests import MarketOrderRequest, GetOrdersRequest
+from alpaca.trading.enums import OrderSide, TimeInForce, QueryOrderStatus
 
 # ---------------------------------------------------------------------------
 # Environment + Alpaca clients
@@ -43,6 +46,8 @@ data_client = (
     else None
 )
 
+# IMPORTANT: paper=True is hardcoded. Do not change to False without
+# extensive validation, risk management, and conscious decision.
 trading_client = (
     TradingClient(ALPACA_API_KEY, ALPACA_API_SECRET, paper=True)
     if ALPACA_API_KEY and ALPACA_API_SECRET
@@ -50,13 +55,19 @@ trading_client = (
 )
 
 # ---------------------------------------------------------------------------
+# Trading safety constants
+# ---------------------------------------------------------------------------
+
+MAX_QTY_PER_ORDER = 100  # max shares per single order
+MAX_NOTIONAL_PER_ORDER = 10_000  # max dollar value per single order
+
+# ---------------------------------------------------------------------------
 # App setup
 # ---------------------------------------------------------------------------
 
 app = FastAPI(
     title="Swing Trading Dashboard API",
-    description="Backend for the ML-based cross-sectional swing trading dashboard",
-    version="0.4.0",
+    version="0.6.0",
 )
 
 app.add_middleware(
@@ -77,10 +88,6 @@ app.add_middleware(
 BACKEND_DIR = Path(__file__).parent
 PROJECT_ROOT = BACKEND_DIR.parent.parent
 RESULTS_DIR = PROJECT_ROOT / "results"
-
-# ---------------------------------------------------------------------------
-# Capstone data loading
-# ---------------------------------------------------------------------------
 
 def _load_predictions() -> pd.DataFrame:
     path = RESULTS_DIR / "predictions.parquet"
@@ -104,7 +111,7 @@ BACKTEST = _load_backtest_summary()
 UNIVERSE = sorted(PREDICTIONS["ticker"].unique().tolist())
 
 # ---------------------------------------------------------------------------
-# Endpoints — capstone data
+# Endpoints — root
 # ---------------------------------------------------------------------------
 
 @app.get("/")
@@ -113,6 +120,7 @@ def root():
         "service": "swing-trading-dashboard-api",
         "status": "ok",
         "alpaca_connected": data_client is not None,
+        "trading_mode": "paper",
         "endpoints": [
             "/api/summary",
             "/api/predictions/latest",
@@ -122,10 +130,17 @@ def root():
             "/api/live-price/{ticker}",
             "/api/live-prices",
             "/api/historical-bars/{ticker}",
+            "/api/prev-closes",
             "/api/account",
+            "/api/orders/recent",
+            "/api/orders/place",
+            "/api/positions",
         ],
     }
 
+# ---------------------------------------------------------------------------
+# Endpoints — capstone data
+# ---------------------------------------------------------------------------
 
 @app.get("/api/summary")
 def get_summary():
@@ -161,10 +176,7 @@ def get_ticker_predictions(ticker: str):
     ticker = ticker.upper()
     sub = PREDICTIONS[PREDICTIONS["ticker"] == ticker].copy()
     if sub.empty:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Ticker '{ticker}' not found.",
-        )
+        raise HTTPException(status_code=404, detail=f"Ticker '{ticker}' not found.")
     sub = sub.sort_values("date")
     return {
         "ticker": ticker,
@@ -276,20 +288,57 @@ def get_live_prices():
         raise HTTPException(status_code=500, detail=f"Alpaca request failed: {str(e)}")
 
 
+@app.get("/api/prev-closes")
+def get_prev_closes():
+    if data_client is None:
+        raise HTTPException(status_code=503, detail="Alpaca client not configured.")
+
+    try:
+        end = datetime.now() - timedelta(minutes=20)
+        start = end - timedelta(days=7)
+
+        request = StockBarsRequest(
+            symbol_or_symbols=UNIVERSE,
+            timeframe=TimeFrame.Day,
+            start=start,
+            end=end,
+        )
+        response = data_client.get_stock_bars(request)
+
+        prev_closes = {}
+        for ticker in UNIVERSE:
+            if ticker in response.data and len(response.data[ticker]) > 0:
+                bars = response.data[ticker]
+                latest_bar = bars[-1]
+                prev_closes[ticker] = {
+                    "ticker": ticker,
+                    "prev_close": round(float(latest_bar.close), 2),
+                    "date": latest_bar.timestamp.strftime("%Y-%m-%d"),
+                }
+            else:
+                prev_closes[ticker] = {
+                    "ticker": ticker,
+                    "prev_close": None,
+                    "date": None,
+                }
+
+        return {
+            "count": len(UNIVERSE),
+            "data": prev_closes,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Alpaca prev-closes request failed: {str(e)}")
+
+
 @app.get("/api/historical-bars/{ticker}")
 def get_historical_bars(ticker: str, days: int = 90):
-    """
-    Fetch daily OHLC bars for a ticker over the past N days.
-    Returns data formatted for charting.
-    """
     if data_client is None:
         raise HTTPException(status_code=503, detail="Alpaca client not configured.")
 
     ticker = ticker.upper()
-    days = max(1, min(days, 365))  # clamp 1-365
+    days = max(1, min(days, 365))
 
     try:
-        # Alpaca free tier requires data >= 15 min old, so we use a small offset
         end = datetime.now() - timedelta(minutes=20)
         start = end - timedelta(days=days)
 
@@ -344,3 +393,163 @@ def get_account():
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Alpaca account request failed: {str(e)}")
+
+# ---------------------------------------------------------------------------
+# Endpoints — Trading (PAPER ONLY)
+# ---------------------------------------------------------------------------
+
+class PlaceOrderRequest(BaseModel):
+    """Validated order request. All orders go to paper account only."""
+    ticker: str = Field(..., description="Ticker symbol")
+    side: str = Field(..., description="'buy' or 'sell'")
+    qty: int = Field(..., gt=0, le=MAX_QTY_PER_ORDER, description=f"Shares (1-{MAX_QTY_PER_ORDER})")
+
+    @field_validator("ticker")
+    @classmethod
+    def ticker_in_universe(cls, v: str) -> str:
+        v = v.upper().strip()
+        if v not in UNIVERSE:
+            raise ValueError(f"Ticker '{v}' not in tradable universe: {UNIVERSE}")
+        return v
+
+    @field_validator("side")
+    @classmethod
+    def valid_side(cls, v: str) -> str:
+        v = v.lower().strip()
+        if v not in ("buy", "sell"):
+            raise ValueError(f"Side must be 'buy' or 'sell', got '{v}'")
+        return v
+
+
+@app.post("/api/orders/place")
+def place_order(req: PlaceOrderRequest):
+    """
+    Place a paper trading order. Hard-restricted to:
+    - Universe tickers only
+    - Max 100 shares per order
+    - Max $10,000 notional per order
+    - Day order, market order
+    - PAPER ACCOUNT ONLY (paper=True hardcoded above)
+    """
+    if trading_client is None:
+        raise HTTPException(status_code=503, detail="Alpaca trading not configured.")
+    if data_client is None:
+        raise HTTPException(status_code=503, detail="Alpaca data not configured.")
+
+    # Get current quote to estimate notional and check limits
+    try:
+        quote_req = StockLatestQuoteRequest(symbol_or_symbols=[req.ticker])
+        quote_resp = data_client.get_stock_latest_quote(quote_req)
+        if req.ticker not in quote_resp:
+            raise HTTPException(status_code=400, detail=f"Cannot get quote for {req.ticker}")
+        quote = quote_resp[req.ticker]
+        ask = float(quote.ask_price) if quote.ask_price else None
+        bid = float(quote.bid_price) if quote.bid_price else None
+        ref_price = ask if (req.side == "buy" and ask) else (bid if bid else (ask or 0))
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Quote lookup failed: {str(e)}")
+
+    if ref_price <= 0:
+        raise HTTPException(
+            status_code=400,
+            detail=f"No valid reference price for {req.ticker}. Markets may be closed.",
+        )
+
+    estimated_notional = ref_price * req.qty
+    if estimated_notional > MAX_NOTIONAL_PER_ORDER:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"Estimated order value ${estimated_notional:,.2f} exceeds "
+                f"max ${MAX_NOTIONAL_PER_ORDER:,.0f} per order. "
+                f"Try fewer shares (current ref price: ${ref_price:.2f})."
+            ),
+        )
+
+    # Submit the order
+    try:
+        order_req = MarketOrderRequest(
+            symbol=req.ticker,
+            qty=req.qty,
+            side=OrderSide.BUY if req.side == "buy" else OrderSide.SELL,
+            time_in_force=TimeInForce.DAY,
+        )
+        order = trading_client.submit_order(order_data=order_req)
+
+        return {
+            "status": "submitted",
+            "order_id": str(order.id),
+            "ticker": req.ticker,
+            "side": req.side,
+            "qty": req.qty,
+            "estimated_price": ref_price,
+            "estimated_notional": round(estimated_notional, 2),
+            "submitted_at": order.submitted_at.isoformat() if order.submitted_at else None,
+            "alpaca_status": str(order.status),
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Order submission failed: {str(e)}")
+
+
+@app.get("/api/orders/recent")
+def get_recent_orders(limit: int = 25):
+    """Get recent orders (filled, canceled, pending)."""
+    if trading_client is None:
+        raise HTTPException(status_code=503, detail="Alpaca trading not configured.")
+    limit = max(1, min(limit, 100))
+
+    try:
+        request = GetOrdersRequest(status=QueryOrderStatus.ALL, limit=limit)
+        orders = trading_client.get_orders(filter=request)
+
+        return {
+            "count": len(orders),
+            "orders": [
+                {
+                    "order_id": str(o.id),
+                    "ticker": o.symbol,
+                    "side": str(o.side).lower().replace("orderside.", ""),
+                    "qty": int(o.qty) if o.qty else 0,
+                    "filled_qty": int(o.filled_qty) if o.filled_qty else 0,
+                    "filled_avg_price": float(o.filled_avg_price) if o.filled_avg_price else None,
+                    "status": str(o.status).lower().replace("orderstatus.", ""),
+                    "submitted_at": o.submitted_at.isoformat() if o.submitted_at else None,
+                    "filled_at": o.filled_at.isoformat() if o.filled_at else None,
+                }
+                for o in orders
+            ],
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Orders request failed: {str(e)}")
+
+
+@app.get("/api/positions")
+def get_positions():
+    """Get current open positions."""
+    if trading_client is None:
+        raise HTTPException(status_code=503, detail="Alpaca trading not configured.")
+
+    try:
+        positions = trading_client.get_all_positions()
+
+        return {
+            "count": len(positions),
+            "positions": [
+                {
+                    "ticker": p.symbol,
+                    "qty": int(p.qty) if p.qty else 0,
+                    "side": str(p.side).lower().replace("positionside.", ""),
+                    "avg_entry_price": float(p.avg_entry_price) if p.avg_entry_price else None,
+                    "current_price": float(p.current_price) if p.current_price else None,
+                    "market_value": float(p.market_value) if p.market_value else None,
+                    "cost_basis": float(p.cost_basis) if p.cost_basis else None,
+                    "unrealized_pl": float(p.unrealized_pl) if p.unrealized_pl else None,
+                    "unrealized_plpc": float(p.unrealized_plpc) if p.unrealized_plpc else None,
+                }
+                for p in positions
+            ],
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Positions request failed: {str(e)}")

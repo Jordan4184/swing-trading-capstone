@@ -103,11 +103,50 @@ type BarsResponse = {
   data: Bar[];
 };
 
+type Order = {
+  order_id: string;
+  ticker: string;
+  side: string;
+  qty: number;
+  filled_qty: number;
+  filled_avg_price: number | null;
+  status: string;
+  submitted_at: string | null;
+  filled_at: string | null;
+};
+
+type OrdersResponse = {
+  count: number;
+  orders: Order[];
+};
+
+type Position = {
+  ticker: string;
+  qty: number;
+  side: string;
+  avg_entry_price: number | null;
+  current_price: number | null;
+  market_value: number | null;
+  cost_basis: number | null;
+  unrealized_pl: number | null;
+  unrealized_plpc: number | null;
+};
+
+type PositionsResponse = {
+  count: number;
+  positions: Position[];
+};
+
 type FlashState = "up" | "dn" | null;
+type Toast = { type: "success" | "error" | "info"; message: string };
+type OrderModalState = { ticker: string; side: "buy" | "sell" } | null;
 
 const API_BASE = "http://localhost:8000";
 const POLL_INTERVAL_MS = 5_000;
 const PREV_CLOSE_REFRESH_MS = 60_000;
+const ORDERS_REFRESH_MS = 10_000;
+const MAX_QTY_PER_ORDER = 100;
+const MAX_NOTIONAL_PER_ORDER = 10_000;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -131,7 +170,6 @@ const computeBarChange = (bars: Bar[] | undefined): { abs: number; pct: number }
   return { abs: last - first, pct: (last - first) / first };
 };
 
-// Daily change from current mid vs yesterday's close
 const computeDailyChange = (
   current: number | null | undefined,
   prevClose: number | null | undefined
@@ -161,7 +199,6 @@ function usePriceFlash(prices: Record<string, number | null | undefined>) {
       if (prev != null && current != null && current !== prev) {
         newFlashes[ticker] = current > prev ? "up" : "dn";
         anyChanged = true;
-        // Clear flash after animation completes
         if (timeoutsRef.current[ticker]) clearTimeout(timeoutsRef.current[ticker]);
         timeoutsRef.current[ticker] = setTimeout(() => {
           setFlashes((f) => ({ ...f, [ticker]: null }));
@@ -176,7 +213,6 @@ function usePriceFlash(prices: Record<string, number | null | undefined>) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [JSON.stringify(prices)]);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       Object.values(timeoutsRef.current).forEach(clearTimeout);
@@ -197,14 +233,18 @@ export default function DashboardPage() {
   const [account, setAccount] = useState<Account | null>(null);
   const [livePrices, setLivePrices] = useState<LivePricesResponse | null>(null);
   const [prevCloses, setPrevCloses] = useState<PrevClosesResponse | null>(null);
+  const [orders, setOrders] = useState<OrdersResponse | null>(null);
+  const [positions, setPositions] = useState<PositionsResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selectedTicker, setSelectedTicker] = useState<string>("NVDA");
   const [tickerPredictions, setTickerPredictions] = useState<Prediction[]>([]);
   const [selectedBars, setSelectedBars] = useState<BarsResponse | null>(null);
   const [spyBars, setSpyBars] = useState<BarsResponse | null>(null);
   const [pollCount, setPollCount] = useState(0);
+  const [activityTab, setActivityTab] = useState<"orders" | "positions">("orders");
+  const [orderModal, setOrderModal] = useState<OrderModalState>(null);
+  const [toast, setToast] = useState<Toast | null>(null);
 
-  // Build a map of {ticker: mid_price} for the flash hook
   const priceMap: Record<string, number | null | undefined> = {};
   if (livePrices) {
     Object.entries(livePrices.quotes).forEach(([t, q]) => {
@@ -213,17 +253,27 @@ export default function DashboardPage() {
   }
   const flashes = usePriceFlash(priceMap);
 
+  // Toast auto-dismiss
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
+
   // Initial load
   useEffect(() => {
     async function loadInitial() {
       try {
-        const [summaryRes, latestRes, equityRes, accountRes, spyBarsRes, prevClosesRes] = await Promise.all([
+        const [summaryRes, latestRes, equityRes, accountRes, spyBarsRes, prevClosesRes, ordersRes, positionsRes] = await Promise.all([
           fetch(`${API_BASE}/api/summary`),
           fetch(`${API_BASE}/api/predictions/latest?top_n=10`),
           fetch(`${API_BASE}/api/equity-curve`),
           fetch(`${API_BASE}/api/account`),
           fetch(`${API_BASE}/api/historical-bars/SPY?days=90`),
           fetch(`${API_BASE}/api/prev-closes`),
+          fetch(`${API_BASE}/api/orders/recent`),
+          fetch(`${API_BASE}/api/positions`),
         ]);
 
         if (!summaryRes.ok) throw new Error("summary failed");
@@ -237,6 +287,8 @@ export default function DashboardPage() {
         setAccount(await accountRes.json());
         if (spyBarsRes.ok) setSpyBars(await spyBarsRes.json());
         if (prevClosesRes.ok) setPrevCloses(await prevClosesRes.json());
+        if (ordersRes.ok) setOrders(await ordersRes.json());
+        if (positionsRes.ok) setPositions(await positionsRes.json());
       } catch (err) {
         setError(err instanceof Error ? err.message : "Unknown error");
       }
@@ -260,7 +312,7 @@ export default function DashboardPage() {
     return () => clearInterval(interval);
   }, [fetchLivePrices]);
 
-  // Refresh prev closes periodically (handles transitions across days)
+  // Refresh prev closes
   const fetchPrevCloses = useCallback(async () => {
     try {
       const res = await fetch(`${API_BASE}/api/prev-closes`);
@@ -273,6 +325,25 @@ export default function DashboardPage() {
     const interval = setInterval(fetchPrevCloses, PREV_CLOSE_REFRESH_MS);
     return () => clearInterval(interval);
   }, [fetchPrevCloses]);
+
+  // Refresh orders + positions periodically
+  const fetchOrdersAndPositions = useCallback(async () => {
+    try {
+      const [ordersRes, positionsRes, accountRes] = await Promise.all([
+        fetch(`${API_BASE}/api/orders/recent`),
+        fetch(`${API_BASE}/api/positions`),
+        fetch(`${API_BASE}/api/account`),
+      ]);
+      if (ordersRes.ok) setOrders(await ordersRes.json());
+      if (positionsRes.ok) setPositions(await positionsRes.json());
+      if (accountRes.ok) setAccount(await accountRes.json());
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    const interval = setInterval(fetchOrdersAndPositions, ORDERS_REFRESH_MS);
+    return () => clearInterval(interval);
+  }, [fetchOrdersAndPositions]);
 
   // Load ticker-specific data when selection changes
   useEffect(() => {
@@ -293,6 +364,31 @@ export default function DashboardPage() {
     }
     loadTickerData();
   }, [selectedTicker]);
+
+  // Order placement
+  async function handlePlaceOrder(ticker: string, side: "buy" | "sell", qty: number) {
+    try {
+      const res = await fetch(`${API_BASE}/api/orders/place`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ticker, side, qty }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setToast({ type: "error", message: data.detail || "Order failed" });
+        return;
+      }
+      setToast({
+        type: "success",
+        message: `${side.toUpperCase()} ${qty} ${ticker} @ ~$${data.estimated_price.toFixed(2)} submitted`,
+      });
+      setOrderModal(null);
+      // Refresh orders/positions immediately
+      fetchOrdersAndPositions();
+    } catch (e) {
+      setToast({ type: "error", message: e instanceof Error ? e.message : "Network error" });
+    }
+  }
 
   if (error) {
     return (
@@ -481,7 +577,7 @@ export default function DashboardPage() {
 
         {/* Bottom row */}
         <div className="bottom-row">
-          <BottomCell title="Latest Signals" meta={`As of ${latest.date}`}>
+          <BottomCell title="Latest Signals" meta={`${latest.predictions.length} · click trade`}>
             <div style={{ overflow: "auto", maxHeight: "100%" }}>
               {latest.predictions.slice(0, 8).map((p, idx) => (
                 <SignalRow
@@ -493,6 +589,7 @@ export default function DashboardPage() {
                   selected={p.ticker === selectedTicker}
                   flash={flashes[p.ticker]}
                   onClick={() => setSelectedTicker(p.ticker)}
+                  onTrade={(side) => setOrderModal({ ticker: p.ticker, side })}
                 />
               ))}
             </div>
@@ -517,20 +614,53 @@ export default function DashboardPage() {
             </div>
           </BottomCell>
 
-          <BottomCell title="Activity Feed" meta="signals + events">
-            <div style={{ overflow: "auto", maxHeight: "100%" }}>
-              {latest.predictions.slice(0, 5).map((p) => (
-                <ActivityRow
-                  key={p.ticker}
-                  time={latest.date.slice(5)}
-                  type="signal"
-                  desc={`${p.ticker} signal: prob ${p.y_proba.toFixed(3)}`}
-                  meta={p.y_proba >= 0.55 ? "BUY" : p.y_proba >= 0.50 ? "WATCH" : "HOLD"}
-                />
-              ))}
-              <ActivityRow time="—" type="news" desc="News feed not yet wired" meta="placeholder" />
+          {/* TRADING ACTIVITY (Orders + Positions tabs) */}
+          <div style={{ background: "var(--bg-panel)", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+            <div style={{ padding: "0 10px", background: "var(--bg-elevated)", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div style={{ display: "flex" }}>
+                <button
+                  onClick={() => setActivityTab("orders")}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    padding: "8px 12px",
+                    fontSize: 11,
+                    fontWeight: 600,
+                    color: activityTab === "orders" ? "var(--text-primary)" : "var(--text-muted)",
+                    borderBottom: activityTab === "orders" ? "2px solid var(--green)" : "2px solid transparent",
+                    fontFamily: "inherit",
+                  }}
+                >
+                  Orders ({orders?.count ?? 0})
+                </button>
+                <button
+                  onClick={() => setActivityTab("positions")}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    padding: "8px 12px",
+                    fontSize: 11,
+                    fontWeight: 600,
+                    color: activityTab === "positions" ? "var(--text-primary)" : "var(--text-muted)",
+                    borderBottom: activityTab === "positions" ? "2px solid var(--green)" : "2px solid transparent",
+                    fontFamily: "inherit",
+                  }}
+                >
+                  Positions ({positions?.count ?? 0})
+                </button>
+              </div>
+              <span style={{ fontSize: 9, color: "var(--text-faint)" }}>refreshes 10s</span>
             </div>
-          </BottomCell>
+            <div style={{ flex: 1, overflow: "auto" }}>
+              {activityTab === "orders" ? (
+                <OrdersList orders={orders?.orders ?? []} />
+              ) : (
+                <PositionsList positions={positions?.positions ?? []} />
+              )}
+            </div>
+          </div>
         </div>
       </main>
 
@@ -567,6 +697,43 @@ export default function DashboardPage() {
                 </div>
               )}
             </div>
+          </div>
+          {/* Trade buttons in right panel header */}
+          <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
+            <button
+              onClick={() => setOrderModal({ ticker: selectedTicker, side: "buy" })}
+              style={{
+                flex: 1,
+                background: "var(--green)",
+                color: "var(--bg-base)",
+                border: "none",
+                borderRadius: 4,
+                padding: "6px 0",
+                fontSize: 11,
+                fontWeight: 700,
+                cursor: "pointer",
+                fontFamily: "inherit",
+              }}
+            >
+              BUY
+            </button>
+            <button
+              onClick={() => setOrderModal({ ticker: selectedTicker, side: "sell" })}
+              style={{
+                flex: 1,
+                background: "var(--red)",
+                color: "var(--bg-base)",
+                border: "none",
+                borderRadius: 4,
+                padding: "6px 0",
+                fontSize: 11,
+                fontWeight: 700,
+                cursor: "pointer",
+                fontFamily: "inherit",
+              }}
+            >
+              SELL
+            </button>
           </div>
         </div>
 
@@ -670,36 +837,6 @@ export default function DashboardPage() {
               )}
             </div>
           </div>
-
-          <div className="detail-section">
-            <div className="detail-section-header">
-              <span>Options Chain</span>
-              <span className="meta">not yet wired</span>
-            </div>
-            <div className="detail-section-body" style={{ color: "var(--text-faint)", fontSize: 10 }}>
-              Requires options data API. Future session.
-            </div>
-          </div>
-
-          <div className="detail-section">
-            <div className="detail-section-header">
-              <span>Earnings</span>
-              <span className="meta">not yet wired</span>
-            </div>
-            <div className="detail-section-body" style={{ color: "var(--text-faint)", fontSize: 10 }}>
-              Requires fundamentals API. Future session.
-            </div>
-          </div>
-
-          <div className="detail-section">
-            <div className="detail-section-header">
-              <span>Analyst Ratings</span>
-              <span className="meta">not yet wired</span>
-            </div>
-            <div className="detail-section-body" style={{ color: "var(--text-faint)", fontSize: 10 }}>
-              Requires analyst data API. Future session.
-            </div>
-          </div>
         </div>
       </aside>
 
@@ -709,16 +846,47 @@ export default function DashboardPage() {
           <span className="status-dot"></span>
           API: ALPACA · {livePrices ? "LIVE" : "CONNECTING"}
         </div>
-        <div className="status-item">
-          POLLING: {POLL_INTERVAL_MS / 1000}s · {pollCount} polls
-        </div>
-        <div className="status-item">
-          UNIVERSE: 11 tickers
-        </div>
+        <div className="status-item">POLLING: {POLL_INTERVAL_MS / 1000}s · {pollCount} polls</div>
+        <div className="status-item">UNIVERSE: 11 tickers</div>
+        <div className="status-item">PAPER · {orders?.count ?? 0} orders · {positions?.count ?? 0} positions</div>
         <div className="status-item" style={{ marginLeft: "auto" }}>
-          v0.5 · paper account · {account?.account_status ?? "—"}
+          v0.6 · {account?.account_status ?? "—"}
         </div>
       </footer>
+
+      {/* ORDER MODAL */}
+      {orderModal && (
+        <OrderModal
+          ticker={orderModal.ticker}
+          side={orderModal.side}
+          quote={livePrices?.quotes[orderModal.ticker]}
+          buyingPower={account?.buying_power}
+          onClose={() => setOrderModal(null)}
+          onSubmit={(qty) => handlePlaceOrder(orderModal.ticker, orderModal.side, qty)}
+        />
+      )}
+
+      {/* TOAST */}
+      {toast && (
+        <div
+          style={{
+            position: "fixed",
+            bottom: 30,
+            right: 30,
+            background: toast.type === "success" ? "var(--green-bg-strong)" : toast.type === "error" ? "rgba(248,113,113,0.2)" : "var(--bg-elevated)",
+            border: `1px solid ${toast.type === "success" ? "var(--green)" : toast.type === "error" ? "var(--red)" : "var(--border)"}`,
+            color: toast.type === "success" ? "var(--green)" : toast.type === "error" ? "var(--red)" : "var(--text-primary)",
+            padding: "12px 20px",
+            borderRadius: 6,
+            fontSize: 12,
+            fontWeight: 500,
+            zIndex: 1000,
+            maxWidth: 400,
+          }}
+        >
+          {toast.message}
+        </div>
+      )}
 
       <style jsx>{`
         .layout {
@@ -1012,51 +1180,26 @@ function StatCell({ label, value, sub, accent }: { label: string; value: string;
   );
 }
 
-function PriceChart({
-  symbol,
-  name,
-  quote,
-  bars,
-  change,
-  color,
-  flash,
-}: {
-  symbol: string;
-  name: string;
-  quote?: Quote;
-  bars?: Bar[];
-  change: { abs: number; pct: number } | null;
-  color: string;
-  flash?: FlashState;
-}) {
+function PriceChart({ symbol, name, quote, bars, change, color, flash }: { symbol: string; name: string; quote?: Quote; bars?: Bar[]; change: { abs: number; pct: number } | null; color: string; flash?: FlashState }) {
   const gradId = `grad-${symbol}`;
   const lastClose = bars && bars.length > 0 ? bars[bars.length - 1].close : null;
   const displayPrice = quote?.mid_price ?? lastClose;
 
   return (
     <div style={{ background: "var(--bg-base)", display: "flex", flexDirection: "column", overflow: "hidden" }}>
-      <div
-        className={flash === "up" ? "flash-up" : flash === "dn" ? "flash-dn" : ""}
-        style={{ background: "var(--bg-panel)", borderBottom: "1px solid var(--border)", padding: "5px 8px", display: "flex", justifyContent: "space-between", alignItems: "center" }}
-      >
+      <div className={flash === "up" ? "flash-up" : flash === "dn" ? "flash-dn" : ""} style={{ background: "var(--bg-panel)", borderBottom: "1px solid var(--border)", padding: "5px 8px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div style={{ display: "flex", gap: 8, alignItems: "baseline" }}>
           <span style={{ fontSize: 12, fontWeight: 700 }}>{symbol}</span>
           <span style={{ fontSize: 9, color: "var(--text-muted)" }}>{name}</span>
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "baseline" }}>
           <span style={{ fontSize: 12, fontWeight: 700 }}>{fmtPrice(displayPrice)}</span>
-          {change && (
-            <span style={{ fontSize: 10, fontWeight: 600 }} className={change.pct >= 0 ? "up" : "dn"}>
-              {fmtPct(change.pct)}
-            </span>
-          )}
+          {change && <span style={{ fontSize: 10, fontWeight: 600 }} className={change.pct >= 0 ? "up" : "dn"}>{fmtPct(change.pct)}</span>}
         </div>
       </div>
       <div style={{ flex: 1, minHeight: 0, position: "relative" }}>
         {!bars || bars.length === 0 ? (
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "var(--text-faint)", fontSize: 10 }}>
-            Loading bars...
-          </div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "var(--text-faint)", fontSize: 10 }}>Loading bars...</div>
         ) : (
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart data={bars} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
@@ -1067,24 +1210,9 @@ function PriceChart({
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#1F2533" />
-              <XAxis
-                dataKey="date"
-                stroke="#6A7488"
-                tick={{ fontSize: 8 }}
-                tickFormatter={(d: string) => d.slice(5)}
-                interval={Math.max(0, Math.floor(bars.length / 5))}
-              />
-              <YAxis
-                stroke="#6A7488"
-                tick={{ fontSize: 8 }}
-                domain={["auto", "auto"]}
-                tickFormatter={(v: number) => `$${v.toFixed(0)}`}
-                width={40}
-              />
-              <Tooltip
-                contentStyle={{ backgroundColor: "#11151D", border: "1px solid #1F2533", fontSize: 10 }}
-                formatter={(v: number) => [`$${v.toFixed(2)}`, "Close"]}
-              />
+              <XAxis dataKey="date" stroke="#6A7488" tick={{ fontSize: 8 }} tickFormatter={(d: string) => d.slice(5)} interval={Math.max(0, Math.floor(bars.length / 5))} />
+              <YAxis stroke="#6A7488" tick={{ fontSize: 8 }} domain={["auto", "auto"]} tickFormatter={(v: number) => `$${v.toFixed(0)}`} width={40} />
+              <Tooltip contentStyle={{ backgroundColor: "#11151D", border: "1px solid #1F2533", fontSize: 10 }} formatter={(v: number) => [`$${v.toFixed(2)}`, "Close"]} />
               <Area type="monotone" dataKey="close" stroke={color} strokeWidth={1.5} fill={`url(#${gradId})`} />
             </ComposedChart>
           </ResponsiveContainer>
@@ -1103,9 +1231,7 @@ function EquityChartCell({ equityCurve }: { equityCurve: EquityCurveResponse }) 
           <span style={{ fontSize: 9, color: "var(--text-muted)" }}>ML Equity · ALL · {equityCurve.n_trades} trades</span>
         </div>
         <div style={{ display: "flex", gap: 6, alignItems: "baseline" }}>
-          <span style={{ fontSize: 12, fontWeight: 700 }} className="up">
-            ${(equityCurve.data[equityCurve.data.length - 1]?.equity ?? 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}
-          </span>
+          <span style={{ fontSize: 12, fontWeight: 700 }} className="up">${(equityCurve.data[equityCurve.data.length - 1]?.equity ?? 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
         </div>
       </div>
       <div style={{ flex: 1, minHeight: 0 }}>
@@ -1118,23 +1244,9 @@ function EquityChartCell({ equityCurve }: { equityCurve: EquityCurveResponse }) 
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="#1F2533" />
-            <XAxis
-              dataKey="date"
-              stroke="#6A7488"
-              tick={{ fontSize: 9 }}
-              tickFormatter={(d: string) => d.slice(0, 7)}
-              interval={Math.floor(equityCurve.data.length / 6)}
-            />
-            <YAxis
-              stroke="#6A7488"
-              tick={{ fontSize: 9 }}
-              tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`}
-              width={40}
-            />
-            <Tooltip
-              contentStyle={{ backgroundColor: "#11151D", border: "1px solid #1F2533", fontSize: 10 }}
-              formatter={(v: number) => [`$${v.toLocaleString()}`, "Equity"]}
-            />
+            <XAxis dataKey="date" stroke="#6A7488" tick={{ fontSize: 9 }} tickFormatter={(d: string) => d.slice(0, 7)} interval={Math.floor(equityCurve.data.length / 6)} />
+            <YAxis stroke="#6A7488" tick={{ fontSize: 9 }} tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`} width={40} />
+            <Tooltip contentStyle={{ backgroundColor: "#11151D", border: "1px solid #1F2533", fontSize: 10 }} formatter={(v: number) => [`$${v.toLocaleString()}`, "Equity"]} />
             <Area type="monotone" dataKey="equity" stroke="#4ADE80" strokeWidth={1.5} fill="url(#strat-grad)" />
           </ComposedChart>
         </ResponsiveContainer>
@@ -1152,36 +1264,14 @@ function SignalsTable({ predictions, onSelect, selectedTicker }: { predictions: 
       </div>
       <div style={{ flex: 1, overflow: "auto" }}>
         {predictions.map((p, idx) => (
-          <div
-            key={p.ticker}
-            onClick={() => onSelect(p.ticker)}
-            style={{
-              display: "grid",
-              gridTemplateColumns: "24px 60px 1fr 50px 50px",
-              gap: 8,
-              padding: "5px 10px",
-              borderBottom: "1px solid var(--border-soft)",
-              alignItems: "center",
-              cursor: "pointer",
-              background: p.ticker === selectedTicker ? "var(--bg-row)" : undefined,
-              fontSize: 11,
-            }}
-          >
+          <div key={p.ticker} onClick={() => onSelect(p.ticker)} style={{ display: "grid", gridTemplateColumns: "24px 60px 1fr 50px 50px", gap: 8, padding: "5px 10px", borderBottom: "1px solid var(--border-soft)", alignItems: "center", cursor: "pointer", background: p.ticker === selectedTicker ? "var(--bg-row)" : undefined, fontSize: 11 }}>
             <span style={{ color: "var(--text-muted)", fontSize: 9, fontWeight: 700, textAlign: "center" }}>#{idx + 1}</span>
             <span style={{ fontWeight: 600 }}>{p.ticker}</span>
             <div style={{ height: 4, background: "var(--bg-row)", borderRadius: 2 }}>
               <div style={{ height: "100%", width: `${p.y_proba * 100}%`, background: idx <= 1 ? "linear-gradient(90deg, var(--green), var(--cyan))" : "var(--text-muted)", borderRadius: 2 }}></div>
             </div>
             <span style={{ fontWeight: 600, textAlign: "right" }}>{p.y_proba.toFixed(3)}</span>
-            <span style={{
-              fontSize: 9,
-              fontWeight: 700,
-              padding: "2px 6px",
-              borderRadius: 3,
-              textAlign: "center",
-              background: p.y_proba >= 0.55 ? "var(--green-bg)" : p.y_proba >= 0.50 ? "rgba(251,191,36,0.1)" : "var(--bg-row)",
-              color: p.y_proba >= 0.55 ? "var(--green)" : p.y_proba >= 0.50 ? "var(--amber)" : "var(--text-muted)",
-            }}>
+            <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 3, textAlign: "center", background: p.y_proba >= 0.55 ? "var(--green-bg)" : p.y_proba >= 0.50 ? "rgba(251,191,36,0.1)" : "var(--bg-row)", color: p.y_proba >= 0.55 ? "var(--green)" : p.y_proba >= 0.50 ? "var(--amber)" : "var(--text-muted)" }}>
               {p.y_proba >= 0.55 ? "BUY" : p.y_proba >= 0.50 ? "WATCH" : "HOLD"}
             </span>
           </div>
@@ -1203,62 +1293,39 @@ function BottomCell({ title, meta, children }: { title: string; meta: string; ch
   );
 }
 
-function SignalRow({ rank, prediction, quote, prevClose, selected, flash, onClick }: { rank: number; prediction: Prediction; quote?: Quote; prevClose?: number | null; selected: boolean; flash?: FlashState; onClick: () => void }) {
+function SignalRow({ rank, prediction, quote, prevClose, selected, flash, onClick, onTrade }: { rank: number; prediction: Prediction; quote?: Quote; prevClose?: number | null; selected: boolean; flash?: FlashState; onClick: () => void; onTrade: (side: "buy" | "sell") => void }) {
   const dailyChange = computeDailyChange(quote?.mid_price, prevClose);
   return (
-    <div
-      onClick={onClick}
-      className={flash === "up" ? "flash-up" : flash === "dn" ? "flash-dn" : ""}
-      style={{
-        display: "grid",
-        gridTemplateColumns: "24px 60px 70px 60px 1fr 50px 50px",
-        gap: 8,
-        padding: "5px 10px",
-        alignItems: "center",
-        borderBottom: "1px solid var(--border-soft)",
-        fontSize: 11,
-        cursor: "pointer",
-        background: selected ? "var(--bg-row)" : undefined,
-      }}
-    >
+    <div onClick={onClick} className={flash === "up" ? "flash-up" : flash === "dn" ? "flash-dn" : ""} style={{ display: "grid", gridTemplateColumns: "24px 50px 60px 50px 1fr 50px auto", gap: 6, padding: "5px 10px", alignItems: "center", borderBottom: "1px solid var(--border-soft)", fontSize: 11, cursor: "pointer", background: selected ? "var(--bg-row)" : undefined }}>
       <span style={{ width: 18, height: 18, borderRadius: "50%", background: rank <= 2 ? "var(--green-bg-strong)" : "var(--bg-row)", color: rank <= 2 ? "var(--green)" : "var(--text-secondary)", fontSize: 9, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>{rank}</span>
       <span style={{ fontWeight: 600 }}>{prediction.ticker}</span>
       <span style={{ fontSize: 10, color: "var(--text-muted)", textAlign: "right" }}>{fmtPrice(quote?.mid_price)}</span>
-      <span style={{ fontSize: 10, textAlign: "right", fontWeight: 500 }} className={dailyChange && dailyChange.pct >= 0 ? "up" : dailyChange ? "dn" : ""}>
-        {dailyChange ? fmtPct(dailyChange.pct) : "—"}
-      </span>
+      <span style={{ fontSize: 10, textAlign: "right", fontWeight: 500 }} className={dailyChange && dailyChange.pct >= 0 ? "up" : dailyChange ? "dn" : ""}>{dailyChange ? fmtPct(dailyChange.pct) : "—"}</span>
       <div style={{ height: 4, background: "var(--bg-row)", borderRadius: 2 }}>
         <div style={{ height: "100%", width: `${prediction.y_proba * 100}%`, background: rank <= 2 ? "linear-gradient(90deg, var(--green), var(--cyan))" : "var(--text-muted)", borderRadius: 2 }}></div>
       </div>
       <span style={{ fontWeight: 600, textAlign: "right" }}>{prediction.y_proba.toFixed(3)}</span>
-      <span style={{
-        fontSize: 9,
-        fontWeight: 700,
-        padding: "2px 6px",
-        borderRadius: 3,
-        textAlign: "center",
-        background: prediction.y_proba >= 0.55 ? "var(--green-bg)" : prediction.y_proba >= 0.50 ? "rgba(251,191,36,0.1)" : "var(--bg-row)",
-        color: prediction.y_proba >= 0.55 ? "var(--green)" : prediction.y_proba >= 0.50 ? "var(--amber)" : "var(--text-muted)",
-      }}>
-        {prediction.y_proba >= 0.55 ? "BUY" : prediction.y_proba >= 0.50 ? "WATCH" : "HOLD"}
-      </span>
-    </div>
-  );
-}
-
-function ActivityRow({ time, type, desc, meta }: { time: string; type: "buy" | "sell" | "signal" | "news"; desc: string; meta: string }) {
-  const colors: Record<string, { bg: string; fg: string }> = {
-    buy: { bg: "var(--green-bg)", fg: "var(--green)" },
-    sell: { bg: "var(--red-bg)", fg: "var(--red)" },
-    signal: { bg: "rgba(96, 165, 250, 0.1)", fg: "var(--blue)" },
-    news: { bg: "rgba(167, 139, 250, 0.1)", fg: "var(--purple)" },
-  };
-  return (
-    <div style={{ display: "grid", gridTemplateColumns: "50px 60px 1fr auto", gap: 8, padding: "5px 10px", borderBottom: "1px solid var(--border-soft)", fontSize: 10, alignItems: "center" }}>
-      <span style={{ color: "var(--text-muted)", fontFeatureSettings: "'tnum'" }}>{time}</span>
-      <span style={{ fontSize: 9, fontWeight: 700, padding: "1px 5px", borderRadius: 2, textAlign: "center", background: colors[type].bg, color: colors[type].fg }}>{type.toUpperCase()}</span>
-      <span style={{ color: "var(--text-secondary)" }}>{desc}</span>
-      <span style={{ color: "var(--text-muted)", fontSize: 10 }}>{meta}</span>
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onTrade(prediction.y_proba >= 0.50 ? "buy" : "sell");
+        }}
+        style={{
+          fontSize: 9,
+          fontWeight: 700,
+          padding: "2px 6px",
+          borderRadius: 3,
+          background: prediction.y_proba >= 0.55 ? "var(--green-bg)" : prediction.y_proba >= 0.50 ? "rgba(251,191,36,0.1)" : "var(--bg-row)",
+          color: prediction.y_proba >= 0.55 ? "var(--green)" : prediction.y_proba >= 0.50 ? "var(--amber)" : "var(--text-muted)",
+          border: "1px solid transparent",
+          cursor: "pointer",
+          fontFamily: "inherit",
+        }}
+        onMouseOver={(e) => (e.currentTarget.style.borderColor = "currentColor")}
+        onMouseOut={(e) => (e.currentTarget.style.borderColor = "transparent")}
+      >
+        {prediction.y_proba >= 0.55 ? "TRADE" : prediction.y_proba >= 0.50 ? "TRADE" : "TRADE"}
+      </button>
     </div>
   );
 }
@@ -1268,6 +1335,384 @@ function QSCell({ label, value }: { label: string; value: string }) {
     <div style={{ padding: "5px 10px", borderRight: "1px solid var(--border-soft)", borderBottom: "1px solid var(--border-soft)", display: "flex", justifyContent: "space-between", fontSize: 10 }}>
       <span style={{ color: "var(--text-muted)" }}>{label}</span>
       <span style={{ fontWeight: 500 }}>{value}</span>
+    </div>
+  );
+}
+
+function OrdersList({ orders }: { orders: Order[] }) {
+  if (orders.length === 0) {
+    return (
+      <div style={{ padding: 16, color: "var(--text-muted)", fontSize: 11, textAlign: "center" }}>
+        No orders yet. Click TRADE on any signal to place one.
+      </div>
+    );
+  }
+  return (
+    <div>
+      {orders.map((o) => (
+        <div
+          key={o.order_id}
+          style={{
+            display: "grid",
+            gridTemplateColumns: "auto 60px 50px 1fr auto",
+            gap: 8,
+            padding: "6px 10px",
+            borderBottom: "1px solid var(--border-soft)",
+            alignItems: "center",
+            fontSize: 10,
+          }}
+        >
+          <span
+            style={{
+              fontSize: 9,
+              fontWeight: 700,
+              padding: "2px 6px",
+              borderRadius: 2,
+              background: o.side === "buy" ? "var(--green-bg)" : "var(--red-bg)",
+              color: o.side === "buy" ? "var(--green)" : "var(--red)",
+            }}
+          >
+            {o.side.toUpperCase()}
+          </span>
+          <span style={{ fontWeight: 600, fontSize: 11 }}>{o.ticker}</span>
+          <span style={{ color: "var(--text-secondary)", textAlign: "right" }}>{o.qty}sh</span>
+          <span style={{ color: "var(--text-muted)", fontSize: 9 }}>
+            {o.filled_avg_price ? `@ $${o.filled_avg_price.toFixed(2)}` : "queued"}
+            {o.submitted_at && ` · ${new Date(o.submitted_at).toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}`}
+          </span>
+          <span
+            style={{
+              fontSize: 9,
+              fontWeight: 600,
+              padding: "1px 5px",
+              borderRadius: 2,
+              background:
+                o.status === "filled"
+                  ? "var(--green-bg)"
+                  : o.status === "canceled" || o.status === "rejected"
+                  ? "var(--red-bg)"
+                  : "var(--bg-row)",
+              color:
+                o.status === "filled"
+                  ? "var(--green)"
+                  : o.status === "canceled" || o.status === "rejected"
+                  ? "var(--red)"
+                  : "var(--text-muted)",
+              textTransform: "uppercase",
+            }}
+          >
+            {o.status}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function PositionsList({ positions }: { positions: Position[] }) {
+  if (positions.length === 0) {
+    return (
+      <div style={{ padding: 16, color: "var(--text-muted)", fontSize: 11, textAlign: "center" }}>
+        No open positions. Orders fill at next market open.
+      </div>
+    );
+  }
+  return (
+    <div>
+      {positions.map((p) => (
+        <div
+          key={p.ticker}
+          style={{
+            display: "grid",
+            gridTemplateColumns: "60px 50px 1fr auto",
+            gap: 8,
+            padding: "6px 10px",
+            borderBottom: "1px solid var(--border-soft)",
+            alignItems: "center",
+            fontSize: 10,
+          }}
+        >
+          <span style={{ fontWeight: 600, fontSize: 11 }}>{p.ticker}</span>
+          <span style={{ color: "var(--text-secondary)", textAlign: "right" }}>{p.qty}sh</span>
+          <span style={{ color: "var(--text-muted)", fontSize: 9 }}>
+            avg ${p.avg_entry_price?.toFixed(2) ?? "—"} · now ${p.current_price?.toFixed(2) ?? "—"}
+          </span>
+          <span
+            style={{ fontWeight: 600, textAlign: "right" }}
+            className={p.unrealized_pl != null && p.unrealized_pl >= 0 ? "up" : "dn"}
+          >
+            {p.unrealized_pl != null
+              ? `${p.unrealized_pl >= 0 ? "+" : ""}$${p.unrealized_pl.toFixed(2)}`
+              : "—"}
+            {p.unrealized_plpc != null && (
+              <span style={{ fontSize: 9, marginLeft: 4 }}>
+                ({fmtPct(p.unrealized_plpc)})
+              </span>
+            )}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function OrderModal({
+  ticker,
+  side,
+  quote,
+  buyingPower,
+  onClose,
+  onSubmit,
+}: {
+  ticker: string;
+  side: "buy" | "sell";
+  quote?: Quote;
+  buyingPower?: number;
+  onClose: () => void;
+  onSubmit: (qty: number) => void;
+}) {
+  const [qty, setQty] = useState(1);
+  const refPrice = side === "buy" ? quote?.ask_price ?? quote?.mid_price : quote?.bid_price ?? quote?.mid_price;
+  const estimatedNotional = (refPrice ?? 0) * qty;
+
+  const exceedsQty = qty > MAX_QTY_PER_ORDER;
+  const exceedsNotional = estimatedNotional > MAX_NOTIONAL_PER_ORDER;
+  const exceedsBP = side === "buy" && buyingPower != null && estimatedNotional > buyingPower;
+  const cannotSubmit = qty < 1 || exceedsQty || exceedsNotional || exceedsBP || !refPrice;
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0,0,0,0.6)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 999,
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: "var(--bg-panel)",
+          border: "1px solid var(--border)",
+          borderRadius: 8,
+          padding: 0,
+          width: 380,
+          maxWidth: "90vw",
+          fontSize: 12,
+        }}
+      >
+        {/* Header */}
+        <div
+          style={{
+            padding: "14px 18px",
+            borderBottom: "1px solid var(--border)",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 700 }}>
+              <span style={{ color: side === "buy" ? "var(--green)" : "var(--red)" }}>
+                {side.toUpperCase()}
+              </span>{" "}
+              {ticker}
+            </div>
+            <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 2 }}>
+              Paper trading · market order · day
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            style={{
+              background: "none",
+              border: "none",
+              color: "var(--text-muted)",
+              cursor: "pointer",
+              fontSize: 18,
+            }}
+          >
+            ×
+          </button>
+        </div>
+
+        {/* Body */}
+        <div style={{ padding: 18 }}>
+          <div
+            style={{
+              background: "rgba(96, 165, 250, 0.08)",
+              border: "1px solid rgba(96, 165, 250, 0.2)",
+              borderRadius: 4,
+              padding: "8px 10px",
+              fontSize: 10,
+              color: "var(--text-secondary)",
+              marginBottom: 16,
+            }}
+          >
+            <strong style={{ color: "var(--blue)" }}>PAPER ACCOUNT</strong> — no real money. Orders submitted on
+            weekends queue for the next market open.
+          </div>
+
+          {/* Quote info */}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: 6,
+              marginBottom: 16,
+              fontSize: 11,
+            }}
+          >
+            <div>
+              <div style={{ color: "var(--text-muted)", fontSize: 9, textTransform: "uppercase" }}>Bid</div>
+              <div style={{ fontWeight: 600 }}>{fmtPrice(quote?.bid_price)}</div>
+            </div>
+            <div>
+              <div style={{ color: "var(--text-muted)", fontSize: 9, textTransform: "uppercase" }}>Ask</div>
+              <div style={{ fontWeight: 600 }}>{fmtPrice(quote?.ask_price)}</div>
+            </div>
+            <div>
+              <div style={{ color: "var(--text-muted)", fontSize: 9, textTransform: "uppercase" }}>Mid</div>
+              <div style={{ fontWeight: 600 }}>{fmtPrice(quote?.mid_price)}</div>
+            </div>
+            <div>
+              <div style={{ color: "var(--text-muted)", fontSize: 9, textTransform: "uppercase" }}>
+                Reference {side === "buy" ? "(ask)" : "(bid)"}
+              </div>
+              <div style={{ fontWeight: 600 }}>{fmtPrice(refPrice)}</div>
+            </div>
+          </div>
+
+          {/* Qty input */}
+          <div style={{ marginBottom: 14 }}>
+            <label style={{ display: "block", color: "var(--text-muted)", fontSize: 10, textTransform: "uppercase", marginBottom: 4 }}>
+              Shares (1-{MAX_QTY_PER_ORDER})
+            </label>
+            <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+              <input
+                type="number"
+                min={1}
+                max={MAX_QTY_PER_ORDER}
+                value={qty}
+                onChange={(e) => setQty(Math.max(1, Math.min(MAX_QTY_PER_ORDER, parseInt(e.target.value) || 1)))}
+                style={{
+                  flex: 1,
+                  background: "var(--bg-input)",
+                  border: "1px solid var(--border-strong)",
+                  borderRadius: 4,
+                  padding: "8px 10px",
+                  color: "var(--text-primary)",
+                  fontSize: 14,
+                  fontFamily: "inherit",
+                }}
+              />
+              {[1, 5, 10, 25].map((n) => (
+                <button
+                  key={n}
+                  onClick={() => setQty(n)}
+                  style={{
+                    background: qty === n ? "var(--green-bg)" : "var(--bg-elevated)",
+                    color: qty === n ? "var(--green)" : "var(--text-secondary)",
+                    border: "1px solid var(--border)",
+                    borderRadius: 3,
+                    padding: "5px 9px",
+                    fontSize: 10,
+                    cursor: "pointer",
+                    fontFamily: "inherit",
+                  }}
+                >
+                  {n}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Estimated total */}
+          <div
+            style={{
+              background: "var(--bg-elevated)",
+              border: "1px solid var(--border)",
+              borderRadius: 4,
+              padding: "10px 12px",
+              fontSize: 12,
+              marginBottom: 14,
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <span style={{ color: "var(--text-muted)" }}>Estimated total</span>
+            <span style={{ fontWeight: 700, fontSize: 16 }}>
+              ${estimatedNotional.toFixed(2)}
+            </span>
+          </div>
+
+          {/* Warnings */}
+          {exceedsQty && (
+            <div style={{ color: "var(--red)", fontSize: 10, marginBottom: 8 }}>
+              ⚠ Exceeds max {MAX_QTY_PER_ORDER} shares per order
+            </div>
+          )}
+          {exceedsNotional && (
+            <div style={{ color: "var(--red)", fontSize: 10, marginBottom: 8 }}>
+              ⚠ Exceeds max ${MAX_NOTIONAL_PER_ORDER.toLocaleString()} per order
+            </div>
+          )}
+          {exceedsBP && (
+            <div style={{ color: "var(--red)", fontSize: 10, marginBottom: 8 }}>
+              ⚠ Exceeds buying power ${buyingPower?.toFixed(2)}
+            </div>
+          )}
+          {!refPrice && (
+            <div style={{ color: "var(--amber)", fontSize: 10, marginBottom: 8 }}>
+              ⚠ No live quote. Order may be rejected.
+            </div>
+          )}
+
+          {/* Buttons */}
+          <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+            <button
+              onClick={onClose}
+              style={{
+                flex: 1,
+                background: "var(--bg-elevated)",
+                color: "var(--text-secondary)",
+                border: "1px solid var(--border)",
+                borderRadius: 4,
+                padding: "10px 0",
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: "pointer",
+                fontFamily: "inherit",
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => onSubmit(qty)}
+              disabled={cannotSubmit}
+              style={{
+                flex: 2,
+                background: cannotSubmit ? "var(--bg-elevated)" : side === "buy" ? "var(--green)" : "var(--red)",
+                color: cannotSubmit ? "var(--text-muted)" : "var(--bg-base)",
+                border: "none",
+                borderRadius: 4,
+                padding: "10px 0",
+                fontSize: 12,
+                fontWeight: 700,
+                cursor: cannotSubmit ? "not-allowed" : "pointer",
+                fontFamily: "inherit",
+              }}
+            >
+              Confirm {side.toUpperCase()} {qty} {ticker}
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
