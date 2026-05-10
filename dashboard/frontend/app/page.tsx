@@ -36,12 +36,40 @@ type Position = { ticker: string; qty: number; side: string; avg_entry_price: nu
 type PositionsResponse = { count: number; positions: Position[] };
 type NewsArticle = { id: string | null; headline: string; summary: string; author: string | null; source: string; url: string | null; symbols: string[]; created_at: string | null; updated_at: string | null };
 type NewsResponse = { count: number; articles: NewsArticle[] };
+
+type Intelligence = {
+  ticker: string;
+  sentiment: "bullish" | "bearish" | "neutral";
+  sentiment_confidence: number;
+  impact: "high" | "medium" | "low";
+  summary: string;
+  key_events: string[];
+  trade_rationale: string;
+  risk_flags: string[];
+};
+type IntelligenceMeta = {
+  model: string;
+  input_tokens: number;
+  output_tokens: number;
+  elapsed_seconds: number;
+  estimated_cost: number;
+  cached: boolean;
+  generated_at: string;
+  n_articles_analyzed: number;
+};
+type IntelligenceResponse = {
+  ticker: string;
+  analysis: Intelligence | null;
+  metadata: IntelligenceMeta | { reason: string };
+  n_articles: number;
+};
+
 type FlashState = "up" | "dn" | null;
 type Toast = { type: "success" | "error" | "info"; message: string };
 type OrderModalState = { ticker: string; side: "buy" | "sell" } | null;
 type ChartType = "candle" | "area";
 type LayoutMode = "1x1" | "2x1" | "2x2" | "3x2" | "3x3";
-type DetailTab = "overview" | "predictions" | "news";
+type DetailTab = "overview" | "predictions" | "news" | "intel";
 type ActivityTab = "orders" | "positions" | "news";
 
 const LAYOUT_CONFIG: Record<LayoutMode, { cols: number; rows: number; cells: number }> = {
@@ -78,7 +106,6 @@ const computeDailyChange = (current: number | null | undefined, prevClose: numbe
   return { abs: current - prevClose, pct: (current - prevClose) / prevClose };
 };
 
-// Format relative time like "2h ago" or "Apr 15"
 const fmtRelativeTime = (iso: string | null): string => {
   if (!iso) return "—";
   const date = new Date(iso);
@@ -137,6 +164,8 @@ export default function DashboardPage() {
   const [positions, setPositions] = useState<PositionsResponse | null>(null);
   const [recentNews, setRecentNews] = useState<NewsResponse | null>(null);
   const [tickerNews, setTickerNews] = useState<NewsResponse | null>(null);
+  const [intelligence, setIntelligence] = useState<IntelligenceResponse | null>(null);
+  const [intelLoading, setIntelLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedTicker, setSelectedTicker] = useState<string>("NVDA");
   const [tickerPredictions, setTickerPredictions] = useState<Prediction[]>([]);
@@ -243,7 +272,6 @@ export default function DashboardPage() {
     return () => clearInterval(interval);
   }, [fetchOrdersAndPositions]);
 
-  // Refresh recent news periodically
   const fetchRecentNews = useCallback(async () => {
     try {
       const res = await fetch(`${API_BASE}/api/news/recent?limit=20`);
@@ -274,7 +302,34 @@ export default function DashboardPage() {
       } catch {}
     }
     loadTickerData();
+    // Reset intel when ticker changes
+    setIntelligence(null);
   }, [selectedTicker]);
+
+  // Fetch intelligence when intel tab opened or ticker changes (only if tab is intel)
+  const fetchIntelligence = useCallback(async (forceRefresh = false) => {
+    setIntelLoading(true);
+    try {
+      const url = `${API_BASE}/api/intelligence/${selectedTicker}${forceRefresh ? "?force_refresh=true" : ""}`;
+      const res = await fetch(url);
+      if (res.ok) {
+        setIntelligence(await res.json());
+      } else {
+        const err = await res.json();
+        setToast({ type: "error", message: err.detail || "Intelligence request failed" });
+      }
+    } catch (e) {
+      setToast({ type: "error", message: e instanceof Error ? e.message : "Intelligence error" });
+    } finally {
+      setIntelLoading(false);
+    }
+  }, [selectedTicker]);
+
+  useEffect(() => {
+    if (detailTab === "intel" && !intelligence && !intelLoading) {
+      fetchIntelligence();
+    }
+  }, [detailTab, intelligence, intelLoading, fetchIntelligence]);
 
   useEffect(() => {
     if (!latest) return;
@@ -554,6 +609,9 @@ export default function DashboardPage() {
           <span className={`detail-tab ${detailTab === "overview" ? "active" : ""}`} onClick={() => setDetailTab("overview")}>Overview</span>
           <span className={`detail-tab ${detailTab === "predictions" ? "active" : ""}`} onClick={() => setDetailTab("predictions")}>Predictions</span>
           <span className={`detail-tab ${detailTab === "news" ? "active" : ""}`} onClick={() => setDetailTab("news")}>News ({tickerNews?.count ?? 0})</span>
+          <span className={`detail-tab ${detailTab === "intel" ? "active" : ""}`} onClick={() => setDetailTab("intel")}>
+            <span style={{ background: "linear-gradient(90deg, var(--green), var(--cyan))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text", fontWeight: 700 }}>AI Intel</span>
+          </span>
         </div>
 
         <div className="detail-body">
@@ -575,7 +633,6 @@ export default function DashboardPage() {
                   ) : null}
                 </div>
               </div>
-
               <div className="detail-section">
                 <div className="detail-section-header"><span>ML Signal Detail</span><span className="meta">Random Forest</span></div>
                 <div className="detail-section-body">
@@ -629,6 +686,15 @@ export default function DashboardPage() {
               </div>
             </div>
           )}
+
+          {detailTab === "intel" && (
+            <IntelligencePanel
+              ticker={selectedTicker}
+              intelligence={intelligence}
+              loading={intelLoading}
+              onRefresh={() => fetchIntelligence(true)}
+            />
+          )}
         </div>
       </aside>
 
@@ -637,7 +703,7 @@ export default function DashboardPage() {
         <div className="status-item">POLLING: {POLL_INTERVAL_MS / 1000}s · {pollCount} polls</div>
         <div className="status-item">UNIVERSE: 11 tickers</div>
         <div className="status-item">PAPER · {orders?.count ?? 0} orders · {positions?.count ?? 0} positions · {recentNews?.count ?? 0} news</div>
-        <div className="status-item" style={{ marginLeft: "auto" }}>v0.9 · {account?.account_status ?? "—"}</div>
+        <div className="status-item" style={{ marginLeft: "auto" }}>v1.0 · {account?.account_status ?? "—"}</div>
       </footer>
 
       {orderModal && (
@@ -1025,6 +1091,108 @@ function NewsItem({ article, onTickerClick, universe, compact }: { article: News
         </div>
       )}
     </div>
+  );
+}
+
+function IntelligencePanel({ ticker, intelligence, loading, onRefresh }: { ticker: string; intelligence: IntelligenceResponse | null; loading: boolean; onRefresh: () => void }) {
+  if (loading && !intelligence) {
+    return (
+      <div style={{ padding: 16, color: "var(--text-muted)", fontSize: 11, textAlign: "center" }}>
+        <div style={{ marginBottom: 8 }}>🧠 Claude is analyzing the news...</div>
+        <div style={{ fontSize: 10, color: "var(--text-faint)" }}>Usually takes 5-10 seconds</div>
+      </div>
+    );
+  }
+
+  if (!intelligence || !intelligence.analysis) {
+    return (
+      <div style={{ padding: 16, color: "var(--text-muted)", fontSize: 11, textAlign: "center" }}>
+        {intelligence?.metadata && "reason" in intelligence.metadata && intelligence.metadata.reason === "no_articles"
+          ? `No recent news for ${ticker} to analyze.`
+          : "AI analysis unavailable."}
+        <button onClick={onRefresh} style={{ display: "block", margin: "12px auto 0", background: "var(--bg-elevated)", color: "var(--text-secondary)", border: "1px solid var(--border)", borderRadius: 4, padding: "5px 12px", fontSize: 10, cursor: "pointer", fontFamily: "inherit" }}>Try Again</button>
+      </div>
+    );
+  }
+
+  const a = intelligence.analysis;
+  const m = intelligence.metadata as IntelligenceMeta;
+
+  const sentimentColor = a.sentiment === "bullish" ? "var(--green)" : a.sentiment === "bearish" ? "var(--red)" : "var(--text-muted)";
+  const sentimentBg = a.sentiment === "bullish" ? "var(--green-bg)" : a.sentiment === "bearish" ? "var(--red-bg)" : "var(--bg-row)";
+  const impactColor = a.impact === "high" ? "var(--red)" : a.impact === "medium" ? "var(--amber)" : "var(--text-muted)";
+  const impactBg = a.impact === "high" ? "var(--red-bg)" : a.impact === "medium" ? "rgba(251,191,36,0.1)" : "var(--bg-row)";
+
+  return (
+    <>
+      <div className="detail-section">
+        <div className="detail-section-header">
+          <span>AI Analysis · Claude Haiku</span>
+          <button onClick={onRefresh} disabled={loading} style={{ background: "var(--bg-row)", color: "var(--text-secondary)", border: "1px solid var(--border)", borderRadius: 3, padding: "2px 8px", fontSize: 9, cursor: loading ? "not-allowed" : "pointer", fontFamily: "inherit", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+            {loading ? "..." : "↻ Refresh"}
+          </button>
+        </div>
+
+        {/* Sentiment + Impact badges */}
+        <div style={{ padding: "10px 12px", display: "flex", gap: 6, flexWrap: "wrap", borderBottom: "1px solid var(--border-soft)" }}>
+          <span style={{ background: sentimentBg, color: sentimentColor, padding: "4px 10px", borderRadius: 4, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", border: `1px solid ${sentimentColor}` }}>
+            {a.sentiment} · {(a.sentiment_confidence * 100).toFixed(0)}%
+          </span>
+          <span style={{ background: impactBg, color: impactColor, padding: "4px 10px", borderRadius: 4, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", border: `1px solid ${impactColor}` }}>
+            Impact: {a.impact}
+          </span>
+        </div>
+
+        {/* Summary */}
+        <div style={{ padding: "10px 12px", borderBottom: "1px solid var(--border-soft)" }}>
+          <div style={{ fontSize: 9, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 700, marginBottom: 4 }}>Summary</div>
+          <div style={{ fontSize: 11, lineHeight: 1.55, color: "var(--text-primary)" }}>{a.summary}</div>
+        </div>
+
+        {/* Key events */}
+        {a.key_events && a.key_events.length > 0 && (
+          <div style={{ padding: "10px 12px", borderBottom: "1px solid var(--border-soft)" }}>
+            <div style={{ fontSize: 9, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 700, marginBottom: 6 }}>Key Events</div>
+            <ul style={{ paddingLeft: 16, fontSize: 10, lineHeight: 1.5, color: "var(--text-secondary)", margin: 0 }}>
+              {a.key_events.map((event, i) => (
+                <li key={i} style={{ marginBottom: 3 }}>{event}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Trade rationale */}
+        {a.trade_rationale && (
+          <div style={{ padding: "10px 12px", borderBottom: "1px solid var(--border-soft)" }}>
+            <div style={{ fontSize: 9, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 700, marginBottom: 4 }}>Implications</div>
+            <div style={{ fontSize: 10, lineHeight: 1.55, color: "var(--text-secondary)" }}>{a.trade_rationale}</div>
+          </div>
+        )}
+
+        {/* Risk flags */}
+        {a.risk_flags && a.risk_flags.length > 0 && (
+          <div style={{ padding: "10px 12px", borderBottom: "1px solid var(--border-soft)" }}>
+            <div style={{ fontSize: 9, color: "var(--amber)", textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 700, marginBottom: 6 }}>⚠ Risk Flags</div>
+            <ul style={{ paddingLeft: 16, fontSize: 10, lineHeight: 1.5, color: "var(--text-secondary)", margin: 0 }}>
+              {a.risk_flags.map((flag, i) => (
+                <li key={i} style={{ marginBottom: 3 }}>{flag}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Disclaimer */}
+        <div style={{ padding: "8px 12px", background: "rgba(251,191,36,0.05)", fontSize: 9, color: "var(--amber)", lineHeight: 1.5 }}>
+          ⚠ AI-generated analysis from {intelligence.n_articles} articles. NOT financial advice. Verify before acting.
+        </div>
+
+        {/* Metadata */}
+        <div style={{ padding: "6px 12px", fontSize: 9, color: "var(--text-faint)", display: "flex", justifyContent: "space-between" }}>
+          <span>{m.cached ? "📋 Cached" : "🆕 Fresh"} · {fmtRelativeTime(m.generated_at)}</span>
+          <span>{m.input_tokens + m.output_tokens} tokens · ${m.estimated_cost?.toFixed(5) ?? "—"}</span>
+        </div>
+      </div>
+    </>
   );
 }
 

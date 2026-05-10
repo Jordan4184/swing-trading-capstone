@@ -3,7 +3,7 @@ FastAPI backend for the swing-trading dashboard.
 
 Loads precomputed results from the capstone (predictions, backtest summary)
 and exposes them via REST endpoints. Also integrates Alpaca for live market
-data + historical bars + paper trading orders + news feed.
+data + historical bars + paper trading orders + news + LLM-powered analysis.
 
 Run:
     uvicorn main:app --reload --port 8000
@@ -29,6 +29,8 @@ from alpaca.trading.client import TradingClient
 from alpaca.trading.requests import MarketOrderRequest, GetOrdersRequest
 from alpaca.trading.enums import OrderSide, TimeInForce, QueryOrderStatus
 
+import llm_analyzer
+
 # ---------------------------------------------------------------------------
 # Environment + Alpaca clients
 # ---------------------------------------------------------------------------
@@ -37,9 +39,13 @@ load_dotenv()
 
 ALPACA_API_KEY = os.getenv("ALPACA_API_KEY")
 ALPACA_API_SECRET = os.getenv("ALPACA_API_SECRET")
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
 
 if not ALPACA_API_KEY or not ALPACA_API_SECRET:
     print("WARNING: Alpaca credentials missing. Live data endpoints will fail.")
+
+if not ANTHROPIC_API_KEY:
+    print("WARNING: Anthropic credentials missing. /api/intelligence will fail.")
 
 data_client = (
     StockHistoricalDataClient(ALPACA_API_KEY, ALPACA_API_SECRET)
@@ -59,10 +65,6 @@ trading_client = (
     else None
 )
 
-# ---------------------------------------------------------------------------
-# Trading safety constants
-# ---------------------------------------------------------------------------
-
 MAX_QTY_PER_ORDER = 100
 MAX_NOTIONAL_PER_ORDER = 10_000
 
@@ -70,17 +72,11 @@ MAX_NOTIONAL_PER_ORDER = 10_000
 # App setup
 # ---------------------------------------------------------------------------
 
-app = FastAPI(
-    title="Swing Trading Dashboard API",
-    version="0.7.0",
-)
+app = FastAPI(title="Swing Trading Dashboard API", version="0.8.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-    ],
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -125,6 +121,7 @@ def root():
         "service": "swing-trading-dashboard-api",
         "status": "ok",
         "alpaca_connected": data_client is not None,
+        "anthropic_connected": ANTHROPIC_API_KEY is not None,
         "trading_mode": "paper",
         "endpoints": [
             "/api/summary",
@@ -142,6 +139,8 @@ def root():
             "/api/positions",
             "/api/news/recent",
             "/api/news/{ticker}",
+            "/api/intelligence/{ticker}",
+            "/api/intelligence/stats",
         ],
     }
 
@@ -188,20 +187,16 @@ def get_ticker_predictions(ticker: str):
     return {
         "ticker": ticker,
         "n_predictions": len(sub),
-        "data": sub.assign(
-            date=sub["date"].dt.strftime("%Y-%m-%d")
-        ).to_dict(orient="records"),
+        "data": sub.assign(date=sub["date"].dt.strftime("%Y-%m-%d")).to_dict(orient="records"),
     }
 
 
 @app.get("/api/equity-curve")
 def get_equity_curve(top_n: int = 2, holding_days: int = 5, cost_bps: float = 10.0):
     cost = cost_bps / 10000.0
-
     pr = PREDICTIONS.copy()
     pr["rank"] = pr.groupby("date")["y_proba"].rank(method="first", ascending=False)
     picks = pr[pr["rank"] <= top_n]
-
     daily = (
         picks.groupby("date", as_index=False)["fwd_return_5d"]
         .mean()
@@ -209,25 +204,15 @@ def get_equity_curve(top_n: int = 2, holding_days: int = 5, cost_bps: float = 10
         .sort_values("date")
         .reset_index(drop=True)
     )
-
     trades = daily.iloc[::holding_days].copy().reset_index(drop=True)
     trades["return_net"] = trades["basket_return"] - cost
     trades["equity"] = 10000 * (1 + trades["return_net"]).cumprod()
 
     return {
-        "config": {
-            "top_n": top_n,
-            "holding_days": holding_days,
-            "cost_bps": cost_bps,
-            "initial_capital": 10000,
-        },
+        "config": {"top_n": top_n, "holding_days": holding_days, "cost_bps": cost_bps, "initial_capital": 10000},
         "n_trades": len(trades),
         "data": [
-            {
-                "date": row["date"].strftime("%Y-%m-%d"),
-                "equity": round(float(row["equity"]), 2),
-                "return": round(float(row["return_net"]), 6),
-            }
+            {"date": row["date"].strftime("%Y-%m-%d"), "equity": round(float(row["equity"]), 2), "return": round(float(row["return_net"]), 6)}
             for _, row in trades.iterrows()
         ],
     }
@@ -255,15 +240,12 @@ def _format_quote(ticker: str, quote) -> dict:
 def get_live_price(ticker: str):
     if data_client is None:
         raise HTTPException(status_code=503, detail="Alpaca client not configured.")
-
     ticker = ticker.upper()
     try:
         request = StockLatestQuoteRequest(symbol_or_symbols=[ticker])
         response = data_client.get_stock_latest_quote(request)
-
         if ticker not in response:
             raise HTTPException(status_code=404, detail=f"No quote data for '{ticker}'.")
-
         return _format_quote(ticker, response[ticker])
     except HTTPException:
         raise
@@ -275,22 +257,16 @@ def get_live_price(ticker: str):
 def get_live_prices():
     if data_client is None:
         raise HTTPException(status_code=503, detail="Alpaca client not configured.")
-
     try:
         request = StockLatestQuoteRequest(symbol_or_symbols=UNIVERSE)
         response = data_client.get_stock_latest_quote(request)
-
         quotes = {}
         for ticker in UNIVERSE:
             if ticker in response:
                 quotes[ticker] = _format_quote(ticker, response[ticker])
             else:
                 quotes[ticker] = {"ticker": ticker, "bid_price": None, "ask_price": None}
-
-        return {
-            "count": len(UNIVERSE),
-            "quotes": quotes,
-        }
+        return {"count": len(UNIVERSE), "quotes": quotes}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Alpaca request failed: {str(e)}")
 
@@ -299,40 +275,20 @@ def get_live_prices():
 def get_prev_closes():
     if data_client is None:
         raise HTTPException(status_code=503, detail="Alpaca client not configured.")
-
     try:
         end = datetime.now() - timedelta(minutes=20)
         start = end - timedelta(days=7)
-
-        request = StockBarsRequest(
-            symbol_or_symbols=UNIVERSE,
-            timeframe=TimeFrame.Day,
-            start=start,
-            end=end,
-        )
+        request = StockBarsRequest(symbol_or_symbols=UNIVERSE, timeframe=TimeFrame.Day, start=start, end=end)
         response = data_client.get_stock_bars(request)
-
         prev_closes = {}
         for ticker in UNIVERSE:
             if ticker in response.data and len(response.data[ticker]) > 0:
                 bars = response.data[ticker]
                 latest_bar = bars[-1]
-                prev_closes[ticker] = {
-                    "ticker": ticker,
-                    "prev_close": round(float(latest_bar.close), 2),
-                    "date": latest_bar.timestamp.strftime("%Y-%m-%d"),
-                }
+                prev_closes[ticker] = {"ticker": ticker, "prev_close": round(float(latest_bar.close), 2), "date": latest_bar.timestamp.strftime("%Y-%m-%d")}
             else:
-                prev_closes[ticker] = {
-                    "ticker": ticker,
-                    "prev_close": None,
-                    "date": None,
-                }
-
-        return {
-            "count": len(UNIVERSE),
-            "data": prev_closes,
-        }
+                prev_closes[ticker] = {"ticker": ticker, "prev_close": None, "date": None}
+        return {"count": len(UNIVERSE), "data": prev_closes}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Alpaca prev-closes request failed: {str(e)}")
 
@@ -341,43 +297,21 @@ def get_prev_closes():
 def get_historical_bars(ticker: str, days: int = 90):
     if data_client is None:
         raise HTTPException(status_code=503, detail="Alpaca client not configured.")
-
     ticker = ticker.upper()
     days = max(1, min(days, 365))
-
     try:
         end = datetime.now() - timedelta(minutes=20)
         start = end - timedelta(days=days)
-
-        request = StockBarsRequest(
-            symbol_or_symbols=[ticker],
-            timeframe=TimeFrame.Day,
-            start=start,
-            end=end,
-        )
+        request = StockBarsRequest(symbol_or_symbols=[ticker], timeframe=TimeFrame.Day, start=start, end=end)
         response = data_client.get_stock_bars(request)
-
         if ticker not in response.data:
             return {"ticker": ticker, "n_bars": 0, "data": []}
-
         bars = response.data[ticker]
         formatted = [
-            {
-                "date": b.timestamp.strftime("%Y-%m-%d"),
-                "open": round(float(b.open), 2),
-                "high": round(float(b.high), 2),
-                "low": round(float(b.low), 2),
-                "close": round(float(b.close), 2),
-                "volume": int(b.volume),
-            }
+            {"date": b.timestamp.strftime("%Y-%m-%d"), "open": round(float(b.open), 2), "high": round(float(b.high), 2), "low": round(float(b.low), 2), "close": round(float(b.close), 2), "volume": int(b.volume)}
             for b in bars
         ]
-
-        return {
-            "ticker": ticker,
-            "n_bars": len(formatted),
-            "data": formatted,
-        }
+        return {"ticker": ticker, "n_bars": len(formatted), "data": formatted}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Alpaca bars request failed: {str(e)}")
 
@@ -406,7 +340,6 @@ def get_account():
 # ---------------------------------------------------------------------------
 
 def _format_news_article(article) -> dict:
-    """Format an Alpaca news article into a JSON-friendly dict."""
     return {
         "id": str(article.id) if hasattr(article, "id") and article.id else None,
         "headline": article.headline if hasattr(article, "headline") else "",
@@ -422,72 +355,96 @@ def _format_news_article(article) -> dict:
 
 @app.get("/api/news/recent")
 def get_recent_news(limit: int = 20):
-    """
-    Get recent news for the entire universe of tickers.
-    Returns articles sorted newest first.
-    """
     if news_client is None:
         raise HTTPException(status_code=503, detail="Alpaca news client not configured.")
-
     limit = max(1, min(limit, 50))
-
     try:
-        # Fetch news for all universe tickers from past 7 days
         end = datetime.now()
         start = end - timedelta(days=7)
-
-        request = NewsRequest(
-            symbols=",".join(UNIVERSE),
-            start=start,
-            end=end,
-            limit=limit,
-            sort="desc",
-        )
+        request = NewsRequest(symbols=",".join(UNIVERSE), start=start, end=end, limit=limit, sort="desc")
         response = news_client.get_news(request)
-
         articles = response.data.get("news", []) if hasattr(response, "data") else []
         formatted = [_format_news_article(a) for a in articles]
-
-        return {
-            "count": len(formatted),
-            "articles": formatted,
-        }
+        return {"count": len(formatted), "articles": formatted}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Alpaca news request failed: {str(e)}")
 
 
 @app.get("/api/news/{ticker}")
 def get_ticker_news(ticker: str, limit: int = 10):
-    """News articles for a single ticker."""
     if news_client is None:
         raise HTTPException(status_code=503, detail="Alpaca news client not configured.")
-
     ticker = ticker.upper()
     limit = max(1, min(limit, 30))
-
     try:
         end = datetime.now()
         start = end - timedelta(days=14)
-
-        request = NewsRequest(
-            symbols=ticker,
-            start=start,
-            end=end,
-            limit=limit,
-            sort="desc",
-        )
+        request = NewsRequest(symbols=ticker, start=start, end=end, limit=limit, sort="desc")
         response = news_client.get_news(request)
-
         articles = response.data.get("news", []) if hasattr(response, "data") else []
         formatted = [_format_news_article(a) for a in articles]
-
-        return {
-            "ticker": ticker,
-            "count": len(formatted),
-            "articles": formatted,
-        }
+        return {"ticker": ticker, "count": len(formatted), "articles": formatted}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Alpaca news request failed: {str(e)}")
+
+# ---------------------------------------------------------------------------
+# Endpoints — LLM Intelligence
+# ---------------------------------------------------------------------------
+
+@app.get("/api/intelligence/stats")
+def get_intelligence_stats():
+    """Monitoring endpoint: how many LLM calls today, cache state, etc."""
+    return llm_analyzer.get_call_stats()
+
+
+@app.get("/api/intelligence/{ticker}")
+def get_ticker_intelligence(ticker: str, force_refresh: bool = False):
+    """
+    Get LLM-powered analysis for a ticker's recent news.
+    Cached per (ticker, latest_article_id) to minimize LLM calls.
+    """
+    if news_client is None:
+        raise HTTPException(status_code=503, detail="Alpaca news client not configured.")
+
+    if not ANTHROPIC_API_KEY:
+        raise HTTPException(status_code=503, detail="Anthropic client not configured.")
+
+    ticker = ticker.upper()
+
+    # Fetch recent articles for this ticker
+    try:
+        end = datetime.now()
+        start = end - timedelta(days=14)
+        request = NewsRequest(symbols=ticker, start=start, end=end, limit=10, sort="desc")
+        response = news_client.get_news(request)
+        articles = response.data.get("news", []) if hasattr(response, "data") else []
+        formatted_articles = [_format_news_article(a) for a in articles]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch news: {str(e)}")
+
+    if not formatted_articles:
+        return {
+            "ticker": ticker,
+            "analysis": None,
+            "metadata": {"reason": "no_articles"},
+            "n_articles": 0,
+        }
+
+    # Run LLM analysis (uses cache automatically)
+    result = llm_analyzer.analyze_news(ticker, formatted_articles, force_refresh=force_refresh)
+
+    if result is None:
+        raise HTTPException(
+            status_code=500,
+            detail="LLM analysis failed. Check backend logs and daily call limit.",
+        )
+
+    return {
+        "ticker": ticker,
+        "analysis": result["analysis"],
+        "metadata": result["metadata"],
+        "n_articles": len(formatted_articles),
+    }
 
 # ---------------------------------------------------------------------------
 # Endpoints — Trading (PAPER ONLY)
@@ -537,20 +494,13 @@ def place_order(req: PlaceOrderRequest):
         raise HTTPException(status_code=500, detail=f"Quote lookup failed: {str(e)}")
 
     if ref_price <= 0:
-        raise HTTPException(
-            status_code=400,
-            detail=f"No valid reference price for {req.ticker}. Markets may be closed.",
-        )
+        raise HTTPException(status_code=400, detail=f"No valid reference price for {req.ticker}. Markets may be closed.")
 
     estimated_notional = ref_price * req.qty
     if estimated_notional > MAX_NOTIONAL_PER_ORDER:
         raise HTTPException(
             status_code=400,
-            detail=(
-                f"Estimated order value ${estimated_notional:,.2f} exceeds "
-                f"max ${MAX_NOTIONAL_PER_ORDER:,.0f} per order. "
-                f"Try fewer shares (current ref price: ${ref_price:.2f})."
-            ),
+            detail=f"Estimated order value ${estimated_notional:,.2f} exceeds max ${MAX_NOTIONAL_PER_ORDER:,.0f} per order. Try fewer shares (current ref price: ${ref_price:.2f}).",
         )
 
     try:
@@ -561,7 +511,6 @@ def place_order(req: PlaceOrderRequest):
             time_in_force=TimeInForce.DAY,
         )
         order = trading_client.submit_order(order_data=order_req)
-
         return {
             "status": "submitted",
             "order_id": str(order.id),
@@ -582,11 +531,9 @@ def get_recent_orders(limit: int = 25):
     if trading_client is None:
         raise HTTPException(status_code=503, detail="Alpaca trading not configured.")
     limit = max(1, min(limit, 100))
-
     try:
         request = GetOrdersRequest(status=QueryOrderStatus.ALL, limit=limit)
         orders = trading_client.get_orders(filter=request)
-
         return {
             "count": len(orders),
             "orders": [
@@ -612,10 +559,8 @@ def get_recent_orders(limit: int = 25):
 def get_positions():
     if trading_client is None:
         raise HTTPException(status_code=503, detail="Alpaca trading not configured.")
-
     try:
         positions = trading_client.get_all_positions()
-
         return {
             "count": len(positions),
             "positions": [
