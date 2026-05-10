@@ -17,102 +17,32 @@ import {
 // Types
 // ---------------------------------------------------------------------------
 
-type Prediction = {
-  date: string;
-  ticker: string;
-  y_true: number;
-  y_proba: number;
-  fwd_return_5d: number;
-  fold: number;
-};
-
-type LatestPredictionsResponse = {
-  date: string;
-  predictions: Prediction[];
-};
-
-type StrategyMetrics = {
-  total_return: number;
-  annualized_return: number;
-  sharpe_ratio: number;
-  max_drawdown: number;
-  hit_rate: number;
-};
-
-type BacktestSummary = {
-  strategy: StrategyMetrics;
-  equal_weight: StrategyMetrics;
-  spy: StrategyMetrics;
-};
-
+type Prediction = { date: string; ticker: string; y_true: number; y_proba: number; fwd_return_5d: number; fold: number };
+type LatestPredictionsResponse = { date: string; predictions: Prediction[] };
+type StrategyMetrics = { total_return: number; annualized_return: number; sharpe_ratio: number; max_drawdown: number; hit_rate: number };
+type BacktestSummary = { strategy: StrategyMetrics; equal_weight: StrategyMetrics; spy: StrategyMetrics };
 type EquityPoint = { date: string; equity: number; return: number };
-
-type EquityCurveResponse = {
-  config: { top_n: number; holding_days: number; cost_bps: number; initial_capital: number };
-  n_trades: number;
-  data: EquityPoint[];
-};
-
-type Quote = {
-  ticker: string;
-  bid_price: number | null;
-  ask_price: number | null;
-  mid_price?: number | null;
-  bid_size?: number | null;
-  ask_size?: number | null;
-  timestamp?: string | null;
-};
-
+type EquityCurveResponse = { config: { top_n: number; holding_days: number; cost_bps: number; initial_capital: number }; n_trades: number; data: EquityPoint[] };
+type Quote = { ticker: string; bid_price: number | null; ask_price: number | null; mid_price?: number | null; bid_size?: number | null; ask_size?: number | null; timestamp?: string | null };
 type LivePricesResponse = { count: number; quotes: Record<string, Quote> };
-
 type PrevClose = { ticker: string; prev_close: number | null; date: string | null };
 type PrevClosesResponse = { count: number; data: Record<string, PrevClose> };
-
-type Account = {
-  account_status: string;
-  buying_power: number;
-  cash: number;
-  equity: number;
-  portfolio_value: number;
-  pattern_day_trader: boolean;
-  trading_blocked: boolean;
-  currency: string;
-};
-
+type Account = { account_status: string; buying_power: number; cash: number; equity: number; portfolio_value: number; pattern_day_trader: boolean; trading_blocked: boolean; currency: string };
 type BarRow = { date: string; open: number; high: number; low: number; close: number; volume: number };
 type BarsResponse = { ticker: string; n_bars: number; data: BarRow[] };
-
-type Order = {
-  order_id: string;
-  ticker: string;
-  side: string;
-  qty: number;
-  filled_qty: number;
-  filled_avg_price: number | null;
-  status: string;
-  submitted_at: string | null;
-  filled_at: string | null;
-};
+type Order = { order_id: string; ticker: string; side: string; qty: number; filled_qty: number; filled_avg_price: number | null; status: string; submitted_at: string | null; filled_at: string | null };
 type OrdersResponse = { count: number; orders: Order[] };
-
-type Position = {
-  ticker: string;
-  qty: number;
-  side: string;
-  avg_entry_price: number | null;
-  current_price: number | null;
-  market_value: number | null;
-  cost_basis: number | null;
-  unrealized_pl: number | null;
-  unrealized_plpc: number | null;
-};
+type Position = { ticker: string; qty: number; side: string; avg_entry_price: number | null; current_price: number | null; market_value: number | null; cost_basis: number | null; unrealized_pl: number | null; unrealized_plpc: number | null };
 type PositionsResponse = { count: number; positions: Position[] };
-
+type NewsArticle = { id: string | null; headline: string; summary: string; author: string | null; source: string; url: string | null; symbols: string[]; created_at: string | null; updated_at: string | null };
+type NewsResponse = { count: number; articles: NewsArticle[] };
 type FlashState = "up" | "dn" | null;
 type Toast = { type: "success" | "error" | "info"; message: string };
 type OrderModalState = { ticker: string; side: "buy" | "sell" } | null;
 type ChartType = "candle" | "area";
 type LayoutMode = "1x1" | "2x1" | "2x2" | "3x2" | "3x3";
+type DetailTab = "overview" | "predictions" | "news";
+type ActivityTab = "orders" | "positions" | "news";
 
 const LAYOUT_CONFIG: Record<LayoutMode, { cols: number; rows: number; cells: number }> = {
   "1x1": { cols: 1, rows: 1, cells: 1 },
@@ -126,6 +56,7 @@ const API_BASE = "http://localhost:8000";
 const POLL_INTERVAL_MS = 5_000;
 const PREV_CLOSE_REFRESH_MS = 60_000;
 const ORDERS_REFRESH_MS = 10_000;
+const NEWS_REFRESH_MS = 60_000;
 const MAX_QTY_PER_ORDER = 100;
 const MAX_NOTIONAL_PER_ORDER = 10_000;
 
@@ -134,29 +65,39 @@ const MAX_NOTIONAL_PER_ORDER = 10_000;
 // ---------------------------------------------------------------------------
 
 const fmtMoney = (n: number) => (n >= 1000 ? `$${(n / 1000).toFixed(1)}k` : `$${n.toFixed(2)}`);
-const fmtPct = (n: number, withSign = true) => {
-  const v = (n * 100).toFixed(2);
-  return withSign && n > 0 ? `+${v}%` : `${v}%`;
-};
+const fmtPct = (n: number, withSign = true) => { const v = (n * 100).toFixed(2); return withSign && n > 0 ? `+${v}%` : `${v}%`; };
 const fmtPrice = (n: number | null | undefined) => (n == null ? "—" : n.toFixed(2));
-
 const computeBarChange = (bars: BarRow[] | undefined): { abs: number; pct: number } | null => {
   if (!bars || bars.length < 2) return null;
   const first = bars[0].close;
   const last = bars[bars.length - 1].close;
   return { abs: last - first, pct: (last - first) / first };
 };
-
 const computeDailyChange = (current: number | null | undefined, prevClose: number | null | undefined): { abs: number; pct: number } | null => {
   if (current == null || prevClose == null || prevClose === 0) return null;
   return { abs: current - prevClose, pct: (current - prevClose) / prevClose };
+};
+
+// Format relative time like "2h ago" or "Apr 15"
+const fmtRelativeTime = (iso: string | null): string => {
+  if (!iso) return "—";
+  const date = new Date(iso);
+  const now = Date.now();
+  const diffMs = now - date.getTime();
+  const diffMin = Math.floor(diffMs / 60000);
+  const diffHr = Math.floor(diffMs / 3600000);
+  const diffDay = Math.floor(diffMs / 86400000);
+  if (diffMin < 1) return "just now";
+  if (diffMin < 60) return `${diffMin}m ago`;
+  if (diffHr < 24) return `${diffHr}h ago`;
+  if (diffDay < 7) return `${diffDay}d ago`;
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 };
 
 function usePriceFlash(prices: Record<string, number | null | undefined>) {
   const previousRef = useRef<Record<string, number | null>>({});
   const [flashes, setFlashes] = useState<Record<string, FlashState>>({});
   const timeoutsRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
-
   useEffect(() => {
     const newFlashes: Record<string, FlashState> = {};
     let anyChanged = false;
@@ -175,11 +116,9 @@ function usePriceFlash(prices: Record<string, number | null | undefined>) {
     if (anyChanged) setFlashes((f) => ({ ...f, ...newFlashes }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [JSON.stringify(prices)]);
-
   useEffect(() => {
     return () => Object.values(timeoutsRef.current).forEach(clearTimeout);
   }, []);
-
   return flashes;
 }
 
@@ -196,13 +135,16 @@ export default function DashboardPage() {
   const [prevCloses, setPrevCloses] = useState<PrevClosesResponse | null>(null);
   const [orders, setOrders] = useState<OrdersResponse | null>(null);
   const [positions, setPositions] = useState<PositionsResponse | null>(null);
+  const [recentNews, setRecentNews] = useState<NewsResponse | null>(null);
+  const [tickerNews, setTickerNews] = useState<NewsResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selectedTicker, setSelectedTicker] = useState<string>("NVDA");
   const [tickerPredictions, setTickerPredictions] = useState<Prediction[]>([]);
   const [selectedBars, setSelectedBars] = useState<BarsResponse | null>(null);
   const [spyBars, setSpyBars] = useState<BarsResponse | null>(null);
   const [pollCount, setPollCount] = useState(0);
-  const [activityTab, setActivityTab] = useState<"orders" | "positions">("orders");
+  const [activityTab, setActivityTab] = useState<ActivityTab>("orders");
+  const [detailTab, setDetailTab] = useState<DetailTab>("overview");
   const [orderModal, setOrderModal] = useState<OrderModalState>(null);
   const [toast, setToast] = useState<Toast | null>(null);
   const [chartType, setChartType] = useState<ChartType>("candle");
@@ -224,7 +166,7 @@ export default function DashboardPage() {
   useEffect(() => {
     async function loadInitial() {
       try {
-        const [summaryRes, latestRes, equityRes, accountRes, spyBarsRes, prevClosesRes, ordersRes, positionsRes] = await Promise.all([
+        const [summaryRes, latestRes, equityRes, accountRes, spyBarsRes, prevClosesRes, ordersRes, positionsRes, newsRes] = await Promise.all([
           fetch(`${API_BASE}/api/summary`),
           fetch(`${API_BASE}/api/predictions/latest?top_n=10`),
           fetch(`${API_BASE}/api/equity-curve`),
@@ -233,6 +175,7 @@ export default function DashboardPage() {
           fetch(`${API_BASE}/api/prev-closes`),
           fetch(`${API_BASE}/api/orders/recent`),
           fetch(`${API_BASE}/api/positions`),
+          fetch(`${API_BASE}/api/news/recent?limit=20`),
         ]);
         if (!summaryRes.ok) throw new Error("summary failed");
         if (!latestRes.ok) throw new Error("predictions failed");
@@ -246,6 +189,7 @@ export default function DashboardPage() {
         if (prevClosesRes.ok) setPrevCloses(await prevClosesRes.json());
         if (ordersRes.ok) setOrders(await ordersRes.json());
         if (positionsRes.ok) setPositions(await positionsRes.json());
+        if (newsRes.ok) setRecentNews(await newsRes.json());
       } catch (err) {
         setError(err instanceof Error ? err.message : "Unknown error");
       }
@@ -299,24 +243,39 @@ export default function DashboardPage() {
     return () => clearInterval(interval);
   }, [fetchOrdersAndPositions]);
 
+  // Refresh recent news periodically
+  const fetchRecentNews = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/news/recent?limit=20`);
+      if (res.ok) setRecentNews(await res.json());
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    const interval = setInterval(fetchRecentNews, NEWS_REFRESH_MS);
+    return () => clearInterval(interval);
+  }, [fetchRecentNews]);
+
+  // Load ticker-specific data on selection change
   useEffect(() => {
     async function loadTickerData() {
       try {
-        const [predRes, barsRes] = await Promise.all([
+        const [predRes, barsRes, newsRes] = await Promise.all([
           fetch(`${API_BASE}/api/predictions/${selectedTicker}`),
           fetch(`${API_BASE}/api/historical-bars/${selectedTicker}?days=90`),
+          fetch(`${API_BASE}/api/news/${selectedTicker}?limit=15`),
         ]);
         if (predRes.ok) {
           const data = await predRes.json();
           setTickerPredictions(data.data || []);
         }
         if (barsRes.ok) setSelectedBars(await barsRes.json());
+        if (newsRes.ok) setTickerNews(await newsRes.json());
       } catch {}
     }
     loadTickerData();
   }, [selectedTicker]);
 
-  // Fetch bars for any ticker shown in a cell that we don't have
   useEffect(() => {
     if (!latest) return;
     const cfg = LAYOUT_CONFIG[layout];
@@ -325,7 +284,6 @@ export default function DashboardPage() {
     for (let i = 0; i < cfg.cells; i++) {
       let t = cellTickers[i];
       if (!t) {
-        // Default ticker for this cell
         if (i === 0) t = selectedTicker;
         else if (i === 1) t = "SPY";
         else {
@@ -393,10 +351,8 @@ export default function DashboardPage() {
   const selectedDailyChange = computeDailyChange(selectedQuote?.mid_price, selectedPrevClose);
   const selected90dChange = computeBarChange(selectedBars?.data);
   const spyDailyChange = computeDailyChange(livePrices?.quotes["SPY"]?.mid_price, prevCloses?.data["SPY"]?.prev_close);
-
   const cfg = LAYOUT_CONFIG[layout];
 
-  // Resolve which ticker (or null) goes in each cell
   const resolveCellTicker = (i: number): string | null => {
     if (cellTickers[i]) return cellTickers[i];
     if (i === 0) return selectedTicker;
@@ -493,27 +449,21 @@ export default function DashboardPage() {
         <div style={{ display: "grid", gridTemplateColumns: `repeat(${cfg.cols}, 1fr)`, gridTemplateRows: `repeat(${cfg.rows}, 1fr)`, gap: 1, background: "var(--border)", overflow: "hidden" }}>
           {Array.from({ length: cfg.cells }).map((_, i) => {
             const t = resolveCellTicker(i);
-            // Special slot logic for layouts with 4+ cells: last 2 cells get equity + signals if no ticker
             const isLast = i === cfg.cells - 1;
             const isSecondToLast = i === cfg.cells - 2;
             const noTicker = t === null;
-
-            // For 2x2: cells 2 and 3 are equity + signals (preserves original layout)
             if (layout === "2x2" && i === 2) return <EquityChartCell key={`cell-${i}`} equityCurve={equityCurve} />;
             if (layout === "2x2" && i === 3) return <SignalsTable key={`cell-${i}`} predictions={latest.predictions} onSelect={setSelectedTicker} selectedTicker={selectedTicker} />;
-
             if (noTicker) {
               if (isSecondToLast && cfg.cells >= 4) return <EquityChartCell key={`cell-${i}`} equityCurve={equityCurve} />;
               if (isLast && cfg.cells >= 4) return <SignalsTable key={`cell-${i}`} predictions={latest.predictions} onSelect={setSelectedTicker} selectedTicker={selectedTicker} />;
               return <div key={`cell-${i}`} style={{ background: "var(--bg-base)" }} />;
             }
-
             const q = livePrices?.quotes[t];
             const prev = prevCloses?.data[t]?.prev_close;
             const dc = computeDailyChange(q?.mid_price, prev);
             const bars = t === selectedTicker ? selectedBars?.data : t === "SPY" ? spyBars?.data : allBars[t]?.data;
             const color = i === 0 ? "#4ADE80" : i === 1 ? "#60A5FA" : "#A78BFA";
-
             return (
               <PriceChartCell
                 key={`cell-${i}`}
@@ -562,13 +512,16 @@ export default function DashboardPage() {
           <div style={{ background: "var(--bg-panel)", display: "flex", flexDirection: "column", overflow: "hidden" }}>
             <div style={{ padding: "0 10px", background: "var(--bg-elevated)", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div style={{ display: "flex" }}>
-                <button onClick={() => setActivityTab("orders")} style={{ background: "none", border: "none", cursor: "pointer", padding: "8px 12px", fontSize: 11, fontWeight: 600, color: activityTab === "orders" ? "var(--text-primary)" : "var(--text-muted)", borderBottom: activityTab === "orders" ? "2px solid var(--green)" : "2px solid transparent", fontFamily: "inherit" }}>Orders ({orders?.count ?? 0})</button>
-                <button onClick={() => setActivityTab("positions")} style={{ background: "none", border: "none", cursor: "pointer", padding: "8px 12px", fontSize: 11, fontWeight: 600, color: activityTab === "positions" ? "var(--text-primary)" : "var(--text-muted)", borderBottom: activityTab === "positions" ? "2px solid var(--green)" : "2px solid transparent", fontFamily: "inherit" }}>Positions ({positions?.count ?? 0})</button>
+                <button onClick={() => setActivityTab("orders")} style={tabBtnStyle(activityTab === "orders")}>Orders ({orders?.count ?? 0})</button>
+                <button onClick={() => setActivityTab("positions")} style={tabBtnStyle(activityTab === "positions")}>Positions ({positions?.count ?? 0})</button>
+                <button onClick={() => setActivityTab("news")} style={tabBtnStyle(activityTab === "news")}>News ({recentNews?.count ?? 0})</button>
               </div>
-              <span style={{ fontSize: 9, color: "var(--text-faint)" }}>refreshes 10s</span>
+              <span style={{ fontSize: 9, color: "var(--text-faint)" }}>refreshes 10-60s</span>
             </div>
             <div style={{ flex: 1, overflow: "auto" }}>
-              {activityTab === "orders" ? <OrdersList orders={orders?.orders ?? []} /> : <PositionsList positions={positions?.positions ?? []} />}
+              {activityTab === "orders" && <OrdersList orders={orders?.orders ?? []} />}
+              {activityTab === "positions" && <PositionsList positions={positions?.positions ?? []} />}
+              {activityTab === "news" && <NewsList articles={recentNews?.articles ?? []} onTickerClick={setSelectedTicker} universe={universe} />}
             </div>
           </div>
         </div>
@@ -598,63 +551,84 @@ export default function DashboardPage() {
         </div>
 
         <div className="detail-tabs">
-          <span className="detail-tab active">Overview</span>
-          <span className="detail-tab">Predictions</span>
-          <span className="detail-tab" style={{ color: "var(--text-faint)" }}>News (soon)</span>
-          <span className="detail-tab" style={{ color: "var(--text-faint)" }}>Earnings (soon)</span>
-          <span className="detail-tab" style={{ color: "var(--text-faint)" }}>Options (soon)</span>
+          <span className={`detail-tab ${detailTab === "overview" ? "active" : ""}`} onClick={() => setDetailTab("overview")}>Overview</span>
+          <span className={`detail-tab ${detailTab === "predictions" ? "active" : ""}`} onClick={() => setDetailTab("predictions")}>Predictions</span>
+          <span className={`detail-tab ${detailTab === "news" ? "active" : ""}`} onClick={() => setDetailTab("news")}>News ({tickerNews?.count ?? 0})</span>
         </div>
 
         <div className="detail-body">
-          <div className="detail-section">
-            <div className="quote-stats">
-              <QSCell label="Bid" value={fmtPrice(selectedQuote?.bid_price)} />
-              <QSCell label="Ask" value={fmtPrice(selectedQuote?.ask_price)} />
-              <QSCell label="Mid" value={fmtPrice(selectedQuote?.mid_price)} />
-              <QSCell label="Prev Close" value={fmtPrice(selectedPrevClose)} />
-              <QSCell label="Spread" value={selectedQuote?.bid_price && selectedQuote?.ask_price ? `$${(selectedQuote.ask_price - selectedQuote.bid_price).toFixed(2)}` : "—"} />
-              <QSCell label="Day Change" value={selectedDailyChange ? `${selectedDailyChange.abs >= 0 ? "+" : ""}$${selectedDailyChange.abs.toFixed(2)}` : "—"} />
-              {selectedBars?.data.length ? (
-                <>
-                  <QSCell label="90d High" value={`$${Math.max(...selectedBars.data.map((b) => b.high)).toFixed(2)}`} />
-                  <QSCell label="90d Low" value={`$${Math.min(...selectedBars.data.map((b) => b.low)).toFixed(2)}`} />
-                </>
-              ) : null}
-            </div>
-          </div>
-
-          <div className="detail-section">
-            <div className="detail-section-header"><span>ML Signal Detail</span><span className="meta">Random Forest</span></div>
-            <div className="detail-section-body">
-              {selectedPrediction ? (
-                <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 6, fontSize: 11, lineHeight: 1.6 }}>
-                  <span style={{ color: "var(--text-muted)" }}>Buy probability</span><span style={{ fontWeight: 600 }} className={selectedPrediction.y_proba >= 0.55 ? "up" : ""}>{selectedPrediction.y_proba.toFixed(3)}</span>
-                  <span style={{ color: "var(--text-muted)" }}>Rank in universe</span><span style={{ fontWeight: 600 }}>{selectedRank} of {latest.predictions.length}</span>
-                  <span style={{ color: "var(--text-muted)" }}>Realized 5d return</span><span style={{ fontWeight: 600 }} className={selectedPrediction.fwd_return_5d >= 0 ? "up" : "dn"}>{fmtPct(selectedPrediction.fwd_return_5d)}</span>
-                  <span style={{ color: "var(--text-muted)" }}>Decision</span><span style={{ fontWeight: 600 }} className={selectedPrediction.y_proba >= 0.55 ? "up" : ""}>{selectedPrediction.y_proba >= 0.55 ? "BUY" : selectedPrediction.y_proba >= 0.50 ? "WATCH" : "HOLD"}</span>
-                  <span style={{ color: "var(--text-muted)" }}>Date</span><span style={{ fontWeight: 600 }}>{selectedPrediction.date}</span>
-                  <span style={{ color: "var(--text-muted)" }}>CV fold</span><span style={{ fontWeight: 600 }}>{selectedPrediction.fold}</span>
+          {detailTab === "overview" && (
+            <>
+              <div className="detail-section">
+                <div className="quote-stats">
+                  <QSCell label="Bid" value={fmtPrice(selectedQuote?.bid_price)} />
+                  <QSCell label="Ask" value={fmtPrice(selectedQuote?.ask_price)} />
+                  <QSCell label="Mid" value={fmtPrice(selectedQuote?.mid_price)} />
+                  <QSCell label="Prev Close" value={fmtPrice(selectedPrevClose)} />
+                  <QSCell label="Spread" value={selectedQuote?.bid_price && selectedQuote?.ask_price ? `$${(selectedQuote.ask_price - selectedQuote.bid_price).toFixed(2)}` : "—"} />
+                  <QSCell label="Day Change" value={selectedDailyChange ? `${selectedDailyChange.abs >= 0 ? "+" : ""}$${selectedDailyChange.abs.toFixed(2)}` : "—"} />
+                  {selectedBars?.data.length ? (
+                    <>
+                      <QSCell label="90d High" value={`$${Math.max(...selectedBars.data.map((b) => b.high)).toFixed(2)}`} />
+                      <QSCell label="90d Low" value={`$${Math.min(...selectedBars.data.map((b) => b.low)).toFixed(2)}`} />
+                    </>
+                  ) : null}
                 </div>
-              ) : <div style={{ color: "var(--text-muted)", fontSize: 11 }}>No prediction available for {selectedTicker}</div>}
-            </div>
-          </div>
+              </div>
 
-          <div className="detail-section">
-            <div className="detail-section-header"><span>Prediction History</span><span className="meta">{tickerPredictions.length} preds</span></div>
-            <div className="detail-section-body" style={{ padding: 0, fontSize: 10 }}>
-              {tickerPredictions.length === 0 ? (
-                <div style={{ padding: 12, color: "var(--text-muted)" }}>Loading...</div>
-              ) : (
-                tickerPredictions.slice(-10).reverse().map((p) => (
-                  <div key={`${p.date}-${p.ticker}`} style={{ display: "grid", gridTemplateColumns: "1fr auto auto", gap: 8, padding: "5px 12px", borderBottom: "1px solid var(--border-soft)", fontFeatureSettings: "'tnum'" }}>
-                    <span style={{ color: "var(--text-muted)" }}>{p.date}</span>
-                    <span style={{ fontWeight: 600 }}>{p.y_proba.toFixed(3)}</span>
-                    <span className={p.fwd_return_5d >= 0 ? "up" : "dn"}>{fmtPct(p.fwd_return_5d)}</span>
-                  </div>
-                ))
-              )}
+              <div className="detail-section">
+                <div className="detail-section-header"><span>ML Signal Detail</span><span className="meta">Random Forest</span></div>
+                <div className="detail-section-body">
+                  {selectedPrediction ? (
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 6, fontSize: 11, lineHeight: 1.6 }}>
+                      <span style={{ color: "var(--text-muted)" }}>Buy probability</span><span style={{ fontWeight: 600 }} className={selectedPrediction.y_proba >= 0.55 ? "up" : ""}>{selectedPrediction.y_proba.toFixed(3)}</span>
+                      <span style={{ color: "var(--text-muted)" }}>Rank in universe</span><span style={{ fontWeight: 600 }}>{selectedRank} of {latest.predictions.length}</span>
+                      <span style={{ color: "var(--text-muted)" }}>Realized 5d return</span><span style={{ fontWeight: 600 }} className={selectedPrediction.fwd_return_5d >= 0 ? "up" : "dn"}>{fmtPct(selectedPrediction.fwd_return_5d)}</span>
+                      <span style={{ color: "var(--text-muted)" }}>Decision</span><span style={{ fontWeight: 600 }} className={selectedPrediction.y_proba >= 0.55 ? "up" : ""}>{selectedPrediction.y_proba >= 0.55 ? "BUY" : selectedPrediction.y_proba >= 0.50 ? "WATCH" : "HOLD"}</span>
+                      <span style={{ color: "var(--text-muted)" }}>Date</span><span style={{ fontWeight: 600 }}>{selectedPrediction.date}</span>
+                      <span style={{ color: "var(--text-muted)" }}>CV fold</span><span style={{ fontWeight: 600 }}>{selectedPrediction.fold}</span>
+                    </div>
+                  ) : <div style={{ color: "var(--text-muted)", fontSize: 11 }}>No prediction available for {selectedTicker}</div>}
+                </div>
+              </div>
+            </>
+          )}
+
+          {detailTab === "predictions" && (
+            <div className="detail-section">
+              <div className="detail-section-header"><span>Prediction History</span><span className="meta">{tickerPredictions.length} preds</span></div>
+              <div className="detail-section-body" style={{ padding: 0, fontSize: 10 }}>
+                {tickerPredictions.length === 0 ? (
+                  <div style={{ padding: 12, color: "var(--text-muted)" }}>Loading...</div>
+                ) : (
+                  tickerPredictions.slice(-30).reverse().map((p) => (
+                    <div key={`${p.date}-${p.ticker}`} style={{ display: "grid", gridTemplateColumns: "1fr auto auto", gap: 8, padding: "5px 12px", borderBottom: "1px solid var(--border-soft)", fontFeatureSettings: "'tnum'" }}>
+                      <span style={{ color: "var(--text-muted)" }}>{p.date}</span>
+                      <span style={{ fontWeight: 600 }}>{p.y_proba.toFixed(3)}</span>
+                      <span className={p.fwd_return_5d >= 0 ? "up" : "dn"}>{fmtPct(p.fwd_return_5d)}</span>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
-          </div>
+          )}
+
+          {detailTab === "news" && (
+            <div className="detail-section">
+              <div className="detail-section-header"><span>{selectedTicker} News</span><span className="meta">{tickerNews?.count ?? 0} articles</span></div>
+              <div style={{ padding: 0 }}>
+                {!tickerNews || tickerNews.articles.length === 0 ? (
+                  <div style={{ padding: 12, color: "var(--text-muted)", fontSize: 11 }}>
+                    {tickerNews ? `No recent news for ${selectedTicker}` : "Loading..."}
+                  </div>
+                ) : (
+                  tickerNews.articles.map((article) => (
+                    <NewsItem key={article.id ?? article.headline} article={article} compact />
+                  ))
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </aside>
 
@@ -662,8 +636,8 @@ export default function DashboardPage() {
         <div className="status-item"><span className="status-dot"></span>API: ALPACA · {livePrices ? "LIVE" : "CONNECTING"}</div>
         <div className="status-item">POLLING: {POLL_INTERVAL_MS / 1000}s · {pollCount} polls</div>
         <div className="status-item">UNIVERSE: 11 tickers</div>
-        <div className="status-item">PAPER · {orders?.count ?? 0} orders · {positions?.count ?? 0} positions</div>
-        <div className="status-item" style={{ marginLeft: "auto" }}>v0.8 · {account?.account_status ?? "—"}</div>
+        <div className="status-item">PAPER · {orders?.count ?? 0} orders · {positions?.count ?? 0} positions · {recentNews?.count ?? 0} news</div>
+        <div className="status-item" style={{ marginLeft: "auto" }}>v0.9 · {account?.account_status ?? "—"}</div>
       </footer>
 
       {orderModal && (
@@ -747,6 +721,24 @@ export default function DashboardPage() {
 }
 
 // ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function tabBtnStyle(active: boolean): React.CSSProperties {
+  return {
+    background: "none",
+    border: "none",
+    cursor: "pointer",
+    padding: "8px 12px",
+    fontSize: 11,
+    fontWeight: 600,
+    color: active ? "var(--text-primary)" : "var(--text-muted)",
+    borderBottom: active ? "2px solid var(--green)" : "2px solid transparent",
+    fontFamily: "inherit",
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Candlestick rendering
 // ---------------------------------------------------------------------------
 
@@ -757,12 +749,10 @@ function CandleShape(props: any) {
   const valueRange = yMax - yMin;
   if (valueRange <= 0) return null;
   const valueToY = (v: number) => ((yMax - v) / valueRange) * chartHeight;
-
   const yOpen = valueToY(open);
   const yClose = valueToY(close);
   const yHigh = valueToY(high);
   const yLow = valueToY(low);
-
   const isUp = close >= open;
   const color = isUp ? "#4ADE80" : "#F87171";
   const bodyTop = Math.min(yOpen, yClose);
@@ -770,7 +760,6 @@ function CandleShape(props: any) {
   const bodyHeight = Math.max(1, bodyBottom - bodyTop);
   const candleWidth = Math.max(2, Math.min(width * 0.7, 8));
   const cx = x + width / 2;
-
   return (
     <g>
       <line x1={cx} y1={yHigh} x2={cx} y2={yLow} stroke={color} strokeWidth={1} />
@@ -799,18 +788,12 @@ function PriceChartCell({ cellIndex, symbol, universe, quote, bars, change, colo
   const yDomain: [number | string, number | string] = bars && bars.length > 0
     ? [Math.min(...bars.map((b) => b.low)) * 0.995, Math.max(...bars.map((b) => b.high)) * 1.005]
     : ["auto", "auto"];
-
   const allTickers = universe.includes("SPY") ? universe : [...universe, "SPY"];
-
   return (
     <div style={{ background: "var(--bg-base)", display: "flex", flexDirection: "column", overflow: "hidden" }}>
       <div className={flash === "up" ? "flash-up" : flash === "dn" ? "flash-dn" : ""} style={{ background: "var(--bg-panel)", borderBottom: "1px solid var(--border)", padding: "5px 8px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <select
-            value={symbol}
-            onChange={(e) => onTickerChange(e.target.value)}
-            style={{ background: "var(--bg-elevated)", color: "var(--text-primary)", border: "1px solid var(--border-strong)", borderRadius: 3, padding: "2px 6px", fontSize: 11, fontFamily: "inherit", fontWeight: 700, cursor: "pointer", outline: "none" }}
-          >
+          <select value={symbol} onChange={(e) => onTickerChange(e.target.value)} style={{ background: "var(--bg-elevated)", color: "var(--text-primary)", border: "1px solid var(--border-strong)", borderRadius: 3, padding: "2px 6px", fontSize: 11, fontFamily: "inherit", fontWeight: 700, cursor: "pointer", outline: "none" }}>
             {allTickers.map((t) => <option key={t} value={t}>{t}</option>)}
           </select>
           <span style={{ fontSize: 9, color: "var(--text-muted)" }}>· 90D</span>
@@ -991,6 +974,56 @@ function PositionsList({ positions }: { positions: Position[] }) {
           </span>
         </div>
       ))}
+    </div>
+  );
+}
+
+function NewsList({ articles, onTickerClick, universe }: { articles: NewsArticle[]; onTickerClick: (t: string) => void; universe: string[] }) {
+  if (articles.length === 0) {
+    return <div style={{ padding: 16, color: "var(--text-muted)", fontSize: 11, textAlign: "center" }}>No recent news. Refreshes every 60s.</div>;
+  }
+  return (
+    <div>
+      {articles.map((article) => (
+        <NewsItem key={article.id ?? article.headline} article={article} onTickerClick={onTickerClick} universe={universe} />
+      ))}
+    </div>
+  );
+}
+
+function NewsItem({ article, onTickerClick, universe, compact }: { article: NewsArticle; onTickerClick?: (t: string) => void; universe?: string[]; compact?: boolean }) {
+  const universeSymbols = article.symbols.filter((s) => !universe || universe.includes(s));
+  return (
+    <div style={{ padding: "8px 12px", borderBottom: "1px solid var(--border-soft)" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3, fontSize: 10 }}>
+        <span style={{ color: "var(--green)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>{article.source}</span>
+        <span style={{ color: "var(--text-muted)" }}>{fmtRelativeTime(article.created_at)}</span>
+      </div>
+      {article.url ? (
+        <a href={article.url} target="_blank" rel="noopener noreferrer" style={{ color: "var(--text-primary)", fontSize: 11, lineHeight: 1.45, fontWeight: 500, textDecoration: "none", display: "block" }}>
+          {article.headline}
+        </a>
+      ) : (
+        <div style={{ fontSize: 11, lineHeight: 1.45, fontWeight: 500 }}>{article.headline}</div>
+      )}
+      {!compact && article.summary && (
+        <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 4, lineHeight: 1.5 }}>
+          {article.summary.length > 200 ? article.summary.slice(0, 200) + "..." : article.summary}
+        </div>
+      )}
+      {universeSymbols.length > 0 && onTickerClick && (
+        <div style={{ display: "flex", gap: 4, marginTop: 5, flexWrap: "wrap" }}>
+          {universeSymbols.slice(0, 4).map((sym) => (
+            <button
+              key={sym}
+              onClick={() => onTickerClick(sym)}
+              style={{ background: "var(--bg-row)", color: "var(--text-secondary)", border: "1px solid var(--border)", borderRadius: 99, padding: "1px 6px", fontSize: 9, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}
+            >
+              {sym}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

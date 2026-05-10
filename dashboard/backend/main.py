@@ -3,7 +3,7 @@ FastAPI backend for the swing-trading dashboard.
 
 Loads precomputed results from the capstone (predictions, backtest summary)
 and exposes them via REST endpoints. Also integrates Alpaca for live market
-data + historical bars + paper trading orders.
+data + historical bars + paper trading orders + news feed.
 
 Run:
     uvicorn main:app --reload --port 8000
@@ -22,7 +22,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, field_validator
 
 from alpaca.data.historical import StockHistoricalDataClient
-from alpaca.data.requests import StockLatestQuoteRequest, StockBarsRequest
+from alpaca.data.historical.news import NewsClient
+from alpaca.data.requests import StockLatestQuoteRequest, StockBarsRequest, NewsRequest
 from alpaca.data.timeframe import TimeFrame
 from alpaca.trading.client import TradingClient
 from alpaca.trading.requests import MarketOrderRequest, GetOrdersRequest
@@ -46,8 +47,12 @@ data_client = (
     else None
 )
 
-# IMPORTANT: paper=True is hardcoded. Do not change to False without
-# extensive validation, risk management, and conscious decision.
+news_client = (
+    NewsClient(ALPACA_API_KEY, ALPACA_API_SECRET)
+    if ALPACA_API_KEY and ALPACA_API_SECRET
+    else None
+)
+
 trading_client = (
     TradingClient(ALPACA_API_KEY, ALPACA_API_SECRET, paper=True)
     if ALPACA_API_KEY and ALPACA_API_SECRET
@@ -58,8 +63,8 @@ trading_client = (
 # Trading safety constants
 # ---------------------------------------------------------------------------
 
-MAX_QTY_PER_ORDER = 100  # max shares per single order
-MAX_NOTIONAL_PER_ORDER = 10_000  # max dollar value per single order
+MAX_QTY_PER_ORDER = 100
+MAX_NOTIONAL_PER_ORDER = 10_000
 
 # ---------------------------------------------------------------------------
 # App setup
@@ -67,7 +72,7 @@ MAX_NOTIONAL_PER_ORDER = 10_000  # max dollar value per single order
 
 app = FastAPI(
     title="Swing Trading Dashboard API",
-    version="0.6.0",
+    version="0.7.0",
 )
 
 app.add_middleware(
@@ -135,6 +140,8 @@ def root():
             "/api/orders/recent",
             "/api/orders/place",
             "/api/positions",
+            "/api/news/recent",
+            "/api/news/{ticker}",
         ],
     }
 
@@ -395,11 +402,98 @@ def get_account():
         raise HTTPException(status_code=500, detail=f"Alpaca account request failed: {str(e)}")
 
 # ---------------------------------------------------------------------------
+# Endpoints — News feed
+# ---------------------------------------------------------------------------
+
+def _format_news_article(article) -> dict:
+    """Format an Alpaca news article into a JSON-friendly dict."""
+    return {
+        "id": str(article.id) if hasattr(article, "id") and article.id else None,
+        "headline": article.headline if hasattr(article, "headline") else "",
+        "summary": article.summary if hasattr(article, "summary") and article.summary else "",
+        "author": article.author if hasattr(article, "author") and article.author else None,
+        "source": article.source if hasattr(article, "source") and article.source else "",
+        "url": article.url if hasattr(article, "url") and article.url else None,
+        "symbols": list(article.symbols) if hasattr(article, "symbols") and article.symbols else [],
+        "created_at": article.created_at.isoformat() if hasattr(article, "created_at") and article.created_at else None,
+        "updated_at": article.updated_at.isoformat() if hasattr(article, "updated_at") and article.updated_at else None,
+    }
+
+
+@app.get("/api/news/recent")
+def get_recent_news(limit: int = 20):
+    """
+    Get recent news for the entire universe of tickers.
+    Returns articles sorted newest first.
+    """
+    if news_client is None:
+        raise HTTPException(status_code=503, detail="Alpaca news client not configured.")
+
+    limit = max(1, min(limit, 50))
+
+    try:
+        # Fetch news for all universe tickers from past 7 days
+        end = datetime.now()
+        start = end - timedelta(days=7)
+
+        request = NewsRequest(
+            symbols=",".join(UNIVERSE),
+            start=start,
+            end=end,
+            limit=limit,
+            sort="desc",
+        )
+        response = news_client.get_news(request)
+
+        articles = response.data.get("news", []) if hasattr(response, "data") else []
+        formatted = [_format_news_article(a) for a in articles]
+
+        return {
+            "count": len(formatted),
+            "articles": formatted,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Alpaca news request failed: {str(e)}")
+
+
+@app.get("/api/news/{ticker}")
+def get_ticker_news(ticker: str, limit: int = 10):
+    """News articles for a single ticker."""
+    if news_client is None:
+        raise HTTPException(status_code=503, detail="Alpaca news client not configured.")
+
+    ticker = ticker.upper()
+    limit = max(1, min(limit, 30))
+
+    try:
+        end = datetime.now()
+        start = end - timedelta(days=14)
+
+        request = NewsRequest(
+            symbols=ticker,
+            start=start,
+            end=end,
+            limit=limit,
+            sort="desc",
+        )
+        response = news_client.get_news(request)
+
+        articles = response.data.get("news", []) if hasattr(response, "data") else []
+        formatted = [_format_news_article(a) for a in articles]
+
+        return {
+            "ticker": ticker,
+            "count": len(formatted),
+            "articles": formatted,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Alpaca news request failed: {str(e)}")
+
+# ---------------------------------------------------------------------------
 # Endpoints — Trading (PAPER ONLY)
 # ---------------------------------------------------------------------------
 
 class PlaceOrderRequest(BaseModel):
-    """Validated order request. All orders go to paper account only."""
     ticker: str = Field(..., description="Ticker symbol")
     side: str = Field(..., description="'buy' or 'sell'")
     qty: int = Field(..., gt=0, le=MAX_QTY_PER_ORDER, description=f"Shares (1-{MAX_QTY_PER_ORDER})")
@@ -423,20 +517,11 @@ class PlaceOrderRequest(BaseModel):
 
 @app.post("/api/orders/place")
 def place_order(req: PlaceOrderRequest):
-    """
-    Place a paper trading order. Hard-restricted to:
-    - Universe tickers only
-    - Max 100 shares per order
-    - Max $10,000 notional per order
-    - Day order, market order
-    - PAPER ACCOUNT ONLY (paper=True hardcoded above)
-    """
     if trading_client is None:
         raise HTTPException(status_code=503, detail="Alpaca trading not configured.")
     if data_client is None:
         raise HTTPException(status_code=503, detail="Alpaca data not configured.")
 
-    # Get current quote to estimate notional and check limits
     try:
         quote_req = StockLatestQuoteRequest(symbol_or_symbols=[req.ticker])
         quote_resp = data_client.get_stock_latest_quote(quote_req)
@@ -468,7 +553,6 @@ def place_order(req: PlaceOrderRequest):
             ),
         )
 
-    # Submit the order
     try:
         order_req = MarketOrderRequest(
             symbol=req.ticker,
@@ -495,7 +579,6 @@ def place_order(req: PlaceOrderRequest):
 
 @app.get("/api/orders/recent")
 def get_recent_orders(limit: int = 25):
-    """Get recent orders (filled, canceled, pending)."""
     if trading_client is None:
         raise HTTPException(status_code=503, detail="Alpaca trading not configured.")
     limit = max(1, min(limit, 100))
@@ -527,7 +610,6 @@ def get_recent_orders(limit: int = 25):
 
 @app.get("/api/positions")
 def get_positions():
-    """Get current open positions."""
     if trading_client is None:
         raise HTTPException(status_code=503, detail="Alpaca trading not configured.")
 
