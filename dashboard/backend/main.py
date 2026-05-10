@@ -162,6 +162,7 @@ def root():
             "/api/autotrader/runs",
             "/api/autotrader/entry-cycle (POST)",
             "/api/autotrader/exit-cycle (POST)",
+            "/api/autotrader/predict-cycle (POST)",
         ],
     }
 
@@ -518,6 +519,16 @@ def autotrader_exit(dry_run: bool = True):
     Defaults to dry_run=True for safety. Set dry_run=false to actually exit positions.
     """
     return auto_scheduler.run_exit_cycle(dry_run=dry_run)
+
+
+@app.post("/api/autotrader/predict-cycle")
+def autotrader_predict(timeout: int = 120):
+    """
+    Manually trigger the daily prediction cycle.
+    Shells out to capstone venv to fetch market data, run inference,
+    and append fresh predictions to results/predictions.parquet.
+    """
+    return auto_scheduler.run_prediction_cycle(timeout_seconds=timeout)
 
 
 # ---------------------------------------------------------------------------

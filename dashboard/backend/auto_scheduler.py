@@ -348,6 +348,82 @@ def run_exit_cycle(dry_run: bool = False) -> dict:
     return summary
 
 
+
+
+# ---------------------------------------------------------------------------
+# Prediction cycle: invokes the capstone venv to regenerate predictions.parquet
+# ---------------------------------------------------------------------------
+
+import subprocess
+from pathlib import Path
+
+# Path to the capstone venv's Python (where yfinance/sklearn/joblib live)
+_BACKEND_DIR = Path(__file__).parent
+_PROJECT_ROOT = _BACKEND_DIR.parent.parent
+_CAPSTONE_PYTHON = _PROJECT_ROOT / "venv" / "bin" / "python3"
+
+
+def run_prediction_cycle(timeout_seconds: int = 120) -> dict:
+    """
+    Run the daily prediction generation by invoking the capstone venv.
+
+    This shells out to the capstone\'s Python interpreter (which has yfinance,
+    sklearn, joblib, etc.) and runs `python -m src.predict`. The script
+    fetches fresh market data, runs inference with the saved model, and
+    appends today\'s predictions to results/predictions.parquet.
+    """
+    summary = {
+        "started_at": datetime.now().isoformat(),
+        "completed_at": None,
+        "success": False,
+        "stdout": "",
+        "stderr": "",
+        "returncode": None,
+        "errors": [],
+    }
+
+    if not _CAPSTONE_PYTHON.exists():
+        err = f"Capstone Python not found at {_CAPSTONE_PYTHON}"
+        summary["errors"].append(err)
+        db.log_run(run_type="predict", error=err)
+        summary["completed_at"] = datetime.now().isoformat()
+        return summary
+
+    try:
+        result = subprocess.run(
+            [str(_CAPSTONE_PYTHON), "-m", "src.predict"],
+            cwd=str(_PROJECT_ROOT),
+            capture_output=True,
+            text=True,
+            timeout=timeout_seconds,
+        )
+        summary["stdout"] = result.stdout[-2000:]  # last 2000 chars to keep it manageable
+        summary["stderr"] = result.stderr[-2000:]
+        summary["returncode"] = result.returncode
+        summary["success"] = result.returncode == 0
+
+        if result.returncode != 0:
+            summary["errors"].append(f"Subprocess exited with code {result.returncode}")
+
+        notes = f"returncode={result.returncode}, stdout_lines={len(result.stdout.splitlines())}"
+        db.log_run(
+            run_type="predict",
+            notes=notes,
+            error="; ".join(summary["errors"]) if summary["errors"] else None,
+        )
+    except subprocess.TimeoutExpired:
+        err = f"Prediction subprocess timed out after {timeout_seconds}s"
+        summary["errors"].append(err)
+        db.log_run(run_type="predict", error=err)
+    except Exception as e:
+        err = f"{type(e).__name__}: {str(e)}"
+        summary["errors"].append(err)
+        db.log_run(run_type="predict", error=err)
+
+    summary["completed_at"] = datetime.now().isoformat()
+    return summary
+
+
 # ---------------------------------------------------------------------------
 # APScheduler setup
 # ---------------------------------------------------------------------------
@@ -398,6 +474,16 @@ def start_scheduler() -> dict:
         CronTrigger(day_of_week="mon-fri", hour=9, minute=35, timezone=et),
         id="entry_cycle",
         name="Daily entry cycle",
+        replace_existing=True,
+        max_instances=1,
+    )
+
+    # Predict: weekdays 9:30am ET (5 min before entry)
+    _scheduler.add_job(
+        run_prediction_cycle,
+        CronTrigger(day_of_week="mon-fri", hour=9, minute=30, timezone=et),
+        id="predict_cycle",
+        name="Daily prediction generation",
         replace_existing=True,
         max_instances=1,
     )
