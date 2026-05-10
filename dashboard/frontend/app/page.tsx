@@ -4,11 +4,13 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import {
   ComposedChart,
   Area,
+  Bar,
   XAxis,
   YAxis,
   Tooltip,
   ResponsiveContainer,
   CartesianGrid,
+  Cell,
 } from "recharts";
 
 // ---------------------------------------------------------------------------
@@ -88,7 +90,7 @@ type Account = {
   currency: string;
 };
 
-type Bar = {
+type BarRow = {
   date: string;
   open: number;
   high: number;
@@ -100,7 +102,7 @@ type Bar = {
 type BarsResponse = {
   ticker: string;
   n_bars: number;
-  data: Bar[];
+  data: BarRow[];
 };
 
 type Order = {
@@ -115,10 +117,7 @@ type Order = {
   filled_at: string | null;
 };
 
-type OrdersResponse = {
-  count: number;
-  orders: Order[];
-};
+type OrdersResponse = { count: number; orders: Order[] };
 
 type Position = {
   ticker: string;
@@ -132,14 +131,12 @@ type Position = {
   unrealized_plpc: number | null;
 };
 
-type PositionsResponse = {
-  count: number;
-  positions: Position[];
-};
+type PositionsResponse = { count: number; positions: Position[] };
 
 type FlashState = "up" | "dn" | null;
 type Toast = { type: "success" | "error" | "info"; message: string };
 type OrderModalState = { ticker: string; side: "buy" | "sell" } | null;
+type ChartType = "candle" | "area";
 
 const API_BASE = "http://localhost:8000";
 const POLL_INTERVAL_MS = 5_000;
@@ -152,18 +149,16 @@ const MAX_NOTIONAL_PER_ORDER = 10_000;
 // Helpers
 // ---------------------------------------------------------------------------
 
-const fmtMoney = (n: number) =>
-  n >= 1000 ? `$${(n / 1000).toFixed(1)}k` : `$${n.toFixed(2)}`;
+const fmtMoney = (n: number) => (n >= 1000 ? `$${(n / 1000).toFixed(1)}k` : `$${n.toFixed(2)}`);
 
 const fmtPct = (n: number, withSign = true) => {
   const v = (n * 100).toFixed(2);
   return withSign && n > 0 ? `+${v}%` : `${v}%`;
 };
 
-const fmtPrice = (n: number | null | undefined) =>
-  n == null ? "—" : n.toFixed(2);
+const fmtPrice = (n: number | null | undefined) => (n == null ? "—" : n.toFixed(2));
 
-const computeBarChange = (bars: Bar[] | undefined): { abs: number; pct: number } | null => {
+const computeBarChange = (bars: BarRow[] | undefined): { abs: number; pct: number } | null => {
   if (!bars || bars.length < 2) return null;
   const first = bars[0].close;
   const last = bars[bars.length - 1].close;
@@ -175,10 +170,7 @@ const computeDailyChange = (
   prevClose: number | null | undefined
 ): { abs: number; pct: number } | null => {
   if (current == null || prevClose == null || prevClose === 0) return null;
-  return {
-    abs: current - prevClose,
-    pct: (current - prevClose) / prevClose,
-  };
+  return { abs: current - prevClose, pct: (current - prevClose) / prevClose };
 };
 
 // ---------------------------------------------------------------------------
@@ -207,9 +199,7 @@ function usePriceFlash(prices: Record<string, number | null | undefined>) {
       previousRef.current[ticker] = current ?? null;
     });
 
-    if (anyChanged) {
-      setFlashes((f) => ({ ...f, ...newFlashes }));
-    }
+    if (anyChanged) setFlashes((f) => ({ ...f, ...newFlashes }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [JSON.stringify(prices)]);
 
@@ -244,16 +234,12 @@ export default function DashboardPage() {
   const [activityTab, setActivityTab] = useState<"orders" | "positions">("orders");
   const [orderModal, setOrderModal] = useState<OrderModalState>(null);
   const [toast, setToast] = useState<Toast | null>(null);
+  const [chartType, setChartType] = useState<ChartType>("candle");
 
   const priceMap: Record<string, number | null | undefined> = {};
-  if (livePrices) {
-    Object.entries(livePrices.quotes).forEach(([t, q]) => {
-      priceMap[t] = q.mid_price;
-    });
-  }
+  if (livePrices) Object.entries(livePrices.quotes).forEach(([t, q]) => { priceMap[t] = q.mid_price; });
   const flashes = usePriceFlash(priceMap);
 
-  // Toast auto-dismiss
   useEffect(() => {
     if (toast) {
       const timer = setTimeout(() => setToast(null), 4000);
@@ -261,7 +247,6 @@ export default function DashboardPage() {
     }
   }, [toast]);
 
-  // Initial load
   useEffect(() => {
     async function loadInitial() {
       try {
@@ -275,12 +260,10 @@ export default function DashboardPage() {
           fetch(`${API_BASE}/api/orders/recent`),
           fetch(`${API_BASE}/api/positions`),
         ]);
-
         if (!summaryRes.ok) throw new Error("summary failed");
         if (!latestRes.ok) throw new Error("predictions failed");
         if (!equityRes.ok) throw new Error("equity-curve failed");
         if (!accountRes.ok) throw new Error("account failed");
-
         setSummary(await summaryRes.json());
         setLatest(await latestRes.json());
         setEquityCurve(await equityRes.json());
@@ -296,7 +279,6 @@ export default function DashboardPage() {
     loadInitial();
   }, []);
 
-  // Live prices polling
   const fetchLivePrices = useCallback(async () => {
     try {
       const res = await fetch(`${API_BASE}/api/live-prices`);
@@ -312,7 +294,6 @@ export default function DashboardPage() {
     return () => clearInterval(interval);
   }, [fetchLivePrices]);
 
-  // Refresh prev closes
   const fetchPrevCloses = useCallback(async () => {
     try {
       const res = await fetch(`${API_BASE}/api/prev-closes`);
@@ -326,7 +307,6 @@ export default function DashboardPage() {
     return () => clearInterval(interval);
   }, [fetchPrevCloses]);
 
-  // Refresh orders + positions periodically
   const fetchOrdersAndPositions = useCallback(async () => {
     try {
       const [ordersRes, positionsRes, accountRes] = await Promise.all([
@@ -345,7 +325,6 @@ export default function DashboardPage() {
     return () => clearInterval(interval);
   }, [fetchOrdersAndPositions]);
 
-  // Load ticker-specific data when selection changes
   useEffect(() => {
     async function loadTickerData() {
       try {
@@ -357,15 +336,12 @@ export default function DashboardPage() {
           const data = await predRes.json();
           setTickerPredictions(data.data || []);
         }
-        if (barsRes.ok) {
-          setSelectedBars(await barsRes.json());
-        }
+        if (barsRes.ok) setSelectedBars(await barsRes.json());
       } catch {}
     }
     loadTickerData();
   }, [selectedTicker]);
 
-  // Order placement
   async function handlePlaceOrder(ticker: string, side: "buy" | "sell", qty: number) {
     try {
       const res = await fetch(`${API_BASE}/api/orders/place`, {
@@ -378,12 +354,8 @@ export default function DashboardPage() {
         setToast({ type: "error", message: data.detail || "Order failed" });
         return;
       }
-      setToast({
-        type: "success",
-        message: `${side.toUpperCase()} ${qty} ${ticker} @ ~$${data.estimated_price.toFixed(2)} submitted`,
-      });
+      setToast({ type: "success", message: `${side.toUpperCase()} ${qty} ${ticker} @ ~$${data.estimated_price.toFixed(2)} submitted` });
       setOrderModal(null);
-      // Refresh orders/positions immediately
       fetchOrdersAndPositions();
     } catch (e) {
       setToast({ type: "error", message: e instanceof Error ? e.message : "Network error" });
@@ -394,47 +366,30 @@ export default function DashboardPage() {
     return (
       <main style={{ padding: 20, color: "var(--red)" }}>
         <h1>Backend connection error: {error}</h1>
-        <p style={{ color: "var(--text-muted)", marginTop: 8 }}>
-          Make sure FastAPI is running on port 8000
-        </p>
+        <p style={{ color: "var(--text-muted)", marginTop: 8 }}>Make sure FastAPI is running on port 8000</p>
       </main>
     );
   }
 
   if (!summary || !latest || !equityCurve) {
-    return (
-      <main style={{ padding: 20, color: "var(--text-muted)" }}>
-        Loading dashboard...
-      </main>
-    );
+    return <main style={{ padding: 20, color: "var(--text-muted)" }}>Loading dashboard...</main>;
   }
 
   const s = summary.strategy;
   const ew = summary.equal_weight;
-
   const selectedQuote = livePrices?.quotes[selectedTicker];
   const selectedPrediction = latest.predictions.find((p) => p.ticker === selectedTicker);
   const selectedRank = latest.predictions.findIndex((p) => p.ticker === selectedTicker) + 1;
-
-  const universeOrdered = latest.predictions
-    .map((p) => p.ticker)
-    .filter((t) => livePrices?.quotes[t]);
-
+  const universeOrdered = latest.predictions.map((p) => p.ticker).filter((t) => livePrices?.quotes[t]);
   const selectedPrevClose = prevCloses?.data[selectedTicker]?.prev_close;
   const selectedDailyChange = computeDailyChange(selectedQuote?.mid_price, selectedPrevClose);
   const selected90dChange = computeBarChange(selectedBars?.data);
-  const spyDailyChange = computeDailyChange(
-    livePrices?.quotes["SPY"]?.mid_price,
-    prevCloses?.data["SPY"]?.prev_close
-  );
+  const spyDailyChange = computeDailyChange(livePrices?.quotes["SPY"]?.mid_price, prevCloses?.data["SPY"]?.prev_close);
 
   return (
     <div className="layout">
-      {/* TOP TICKER STRIP */}
       <header className="ticker-strip">
-        <div className="brand-cell">
-          <div className="brand-logo">C</div>
-        </div>
+        <div className="brand-cell"><div className="brand-logo">C</div></div>
         <div className="ticker-tape">
           {universeOrdered.map((ticker) => {
             const q = livePrices?.quotes[ticker];
@@ -442,61 +397,28 @@ export default function DashboardPage() {
             const dc = computeDailyChange(q?.mid_price, prev);
             const flash = flashes[ticker];
             return (
-              <div
-                key={ticker}
-                className={`tape-item ${flash === "up" ? "flash-up" : flash === "dn" ? "flash-dn" : ""}`}
-                onClick={() => setSelectedTicker(ticker)}
-                style={{ cursor: "pointer" }}
-              >
+              <div key={ticker} className={`tape-item ${flash === "up" ? "flash-up" : flash === "dn" ? "flash-dn" : ""}`} onClick={() => setSelectedTicker(ticker)} style={{ cursor: "pointer" }}>
                 <span className="tape-sym">{ticker}</span>
                 <span className="tape-price">{fmtPrice(q?.mid_price)}</span>
-                <span className={`tape-chg ${dc && dc.pct >= 0 ? "up" : "dn"}`}>
-                  {dc ? fmtPct(dc.pct) : "—"}
-                </span>
+                <span className={`tape-chg ${dc && dc.pct >= 0 ? "up" : "dn"}`}>{dc ? fmtPct(dc.pct) : "—"}</span>
               </div>
             );
           })}
-          {!livePrices && (
-            <div className="tape-item">
-              <span className="tape-sym" style={{ color: "var(--text-muted)" }}>
-                Loading prices...
-              </span>
-            </div>
-          )}
+          {!livePrices && <div className="tape-item"><span className="tape-sym" style={{ color: "var(--text-muted)" }}>Loading prices...</span></div>}
         </div>
         <div className="market-clock">
           <span className="clock-pill">
             <span className="pulse"></span>
-            {new Date().getDay() === 0 || new Date().getDay() === 6
-              ? "MARKET CLOSED"
-              : "MARKET OPEN"}
+            {new Date().getDay() === 0 || new Date().getDay() === 6 ? "MARKET CLOSED" : "MARKET OPEN"}
           </span>
-          <span>
-            {new Date().toLocaleTimeString("en-US", {
-              hour: "2-digit",
-              minute: "2-digit",
-              second: "2-digit",
-              hour12: false,
-            })} ET
-          </span>
+          <span>{new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false })} ET</span>
         </div>
         <div className="acct-mini">
-          <div className="acct-mini-item">
-            <span className="acct-mini-label">Equity</span>
-            <span className="acct-mini-value">
-              {account ? `$${account.equity.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : "—"}
-            </span>
-          </div>
-          <div className="acct-mini-item">
-            <span className="acct-mini-label">BP</span>
-            <span className="acct-mini-value">
-              {account ? fmtMoney(account.buying_power) : "—"}
-            </span>
-          </div>
+          <div className="acct-mini-item"><span className="acct-mini-label">Equity</span><span className="acct-mini-value">{account ? `$${account.equity.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : "—"}</span></div>
+          <div className="acct-mini-item"><span className="acct-mini-label">BP</span><span className="acct-mini-value">{account ? fmtMoney(account.buying_power) : "—"}</span></div>
         </div>
       </header>
 
-      {/* SIDEBAR */}
       <aside className="sidebar">
         <div className="nav-btn active" title="Dashboard">▦</div>
         <div className="nav-btn" title="Watchlist">★</div>
@@ -511,9 +433,7 @@ export default function DashboardPage() {
         <div className="nav-btn" title="Settings">⚙</div>
       </aside>
 
-      {/* MAIN AREA */}
       <main className="main">
-        {/* Stat strip */}
         <div className="stat-bar">
           <StatCell label="Total Return" value={fmtPct(s.total_return)} sub={`+${((s.total_return - summary.spy.total_return) * 100).toFixed(0)}pp vs SPY`} accent="up" />
           <StatCell label="Annualized" value={fmtPct(s.annualized_return)} sub={`+${((s.annualized_return - ew.annualized_return) * 100).toFixed(2)}pp vs EW`} accent="up" />
@@ -525,7 +445,6 @@ export default function DashboardPage() {
           <StatCell label="Buying Power" value={account ? fmtMoney(account.buying_power) : "—"} sub="paper" accent="muted" />
         </div>
 
-        {/* Toolbar */}
         <div className="toolbar">
           <div className="toolbar-section">
             <span className="toolbar-text"><strong>Layout</strong></span>
@@ -535,9 +454,9 @@ export default function DashboardPage() {
             <button className="layout-btn">3×2</button>
           </div>
           <div className="toolbar-section">
-            <span className="toolbar-text">Sync:</span>
-            <button className="layout-btn active">Symbol</button>
-            <button className="layout-btn">Timeframe</button>
+            <span className="toolbar-text"><strong>Chart</strong></span>
+            <button className={`layout-btn ${chartType === "candle" ? "active" : ""}`} onClick={() => setChartType("candle")}>Candle</button>
+            <button className={`layout-btn ${chartType === "area" ? "active" : ""}`} onClick={() => setChartType("area")}>Area</button>
           </div>
           <div className="toolbar-section">
             <span className="toolbar-text">Polls:</span>
@@ -545,52 +464,22 @@ export default function DashboardPage() {
             <span className="toolbar-text" style={{ color: "var(--text-faint)" }}>· every {POLL_INTERVAL_MS / 1000}s</span>
           </div>
           <div className="toolbar-section" style={{ marginLeft: "auto" }}>
-            <span className="toolbar-text">
-              Selected: <strong>{selectedTicker}</strong>
-            </span>
+            <span className="toolbar-text">Selected: <strong>{selectedTicker}</strong></span>
           </div>
         </div>
 
-        {/* 2x2 chart grid */}
         <div className="chart-grid">
-          <PriceChart
-            symbol={selectedTicker}
-            name="Selected · 90D"
-            quote={selectedQuote}
-            bars={selectedBars?.data}
-            change={selectedDailyChange}
-            color="#4ADE80"
-            flash={flashes[selectedTicker]}
-          />
-          <PriceChart
-            symbol="SPY"
-            name="S&P 500 · 90D"
-            quote={livePrices?.quotes["SPY"]}
-            bars={spyBars?.data}
-            change={spyDailyChange}
-            color="#60A5FA"
-            flash={flashes["SPY"]}
-          />
+          <PriceChart symbol={selectedTicker} name="Selected · 90D" quote={selectedQuote} bars={selectedBars?.data} change={selectedDailyChange} color="#4ADE80" flash={flashes[selectedTicker]} chartType={chartType} />
+          <PriceChart symbol="SPY" name="S&P 500 · 90D" quote={livePrices?.quotes["SPY"]} bars={spyBars?.data} change={spyDailyChange} color="#60A5FA" flash={flashes["SPY"]} chartType={chartType} />
           <EquityChartCell equityCurve={equityCurve} />
           <SignalsTable predictions={latest.predictions} onSelect={setSelectedTicker} selectedTicker={selectedTicker} />
         </div>
 
-        {/* Bottom row */}
         <div className="bottom-row">
-          <BottomCell title="Latest Signals" meta={`${latest.predictions.length} · click trade`}>
+          <BottomCell title="Latest Signals" meta={`${latest.predictions.length} · click TRADE`}>
             <div style={{ overflow: "auto", maxHeight: "100%" }}>
               {latest.predictions.slice(0, 8).map((p, idx) => (
-                <SignalRow
-                  key={p.ticker}
-                  rank={idx + 1}
-                  prediction={p}
-                  quote={livePrices?.quotes[p.ticker]}
-                  prevClose={prevCloses?.data[p.ticker]?.prev_close}
-                  selected={p.ticker === selectedTicker}
-                  flash={flashes[p.ticker]}
-                  onClick={() => setSelectedTicker(p.ticker)}
-                  onTrade={(side) => setOrderModal({ ticker: p.ticker, side })}
-                />
+                <SignalRow key={p.ticker} rank={idx + 1} prediction={p} quote={livePrices?.quotes[p.ticker]} prevClose={prevCloses?.data[p.ticker]?.prev_close} selected={p.ticker === selectedTicker} flash={flashes[p.ticker]} onClick={() => setSelectedTicker(p.ticker)} onTrade={(side) => setOrderModal({ ticker: p.ticker, side })} />
               ))}
             </div>
           </BottomCell>
@@ -601,139 +490,50 @@ export default function DashboardPage() {
               <p style={{ color: "var(--text-faint)" }}>Currently showing best bid/ask from free tier:</p>
               <div style={{ marginTop: 12, fontSize: 11 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", padding: "2px 16px" }}>
-                  <span style={{ color: "var(--green)" }}>BID</span>
-                  <span>{fmtPrice(selectedQuote?.bid_price)}</span>
-                  <span style={{ color: "var(--text-muted)" }}>{selectedQuote?.bid_size ?? "—"}</span>
+                  <span style={{ color: "var(--green)" }}>BID</span><span>{fmtPrice(selectedQuote?.bid_price)}</span><span style={{ color: "var(--text-muted)" }}>{selectedQuote?.bid_size ?? "—"}</span>
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", padding: "2px 16px" }}>
-                  <span style={{ color: "var(--red)" }}>ASK</span>
-                  <span>{fmtPrice(selectedQuote?.ask_price)}</span>
-                  <span style={{ color: "var(--text-muted)" }}>{selectedQuote?.ask_size ?? "—"}</span>
+                  <span style={{ color: "var(--red)" }}>ASK</span><span>{fmtPrice(selectedQuote?.ask_price)}</span><span style={{ color: "var(--text-muted)" }}>{selectedQuote?.ask_size ?? "—"}</span>
                 </div>
               </div>
             </div>
           </BottomCell>
 
-          {/* TRADING ACTIVITY (Orders + Positions tabs) */}
           <div style={{ background: "var(--bg-panel)", display: "flex", flexDirection: "column", overflow: "hidden" }}>
             <div style={{ padding: "0 10px", background: "var(--bg-elevated)", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div style={{ display: "flex" }}>
-                <button
-                  onClick={() => setActivityTab("orders")}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
-                    padding: "8px 12px",
-                    fontSize: 11,
-                    fontWeight: 600,
-                    color: activityTab === "orders" ? "var(--text-primary)" : "var(--text-muted)",
-                    borderBottom: activityTab === "orders" ? "2px solid var(--green)" : "2px solid transparent",
-                    fontFamily: "inherit",
-                  }}
-                >
-                  Orders ({orders?.count ?? 0})
-                </button>
-                <button
-                  onClick={() => setActivityTab("positions")}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
-                    padding: "8px 12px",
-                    fontSize: 11,
-                    fontWeight: 600,
-                    color: activityTab === "positions" ? "var(--text-primary)" : "var(--text-muted)",
-                    borderBottom: activityTab === "positions" ? "2px solid var(--green)" : "2px solid transparent",
-                    fontFamily: "inherit",
-                  }}
-                >
-                  Positions ({positions?.count ?? 0})
-                </button>
+                <button onClick={() => setActivityTab("orders")} style={{ background: "none", border: "none", cursor: "pointer", padding: "8px 12px", fontSize: 11, fontWeight: 600, color: activityTab === "orders" ? "var(--text-primary)" : "var(--text-muted)", borderBottom: activityTab === "orders" ? "2px solid var(--green)" : "2px solid transparent", fontFamily: "inherit" }}>Orders ({orders?.count ?? 0})</button>
+                <button onClick={() => setActivityTab("positions")} style={{ background: "none", border: "none", cursor: "pointer", padding: "8px 12px", fontSize: 11, fontWeight: 600, color: activityTab === "positions" ? "var(--text-primary)" : "var(--text-muted)", borderBottom: activityTab === "positions" ? "2px solid var(--green)" : "2px solid transparent", fontFamily: "inherit" }}>Positions ({positions?.count ?? 0})</button>
               </div>
               <span style={{ fontSize: 9, color: "var(--text-faint)" }}>refreshes 10s</span>
             </div>
             <div style={{ flex: 1, overflow: "auto" }}>
-              {activityTab === "orders" ? (
-                <OrdersList orders={orders?.orders ?? []} />
-              ) : (
-                <PositionsList positions={positions?.positions ?? []} />
-              )}
+              {activityTab === "orders" ? <OrdersList orders={orders?.orders ?? []} /> : <PositionsList positions={positions?.positions ?? []} />}
             </div>
           </div>
         </div>
       </main>
 
-      {/* RIGHT PANEL — Ticker Detail */}
       <aside className="right-panel">
         <div className="ticker-detail-header">
           <div className="td-top-row">
             <div className="td-symbol-block">
               <div className="td-symbol">{selectedTicker}</div>
-              <div className="td-name">
-                {selectedPrediction
-                  ? `Rank ${selectedRank} of ${latest.predictions.length}`
-                  : "—"}
-              </div>
+              <div className="td-name">{selectedPrediction ? `Rank ${selectedRank} of ${latest.predictions.length}` : "—"}</div>
               <div className="td-tags">
-                {selectedPrediction && selectedRank <= 2 && (
-                  <span className="td-tag signal">★ TOP SIGNAL</span>
-                )}
+                {selectedPrediction && selectedRank <= 2 && <span className="td-tag signal">★ TOP SIGNAL</span>}
                 <span className="td-tag">11-stock universe</span>
               </div>
             </div>
             <div className="td-price-block">
-              <div className="td-price">
-                {fmtPrice(selectedQuote?.mid_price)}
-              </div>
-              {selectedDailyChange && (
-                <div className={`td-change ${selectedDailyChange.pct >= 0 ? "up" : "dn"}`} style={{ fontSize: 13 }}>
-                  {fmtPct(selectedDailyChange.pct)} today
-                </div>
-              )}
-              {selected90dChange && (
-                <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 2 }}>
-                  90d: <span className={selected90dChange.pct >= 0 ? "up" : "dn"}>{fmtPct(selected90dChange.pct)}</span>
-                </div>
-              )}
+              <div className="td-price">{fmtPrice(selectedQuote?.mid_price)}</div>
+              {selectedDailyChange && <div className={`td-change ${selectedDailyChange.pct >= 0 ? "up" : "dn"}`} style={{ fontSize: 13 }}>{fmtPct(selectedDailyChange.pct)} today</div>}
+              {selected90dChange && <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 2 }}>90d: <span className={selected90dChange.pct >= 0 ? "up" : "dn"}>{fmtPct(selected90dChange.pct)}</span></div>}
             </div>
           </div>
-          {/* Trade buttons in right panel header */}
           <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
-            <button
-              onClick={() => setOrderModal({ ticker: selectedTicker, side: "buy" })}
-              style={{
-                flex: 1,
-                background: "var(--green)",
-                color: "var(--bg-base)",
-                border: "none",
-                borderRadius: 4,
-                padding: "6px 0",
-                fontSize: 11,
-                fontWeight: 700,
-                cursor: "pointer",
-                fontFamily: "inherit",
-              }}
-            >
-              BUY
-            </button>
-            <button
-              onClick={() => setOrderModal({ ticker: selectedTicker, side: "sell" })}
-              style={{
-                flex: 1,
-                background: "var(--red)",
-                color: "var(--bg-base)",
-                border: "none",
-                borderRadius: 4,
-                padding: "6px 0",
-                fontSize: 11,
-                fontWeight: 700,
-                cursor: "pointer",
-                fontFamily: "inherit",
-              }}
-            >
-              SELL
-            </button>
+            <button onClick={() => setOrderModal({ ticker: selectedTicker, side: "buy" })} style={{ flex: 1, background: "var(--green)", color: "var(--bg-base)", border: "none", borderRadius: 4, padding: "6px 0", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>BUY</button>
+            <button onClick={() => setOrderModal({ ticker: selectedTicker, side: "sell" })} style={{ flex: 1, background: "var(--red)", color: "var(--bg-base)", border: "none", borderRadius: 4, padding: "6px 0", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>SELL</button>
           </div>
         </div>
 
@@ -752,16 +552,8 @@ export default function DashboardPage() {
               <QSCell label="Ask" value={fmtPrice(selectedQuote?.ask_price)} />
               <QSCell label="Mid" value={fmtPrice(selectedQuote?.mid_price)} />
               <QSCell label="Prev Close" value={fmtPrice(selectedPrevClose)} />
-              <QSCell label="Spread" value={
-                selectedQuote?.bid_price && selectedQuote?.ask_price
-                  ? `$${(selectedQuote.ask_price - selectedQuote.bid_price).toFixed(2)}`
-                  : "—"
-              } />
-              <QSCell label="Day Change" value={
-                selectedDailyChange
-                  ? `${selectedDailyChange.abs >= 0 ? "+" : ""}$${selectedDailyChange.abs.toFixed(2)}`
-                  : "—"
-              } />
+              <QSCell label="Spread" value={selectedQuote?.bid_price && selectedQuote?.ask_price ? `$${(selectedQuote.ask_price - selectedQuote.bid_price).toFixed(2)}` : "—"} />
+              <QSCell label="Day Change" value={selectedDailyChange ? `${selectedDailyChange.abs >= 0 ? "+" : ""}$${selectedDailyChange.abs.toFixed(2)}` : "—"} />
               {selectedBars?.data.length ? (
                 <>
                   <QSCell label="90d High" value={`$${Math.max(...selectedBars.data.map((b) => b.high)).toFixed(2)}`} />
@@ -772,66 +564,32 @@ export default function DashboardPage() {
           </div>
 
           <div className="detail-section">
-            <div className="detail-section-header">
-              <span>ML Signal Detail</span>
-              <span className="meta">Random Forest</span>
-            </div>
+            <div className="detail-section-header"><span>ML Signal Detail</span><span className="meta">Random Forest</span></div>
             <div className="detail-section-body">
               {selectedPrediction ? (
                 <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 6, fontSize: 11, lineHeight: 1.6 }}>
-                  <span style={{ color: "var(--text-muted)" }}>Buy probability</span>
-                  <span style={{ fontWeight: 600 }} className={selectedPrediction.y_proba >= 0.55 ? "up" : ""}>
-                    {selectedPrediction.y_proba.toFixed(3)}
-                  </span>
-                  <span style={{ color: "var(--text-muted)" }}>Rank in universe</span>
-                  <span style={{ fontWeight: 600 }}>{selectedRank} of {latest.predictions.length}</span>
-                  <span style={{ color: "var(--text-muted)" }}>Realized 5d return</span>
-                  <span style={{ fontWeight: 600 }} className={selectedPrediction.fwd_return_5d >= 0 ? "up" : "dn"}>
-                    {fmtPct(selectedPrediction.fwd_return_5d)}
-                  </span>
-                  <span style={{ color: "var(--text-muted)" }}>Decision</span>
-                  <span style={{ fontWeight: 600 }} className={selectedPrediction.y_proba >= 0.55 ? "up" : ""}>
-                    {selectedPrediction.y_proba >= 0.55 ? "BUY" : selectedPrediction.y_proba >= 0.50 ? "WATCH" : "HOLD"}
-                  </span>
-                  <span style={{ color: "var(--text-muted)" }}>Date</span>
-                  <span style={{ fontWeight: 600 }}>{selectedPrediction.date}</span>
-                  <span style={{ color: "var(--text-muted)" }}>CV fold</span>
-                  <span style={{ fontWeight: 600 }}>{selectedPrediction.fold}</span>
+                  <span style={{ color: "var(--text-muted)" }}>Buy probability</span><span style={{ fontWeight: 600 }} className={selectedPrediction.y_proba >= 0.55 ? "up" : ""}>{selectedPrediction.y_proba.toFixed(3)}</span>
+                  <span style={{ color: "var(--text-muted)" }}>Rank in universe</span><span style={{ fontWeight: 600 }}>{selectedRank} of {latest.predictions.length}</span>
+                  <span style={{ color: "var(--text-muted)" }}>Realized 5d return</span><span style={{ fontWeight: 600 }} className={selectedPrediction.fwd_return_5d >= 0 ? "up" : "dn"}>{fmtPct(selectedPrediction.fwd_return_5d)}</span>
+                  <span style={{ color: "var(--text-muted)" }}>Decision</span><span style={{ fontWeight: 600 }} className={selectedPrediction.y_proba >= 0.55 ? "up" : ""}>{selectedPrediction.y_proba >= 0.55 ? "BUY" : selectedPrediction.y_proba >= 0.50 ? "WATCH" : "HOLD"}</span>
+                  <span style={{ color: "var(--text-muted)" }}>Date</span><span style={{ fontWeight: 600 }}>{selectedPrediction.date}</span>
+                  <span style={{ color: "var(--text-muted)" }}>CV fold</span><span style={{ fontWeight: 600 }}>{selectedPrediction.fold}</span>
                 </div>
-              ) : (
-                <div style={{ color: "var(--text-muted)", fontSize: 11 }}>
-                  No prediction available for {selectedTicker}
-                </div>
-              )}
+              ) : <div style={{ color: "var(--text-muted)", fontSize: 11 }}>No prediction available for {selectedTicker}</div>}
             </div>
           </div>
 
           <div className="detail-section">
-            <div className="detail-section-header">
-              <span>Prediction History</span>
-              <span className="meta">{tickerPredictions.length} preds</span>
-            </div>
+            <div className="detail-section-header"><span>Prediction History</span><span className="meta">{tickerPredictions.length} preds</span></div>
             <div className="detail-section-body" style={{ padding: 0, fontSize: 10 }}>
               {tickerPredictions.length === 0 ? (
                 <div style={{ padding: 12, color: "var(--text-muted)" }}>Loading...</div>
               ) : (
                 tickerPredictions.slice(-10).reverse().map((p) => (
-                  <div
-                    key={`${p.date}-${p.ticker}`}
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "1fr auto auto",
-                      gap: 8,
-                      padding: "5px 12px",
-                      borderBottom: "1px solid var(--border-soft)",
-                      fontFeatureSettings: "'tnum'",
-                    }}
-                  >
+                  <div key={`${p.date}-${p.ticker}`} style={{ display: "grid", gridTemplateColumns: "1fr auto auto", gap: 8, padding: "5px 12px", borderBottom: "1px solid var(--border-soft)", fontFeatureSettings: "'tnum'" }}>
                     <span style={{ color: "var(--text-muted)" }}>{p.date}</span>
                     <span style={{ fontWeight: 600 }}>{p.y_proba.toFixed(3)}</span>
-                    <span className={p.fwd_return_5d >= 0 ? "up" : "dn"}>
-                      {fmtPct(p.fwd_return_5d)}
-                    </span>
+                    <span className={p.fwd_return_5d >= 0 ? "up" : "dn"}>{fmtPct(p.fwd_return_5d)}</span>
                   </div>
                 ))
               )}
@@ -840,329 +598,139 @@ export default function DashboardPage() {
         </div>
       </aside>
 
-      {/* STATUS BAR */}
       <footer className="status-bar">
-        <div className="status-item">
-          <span className="status-dot"></span>
-          API: ALPACA · {livePrices ? "LIVE" : "CONNECTING"}
-        </div>
+        <div className="status-item"><span className="status-dot"></span>API: ALPACA · {livePrices ? "LIVE" : "CONNECTING"}</div>
         <div className="status-item">POLLING: {POLL_INTERVAL_MS / 1000}s · {pollCount} polls</div>
         <div className="status-item">UNIVERSE: 11 tickers</div>
         <div className="status-item">PAPER · {orders?.count ?? 0} orders · {positions?.count ?? 0} positions</div>
-        <div className="status-item" style={{ marginLeft: "auto" }}>
-          v0.6 · {account?.account_status ?? "—"}
-        </div>
+        <div className="status-item" style={{ marginLeft: "auto" }}>v0.7 · {account?.account_status ?? "—"}</div>
       </footer>
 
-      {/* ORDER MODAL */}
       {orderModal && (
-        <OrderModal
-          ticker={orderModal.ticker}
-          side={orderModal.side}
-          quote={livePrices?.quotes[orderModal.ticker]}
-          buyingPower={account?.buying_power}
-          onClose={() => setOrderModal(null)}
-          onSubmit={(qty) => handlePlaceOrder(orderModal.ticker, orderModal.side, qty)}
-        />
+        <OrderModal ticker={orderModal.ticker} side={orderModal.side} quote={livePrices?.quotes[orderModal.ticker]} buyingPower={account?.buying_power} onClose={() => setOrderModal(null)} onSubmit={(qty) => handlePlaceOrder(orderModal.ticker, orderModal.side, qty)} />
       )}
 
-      {/* TOAST */}
       {toast && (
-        <div
-          style={{
-            position: "fixed",
-            bottom: 30,
-            right: 30,
-            background: toast.type === "success" ? "var(--green-bg-strong)" : toast.type === "error" ? "rgba(248,113,113,0.2)" : "var(--bg-elevated)",
-            border: `1px solid ${toast.type === "success" ? "var(--green)" : toast.type === "error" ? "var(--red)" : "var(--border)"}`,
-            color: toast.type === "success" ? "var(--green)" : toast.type === "error" ? "var(--red)" : "var(--text-primary)",
-            padding: "12px 20px",
-            borderRadius: 6,
-            fontSize: 12,
-            fontWeight: 500,
-            zIndex: 1000,
-            maxWidth: 400,
-          }}
-        >
+        <div style={{ position: "fixed", bottom: 30, right: 30, background: toast.type === "success" ? "var(--green-bg-strong)" : toast.type === "error" ? "rgba(248,113,113,0.2)" : "var(--bg-elevated)", border: `1px solid ${toast.type === "success" ? "var(--green)" : toast.type === "error" ? "var(--red)" : "var(--border)"}`, color: toast.type === "success" ? "var(--green)" : toast.type === "error" ? "var(--red)" : "var(--text-primary)", padding: "12px 20px", borderRadius: 6, fontSize: 12, fontWeight: 500, zIndex: 1000, maxWidth: 400 }}>
           {toast.message}
         </div>
       )}
 
       <style jsx>{`
-        .layout {
-          display: grid;
-          grid-template-columns: 44px 1fr 320px;
-          grid-template-rows: 32px 1fr 20px;
-          height: 100vh;
-          width: 100vw;
-        }
-        .ticker-strip {
-          grid-column: 1 / -1;
-          background: var(--bg-panel);
-          border-bottom: 1px solid var(--border);
-          display: flex;
-          align-items: stretch;
-        }
-        .brand-cell {
-          flex: 0 0 44px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border-right: 1px solid var(--border);
-        }
-        .brand-logo {
-          width: 24px; height: 24px;
-          border-radius: 5px;
-          background: linear-gradient(135deg, var(--green), var(--cyan));
-          display: flex; align-items: center; justify-content: center;
-          font-weight: 700; color: var(--bg-base);
-          font-size: 12px;
-        }
-        .ticker-tape {
-          flex: 1;
-          display: flex;
-          align-items: center;
-          overflow-x: auto;
-          padding: 0 4px;
-        }
+        .layout { display: grid; grid-template-columns: 44px 1fr 320px; grid-template-rows: 32px 1fr 20px; height: 100vh; width: 100vw; }
+        .ticker-strip { grid-column: 1 / -1; background: var(--bg-panel); border-bottom: 1px solid var(--border); display: flex; align-items: stretch; }
+        .brand-cell { flex: 0 0 44px; display: flex; align-items: center; justify-content: center; border-right: 1px solid var(--border); }
+        .brand-logo { width: 24px; height: 24px; border-radius: 5px; background: linear-gradient(135deg, var(--green), var(--cyan)); display: flex; align-items: center; justify-content: center; font-weight: 700; color: var(--bg-base); font-size: 12px; }
+        .ticker-tape { flex: 1; display: flex; align-items: center; overflow-x: auto; padding: 0 4px; }
         .ticker-tape::-webkit-scrollbar { display: none; }
-        .tape-item {
-          padding: 0 10px;
-          display: flex; gap: 6px; align-items: center;
-          white-space: nowrap;
-          border-right: 1px solid var(--border-soft);
-          font-size: 10px;
-        }
+        .tape-item { padding: 0 10px; display: flex; gap: 6px; align-items: center; white-space: nowrap; border-right: 1px solid var(--border-soft); font-size: 10px; }
         .tape-item:hover { background: var(--bg-row); }
         .tape-sym { font-weight: 600; color: var(--text-primary); }
         .tape-price { color: var(--text-secondary); font-feature-settings: "tnum"; }
         .tape-chg { font-feature-settings: "tnum"; font-weight: 500; }
         .tape-chg.up { color: var(--green); }
         .tape-chg.dn { color: var(--red); }
-        .market-clock {
-          padding: 0 12px;
-          display: flex; gap: 10px; align-items: center;
-          border-left: 1px solid var(--border);
-          font-size: 10px;
-          color: var(--text-secondary);
-        }
-        .clock-pill {
-          background: var(--green-bg);
-          color: var(--green);
-          padding: 2px 8px;
-          border-radius: 99px;
-          font-size: 9px;
-          font-weight: 700;
-          display: flex; gap: 4px; align-items: center;
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-        }
-        .pulse {
-          width: 5px; height: 5px;
-          background: var(--green);
-          border-radius: 50%;
-          animation: pulse-dot 2s ease-in-out infinite;
-        }
-        .acct-mini {
-          padding: 0 12px;
-          border-left: 1px solid var(--border);
-          display: flex; gap: 12px; align-items: center;
-          font-size: 10px;
-        }
+        .market-clock { padding: 0 12px; display: flex; gap: 10px; align-items: center; border-left: 1px solid var(--border); font-size: 10px; color: var(--text-secondary); }
+        .clock-pill { background: var(--green-bg); color: var(--green); padding: 2px 8px; border-radius: 99px; font-size: 9px; font-weight: 700; display: flex; gap: 4px; align-items: center; text-transform: uppercase; letter-spacing: 0.05em; }
+        .pulse { width: 5px; height: 5px; background: var(--green); border-radius: 50%; animation: pulse-dot 2s ease-in-out infinite; }
+        .acct-mini { padding: 0 12px; border-left: 1px solid var(--border); display: flex; gap: 12px; align-items: center; font-size: 10px; }
         .acct-mini-item { display: flex; gap: 6px; }
         .acct-mini-label { color: var(--text-muted); }
         .acct-mini-value { font-weight: 600; }
-        .sidebar {
-          grid-column: 1;
-          grid-row: 2;
-          background: var(--bg-panel);
-          border-right: 1px solid var(--border);
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          padding: 6px 0;
-          gap: 3px;
-        }
-        .nav-btn {
-          width: 32px; height: 32px;
-          border-radius: 6px;
-          display: flex; align-items: center; justify-content: center;
-          color: var(--text-muted);
-          cursor: pointer;
-          font-size: 14px;
-        }
+        .sidebar { grid-column: 1; grid-row: 2; background: var(--bg-panel); border-right: 1px solid var(--border); display: flex; flex-direction: column; align-items: center; padding: 6px 0; gap: 3px; }
+        .nav-btn { width: 32px; height: 32px; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: var(--text-muted); cursor: pointer; font-size: 14px; }
         .nav-btn:hover { background: var(--bg-row); color: var(--text-primary); }
-        .nav-btn.active {
-          background: var(--green-bg-strong);
-          color: var(--green);
-        }
+        .nav-btn.active { background: var(--green-bg-strong); color: var(--green); }
         .nav-divider { height: 1px; width: 20px; background: var(--border); margin: 4px 0; }
         .nav-spacer { flex: 1; }
-        .main {
-          grid-column: 2;
-          grid-row: 2;
-          display: grid;
-          grid-template-rows: auto auto 1fr 180px;
-          overflow: hidden;
-          background: var(--bg-base);
-        }
-        .stat-bar {
-          background: var(--bg-panel);
-          border-bottom: 1px solid var(--border);
-          display: grid;
-          grid-template-columns: repeat(8, 1fr);
-        }
-        .toolbar {
-          background: var(--bg-panel);
-          border-bottom: 1px solid var(--border);
-          padding: 5px 8px;
-          display: flex;
-          gap: 10px;
-          align-items: center;
-          font-size: 10px;
-        }
-        .toolbar-section {
-          display: flex; gap: 3px; align-items: center;
-          padding-right: 10px;
-          border-right: 1px solid var(--border);
-        }
+        .main { grid-column: 2; grid-row: 2; display: grid; grid-template-rows: auto auto 1fr 180px; overflow: hidden; background: var(--bg-base); }
+        .stat-bar { background: var(--bg-panel); border-bottom: 1px solid var(--border); display: grid; grid-template-columns: repeat(8, 1fr); }
+        .toolbar { background: var(--bg-panel); border-bottom: 1px solid var(--border); padding: 5px 8px; display: flex; gap: 10px; align-items: center; font-size: 10px; }
+        .toolbar-section { display: flex; gap: 3px; align-items: center; padding-right: 10px; border-right: 1px solid var(--border); }
         .toolbar-section:last-child { border-right: none; }
         .toolbar-text { color: var(--text-muted); font-size: 10px; }
         .toolbar-text strong { color: var(--text-primary); }
-        .layout-btn {
-          background: var(--bg-elevated);
-          border: 1px solid var(--border);
-          color: var(--text-secondary);
-          padding: 3px 7px;
-          border-radius: 3px;
-          cursor: pointer;
-          font-size: 10px;
-          font-family: inherit;
-        }
+        .layout-btn { background: var(--bg-elevated); border: 1px solid var(--border); color: var(--text-secondary); padding: 3px 7px; border-radius: 3px; cursor: pointer; font-size: 10px; font-family: inherit; }
         .layout-btn:hover { background: var(--bg-row); color: var(--text-primary); }
         .layout-btn.active { background: var(--green-bg); color: var(--green); border-color: var(--green); }
-        .chart-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          grid-template-rows: 1fr 1fr;
-          gap: 1px;
-          background: var(--border);
-          overflow: hidden;
-        }
-        .bottom-row {
-          background: var(--bg-panel);
-          border-top: 1px solid var(--border);
-          display: grid;
-          grid-template-columns: 1.5fr 1fr 1.5fr;
-          gap: 1px;
-          background: var(--border);
-        }
-        .right-panel {
-          grid-column: 3;
-          grid-row: 2;
-          background: var(--bg-panel);
-          border-left: 1px solid var(--border);
-          display: flex;
-          flex-direction: column;
-          overflow: hidden;
-        }
-        .ticker-detail-header {
-          padding: 10px 12px;
-          border-bottom: 1px solid var(--border);
-          background: linear-gradient(180deg, var(--bg-elevated) 0%, var(--bg-panel) 100%);
-        }
+        .chart-grid { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 1px; background: var(--border); overflow: hidden; }
+        .bottom-row { background: var(--bg-panel); border-top: 1px solid var(--border); display: grid; grid-template-columns: 1.5fr 1fr 1.5fr; gap: 1px; background: var(--border); }
+        .right-panel { grid-column: 3; grid-row: 2; background: var(--bg-panel); border-left: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
+        .ticker-detail-header { padding: 10px 12px; border-bottom: 1px solid var(--border); background: linear-gradient(180deg, var(--bg-elevated) 0%, var(--bg-panel) 100%); }
         .td-top-row { display: flex; justify-content: space-between; align-items: flex-start; }
         .td-symbol-block { flex: 1; }
         .td-symbol { font-size: 18px; font-weight: 700; letter-spacing: -0.02em; }
         .td-name { font-size: 10px; color: var(--text-muted); margin-top: -2px; }
         .td-tags { display: flex; gap: 3px; margin-top: 5px; flex-wrap: wrap; }
-        .td-tag {
-          font-size: 8px;
-          padding: 2px 5px;
-          border-radius: 99px;
-          background: var(--bg-row);
-          color: var(--text-secondary);
-          font-weight: 500;
-        }
+        .td-tag { font-size: 8px; padding: 2px 5px; border-radius: 99px; background: var(--bg-row); color: var(--text-secondary); font-weight: 500; }
         .td-tag.signal { background: var(--green-bg); color: var(--green); font-weight: 700; }
         .td-price-block { text-align: right; }
-        .td-price {
-          font-size: 22px;
-          font-weight: 700;
-          letter-spacing: -0.02em;
-        }
-        .td-change {
-          font-size: 12px;
-          font-weight: 600;
-          margin-top: -2px;
-        }
-        .detail-tabs {
-          display: flex;
-          overflow-x: auto;
-          border-bottom: 1px solid var(--border);
-          background: var(--bg-elevated);
-        }
+        .td-price { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
+        .td-change { font-size: 12px; font-weight: 600; margin-top: -2px; }
+        .detail-tabs { display: flex; overflow-x: auto; border-bottom: 1px solid var(--border); background: var(--bg-elevated); }
         .detail-tabs::-webkit-scrollbar { display: none; }
-        .detail-tab {
-          padding: 6px 10px;
-          color: var(--text-muted);
-          cursor: pointer;
-          font-size: 10px;
-          font-weight: 500;
-          border-bottom: 2px solid transparent;
-          white-space: nowrap;
-        }
+        .detail-tab { padding: 6px 10px; color: var(--text-muted); cursor: pointer; font-size: 10px; font-weight: 500; border-bottom: 2px solid transparent; white-space: nowrap; }
         .detail-tab.active { color: var(--text-primary); border-bottom-color: var(--green); }
         .detail-body { flex: 1; overflow: auto; }
         .detail-section { border-bottom: 1px solid var(--border); }
-        .detail-section-header {
-          padding: 8px 12px;
-          background: var(--bg-elevated);
-          border-bottom: 1px solid var(--border);
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          font-size: 10px;
-          color: var(--text-muted);
-          text-transform: uppercase;
-          letter-spacing: 0.06em;
-          font-weight: 700;
-        }
-        .detail-section-header .meta {
-          color: var(--text-faint);
-          font-weight: 500;
-          text-transform: none;
-          letter-spacing: 0;
-          font-size: 10px;
-        }
+        .detail-section-header { padding: 8px 12px; background: var(--bg-elevated); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 700; }
+        .detail-section-header .meta { color: var(--text-faint); font-weight: 500; text-transform: none; letter-spacing: 0; font-size: 10px; }
         .detail-section-body { padding: 8px 12px; }
-        .quote-stats {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-        }
-        .status-bar {
-          grid-column: 1 / -1;
-          background: var(--bg-panel);
-          border-top: 1px solid var(--border);
-          display: flex;
-          align-items: center;
-          padding: 0 12px;
-          gap: 16px;
-          font-size: 10px;
-          color: var(--text-muted);
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-        }
+        .quote-stats { display: grid; grid-template-columns: 1fr 1fr; }
+        .status-bar { grid-column: 1 / -1; background: var(--bg-panel); border-top: 1px solid var(--border); display: flex; align-items: center; padding: 0 12px; gap: 16px; font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
         .status-item { display: flex; gap: 6px; align-items: center; }
-        .status-dot {
-          width: 6px; height: 6px;
-          border-radius: 50%;
-          background: var(--green);
-        }
+        .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
         .up { color: var(--green); }
         .dn { color: var(--red); }
       `}</style>
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Candlestick rendering
+// ---------------------------------------------------------------------------
+
+// Candle shape - uses the bar's pixel height to derive the y-scale via the close price.
+// Recharts gives us x, y, width, height for a bar where:
+//   - bar represents value `close` (because dataKey="close")
+//   - y is the pixel position of close
+//   - height extends from y down to the baseline (0)
+// We pass dataMin/dataMax/yMin/yMax through props so we can compute pixel positions for O/H/L.
+function CandleShape(props: any) {
+  const { x, y, width, height, payload, yMin, yMax, chartHeight } = props;
+  if (!payload || yMin == null || yMax == null || !chartHeight) return null;
+  const { open, high, low, close } = payload as BarRow;
+
+  // Linear scale: value -> pixel y-coordinate
+  // y=0 is at the top of the chart, y=chartHeight at the bottom
+  const valueRange = yMax - yMin;
+  if (valueRange <= 0) return null;
+  const valueToY = (v: number) => {
+    // Normalize: yMax maps to top (0), yMin maps to bottom (chartHeight)
+    const ratio = (yMax - v) / valueRange;
+    return ratio * chartHeight;
+  };
+
+  const yOpen = valueToY(open);
+  const yClose = valueToY(close);
+  const yHigh = valueToY(high);
+  const yLow = valueToY(low);
+
+  const isUp = close >= open;
+  const color = isUp ? "#4ADE80" : "#F87171";
+  const bodyTop = Math.min(yOpen, yClose);
+  const bodyBottom = Math.max(yOpen, yClose);
+  const bodyHeight = Math.max(1, bodyBottom - bodyTop);
+
+  const candleWidth = Math.max(2, Math.min(width * 0.7, 8));
+  const cx = x + width / 2;
+
+  return (
+    <g>
+      <line x1={cx} y1={yHigh} x2={cx} y2={yLow} stroke={color} strokeWidth={1} />
+      <rect x={cx - candleWidth / 2} y={bodyTop} width={candleWidth} height={bodyHeight} fill={color} stroke={color} />
+    </g>
   );
 }
 
@@ -1180,10 +748,16 @@ function StatCell({ label, value, sub, accent }: { label: string; value: string;
   );
 }
 
-function PriceChart({ symbol, name, quote, bars, change, color, flash }: { symbol: string; name: string; quote?: Quote; bars?: Bar[]; change: { abs: number; pct: number } | null; color: string; flash?: FlashState }) {
+function PriceChart({ symbol, name, quote, bars, change, color, flash, chartType }: { symbol: string; name: string; quote?: Quote; bars?: BarRow[]; change: { abs: number; pct: number } | null; color: string; flash?: FlashState; chartType: ChartType }) {
   const gradId = `grad-${symbol}`;
   const lastClose = bars && bars.length > 0 ? bars[bars.length - 1].close : null;
   const displayPrice = quote?.mid_price ?? lastClose;
+
+  // Compute Y domain manually so candles aren't clipped at the top/bottom.
+  // We need the YAxis to span min(low) to max(high), not just min/max of close.
+  const yDomain: [number | string, number | string] = bars && bars.length > 0
+    ? [Math.min(...bars.map((b) => b.low)) * 0.995, Math.max(...bars.map((b) => b.high)) * 1.005]
+    : ["auto", "auto"];
 
   return (
     <div style={{ background: "var(--bg-base)", display: "flex", flexDirection: "column", overflow: "hidden" }}>
@@ -1211,9 +785,30 @@ function PriceChart({ symbol, name, quote, bars, change, color, flash }: { symbo
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#1F2533" />
               <XAxis dataKey="date" stroke="#6A7488" tick={{ fontSize: 8 }} tickFormatter={(d: string) => d.slice(5)} interval={Math.max(0, Math.floor(bars.length / 5))} />
-              <YAxis stroke="#6A7488" tick={{ fontSize: 8 }} domain={["auto", "auto"]} tickFormatter={(v: number) => `$${v.toFixed(0)}`} width={40} />
-              <Tooltip contentStyle={{ backgroundColor: "#11151D", border: "1px solid #1F2533", fontSize: 10 }} formatter={(v: number) => [`$${v.toFixed(2)}`, "Close"]} />
-              <Area type="monotone" dataKey="close" stroke={color} strokeWidth={1.5} fill={`url(#${gradId})`} />
+              <YAxis stroke="#6A7488" tick={{ fontSize: 8 }} domain={yDomain} tickFormatter={(v: number) => `$${v.toFixed(0)}`} width={40} />
+              <Tooltip
+                contentStyle={{ backgroundColor: "#11151D", border: "1px solid #1F2533", fontSize: 10 }}
+                formatter={(v: number, name: string, props: any) => {
+                  if (chartType === "candle" && props?.payload) {
+                    const p = props.payload as BarRow;
+                    return [`O ${p.open.toFixed(2)} H ${p.high.toFixed(2)} L ${p.low.toFixed(2)} C ${p.close.toFixed(2)}`, ""];
+                  }
+                  return [`$${v.toFixed(2)}`, "Close"];
+                }}
+              />
+              {chartType === "candle" ? (
+                <Bar
+                  dataKey="close"
+                  shape={(p: any) => <CandleShape {...p} yMin={Math.min(...bars.map((b) => b.low)) * 0.995} yMax={Math.max(...bars.map((b) => b.high)) * 1.005} chartHeight={p.background?.height ?? 200} />}
+                  isAnimationActive={false}
+                >
+                  {bars.map((entry, idx) => (
+                    <Cell key={idx} fill={entry.close >= entry.open ? "#4ADE80" : "#F87171"} />
+                  ))}
+                </Bar>
+              ) : (
+                <Area type="monotone" dataKey="close" stroke={color} strokeWidth={1.5} fill={`url(#${gradId})`} />
+              )}
             </ComposedChart>
           </ResponsiveContainer>
         )}
@@ -1306,26 +901,11 @@ function SignalRow({ rank, prediction, quote, prevClose, selected, flash, onClic
       </div>
       <span style={{ fontWeight: 600, textAlign: "right" }}>{prediction.y_proba.toFixed(3)}</span>
       <button
-        onClick={(e) => {
-          e.stopPropagation();
-          onTrade(prediction.y_proba >= 0.50 ? "buy" : "sell");
-        }}
-        style={{
-          fontSize: 9,
-          fontWeight: 700,
-          padding: "2px 6px",
-          borderRadius: 3,
-          background: prediction.y_proba >= 0.55 ? "var(--green-bg)" : prediction.y_proba >= 0.50 ? "rgba(251,191,36,0.1)" : "var(--bg-row)",
-          color: prediction.y_proba >= 0.55 ? "var(--green)" : prediction.y_proba >= 0.50 ? "var(--amber)" : "var(--text-muted)",
-          border: "1px solid transparent",
-          cursor: "pointer",
-          fontFamily: "inherit",
-        }}
+        onClick={(e) => { e.stopPropagation(); onTrade(prediction.y_proba >= 0.50 ? "buy" : "sell"); }}
+        style={{ fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 3, background: prediction.y_proba >= 0.55 ? "var(--green-bg)" : prediction.y_proba >= 0.50 ? "rgba(251,191,36,0.1)" : "var(--bg-row)", color: prediction.y_proba >= 0.55 ? "var(--green)" : prediction.y_proba >= 0.50 ? "var(--amber)" : "var(--text-muted)", border: "1px solid transparent", cursor: "pointer", fontFamily: "inherit" }}
         onMouseOver={(e) => (e.currentTarget.style.borderColor = "currentColor")}
         onMouseOut={(e) => (e.currentTarget.style.borderColor = "transparent")}
-      >
-        {prediction.y_proba >= 0.55 ? "TRADE" : prediction.y_proba >= 0.50 ? "TRADE" : "TRADE"}
-      </button>
+      >TRADE</button>
     </div>
   );
 }
@@ -1340,69 +920,19 @@ function QSCell({ label, value }: { label: string; value: string }) {
 }
 
 function OrdersList({ orders }: { orders: Order[] }) {
-  if (orders.length === 0) {
-    return (
-      <div style={{ padding: 16, color: "var(--text-muted)", fontSize: 11, textAlign: "center" }}>
-        No orders yet. Click TRADE on any signal to place one.
-      </div>
-    );
-  }
+  if (orders.length === 0) return <div style={{ padding: 16, color: "var(--text-muted)", fontSize: 11, textAlign: "center" }}>No orders yet. Click TRADE on any signal to place one.</div>;
   return (
     <div>
       {orders.map((o) => (
-        <div
-          key={o.order_id}
-          style={{
-            display: "grid",
-            gridTemplateColumns: "auto 60px 50px 1fr auto",
-            gap: 8,
-            padding: "6px 10px",
-            borderBottom: "1px solid var(--border-soft)",
-            alignItems: "center",
-            fontSize: 10,
-          }}
-        >
-          <span
-            style={{
-              fontSize: 9,
-              fontWeight: 700,
-              padding: "2px 6px",
-              borderRadius: 2,
-              background: o.side === "buy" ? "var(--green-bg)" : "var(--red-bg)",
-              color: o.side === "buy" ? "var(--green)" : "var(--red)",
-            }}
-          >
-            {o.side.toUpperCase()}
-          </span>
+        <div key={o.order_id} style={{ display: "grid", gridTemplateColumns: "auto 60px 50px 1fr auto", gap: 8, padding: "6px 10px", borderBottom: "1px solid var(--border-soft)", alignItems: "center", fontSize: 10 }}>
+          <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 2, background: o.side === "buy" ? "var(--green-bg)" : "var(--red-bg)", color: o.side === "buy" ? "var(--green)" : "var(--red)" }}>{o.side.toUpperCase()}</span>
           <span style={{ fontWeight: 600, fontSize: 11 }}>{o.ticker}</span>
           <span style={{ color: "var(--text-secondary)", textAlign: "right" }}>{o.qty}sh</span>
           <span style={{ color: "var(--text-muted)", fontSize: 9 }}>
             {o.filled_avg_price ? `@ $${o.filled_avg_price.toFixed(2)}` : "queued"}
             {o.submitted_at && ` · ${new Date(o.submitted_at).toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}`}
           </span>
-          <span
-            style={{
-              fontSize: 9,
-              fontWeight: 600,
-              padding: "1px 5px",
-              borderRadius: 2,
-              background:
-                o.status === "filled"
-                  ? "var(--green-bg)"
-                  : o.status === "canceled" || o.status === "rejected"
-                  ? "var(--red-bg)"
-                  : "var(--bg-row)",
-              color:
-                o.status === "filled"
-                  ? "var(--green)"
-                  : o.status === "canceled" || o.status === "rejected"
-                  ? "var(--red)"
-                  : "var(--text-muted)",
-              textTransform: "uppercase",
-            }}
-          >
-            {o.status}
-          </span>
+          <span style={{ fontSize: 9, fontWeight: 600, padding: "1px 5px", borderRadius: 2, background: o.status === "filled" ? "var(--green-bg)" : o.status === "canceled" || o.status === "rejected" ? "var(--red-bg)" : "var(--bg-row)", color: o.status === "filled" ? "var(--green)" : o.status === "canceled" || o.status === "rejected" ? "var(--red)" : "var(--text-muted)", textTransform: "uppercase" }}>{o.status}</span>
         </div>
       ))}
     </div>
@@ -1410,45 +940,17 @@ function OrdersList({ orders }: { orders: Order[] }) {
 }
 
 function PositionsList({ positions }: { positions: Position[] }) {
-  if (positions.length === 0) {
-    return (
-      <div style={{ padding: 16, color: "var(--text-muted)", fontSize: 11, textAlign: "center" }}>
-        No open positions. Orders fill at next market open.
-      </div>
-    );
-  }
+  if (positions.length === 0) return <div style={{ padding: 16, color: "var(--text-muted)", fontSize: 11, textAlign: "center" }}>No open positions. Orders fill at next market open.</div>;
   return (
     <div>
       {positions.map((p) => (
-        <div
-          key={p.ticker}
-          style={{
-            display: "grid",
-            gridTemplateColumns: "60px 50px 1fr auto",
-            gap: 8,
-            padding: "6px 10px",
-            borderBottom: "1px solid var(--border-soft)",
-            alignItems: "center",
-            fontSize: 10,
-          }}
-        >
+        <div key={p.ticker} style={{ display: "grid", gridTemplateColumns: "60px 50px 1fr auto", gap: 8, padding: "6px 10px", borderBottom: "1px solid var(--border-soft)", alignItems: "center", fontSize: 10 }}>
           <span style={{ fontWeight: 600, fontSize: 11 }}>{p.ticker}</span>
           <span style={{ color: "var(--text-secondary)", textAlign: "right" }}>{p.qty}sh</span>
-          <span style={{ color: "var(--text-muted)", fontSize: 9 }}>
-            avg ${p.avg_entry_price?.toFixed(2) ?? "—"} · now ${p.current_price?.toFixed(2) ?? "—"}
-          </span>
-          <span
-            style={{ fontWeight: 600, textAlign: "right" }}
-            className={p.unrealized_pl != null && p.unrealized_pl >= 0 ? "up" : "dn"}
-          >
-            {p.unrealized_pl != null
-              ? `${p.unrealized_pl >= 0 ? "+" : ""}$${p.unrealized_pl.toFixed(2)}`
-              : "—"}
-            {p.unrealized_plpc != null && (
-              <span style={{ fontSize: 9, marginLeft: 4 }}>
-                ({fmtPct(p.unrealized_plpc)})
-              </span>
-            )}
+          <span style={{ color: "var(--text-muted)", fontSize: 9 }}>avg ${p.avg_entry_price?.toFixed(2) ?? "—"} · now ${p.current_price?.toFixed(2) ?? "—"}</span>
+          <span style={{ fontWeight: 600, textAlign: "right" }} className={p.unrealized_pl != null && p.unrealized_pl >= 0 ? "up" : "dn"}>
+            {p.unrealized_pl != null ? `${p.unrealized_pl >= 0 ? "+" : ""}$${p.unrealized_pl.toFixed(2)}` : "—"}
+            {p.unrealized_plpc != null && <span style={{ fontSize: 9, marginLeft: 4 }}>({fmtPct(p.unrealized_plpc)})</span>}
           </span>
         </div>
       ))}
@@ -1456,260 +958,57 @@ function PositionsList({ positions }: { positions: Position[] }) {
   );
 }
 
-function OrderModal({
-  ticker,
-  side,
-  quote,
-  buyingPower,
-  onClose,
-  onSubmit,
-}: {
-  ticker: string;
-  side: "buy" | "sell";
-  quote?: Quote;
-  buyingPower?: number;
-  onClose: () => void;
-  onSubmit: (qty: number) => void;
-}) {
+function OrderModal({ ticker, side, quote, buyingPower, onClose, onSubmit }: { ticker: string; side: "buy" | "sell"; quote?: Quote; buyingPower?: number; onClose: () => void; onSubmit: (qty: number) => void }) {
   const [qty, setQty] = useState(1);
   const refPrice = side === "buy" ? quote?.ask_price ?? quote?.mid_price : quote?.bid_price ?? quote?.mid_price;
   const estimatedNotional = (refPrice ?? 0) * qty;
-
   const exceedsQty = qty > MAX_QTY_PER_ORDER;
   const exceedsNotional = estimatedNotional > MAX_NOTIONAL_PER_ORDER;
   const exceedsBP = side === "buy" && buyingPower != null && estimatedNotional > buyingPower;
   const cannotSubmit = qty < 1 || exceedsQty || exceedsNotional || exceedsBP || !refPrice;
 
   return (
-    <div
-      onClick={onClose}
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(0,0,0,0.6)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        zIndex: 999,
-      }}
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          background: "var(--bg-panel)",
-          border: "1px solid var(--border)",
-          borderRadius: 8,
-          padding: 0,
-          width: 380,
-          maxWidth: "90vw",
-          fontSize: 12,
-        }}
-      >
-        {/* Header */}
-        <div
-          style={{
-            padding: "14px 18px",
-            borderBottom: "1px solid var(--border)",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 999 }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ background: "var(--bg-panel)", border: "1px solid var(--border)", borderRadius: 8, padding: 0, width: 380, maxWidth: "90vw", fontSize: 12 }}>
+        <div style={{ padding: "14px 18px", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
             <div style={{ fontSize: 14, fontWeight: 700 }}>
-              <span style={{ color: side === "buy" ? "var(--green)" : "var(--red)" }}>
-                {side.toUpperCase()}
-              </span>{" "}
-              {ticker}
+              <span style={{ color: side === "buy" ? "var(--green)" : "var(--red)" }}>{side.toUpperCase()}</span> {ticker}
             </div>
-            <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 2 }}>
-              Paper trading · market order · day
-            </div>
+            <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 2 }}>Paper trading · market order · day</div>
           </div>
-          <button
-            onClick={onClose}
-            style={{
-              background: "none",
-              border: "none",
-              color: "var(--text-muted)",
-              cursor: "pointer",
-              fontSize: 18,
-            }}
-          >
-            ×
-          </button>
+          <button onClick={onClose} style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: 18 }}>×</button>
         </div>
-
-        {/* Body */}
         <div style={{ padding: 18 }}>
-          <div
-            style={{
-              background: "rgba(96, 165, 250, 0.08)",
-              border: "1px solid rgba(96, 165, 250, 0.2)",
-              borderRadius: 4,
-              padding: "8px 10px",
-              fontSize: 10,
-              color: "var(--text-secondary)",
-              marginBottom: 16,
-            }}
-          >
-            <strong style={{ color: "var(--blue)" }}>PAPER ACCOUNT</strong> — no real money. Orders submitted on
-            weekends queue for the next market open.
+          <div style={{ background: "rgba(96, 165, 250, 0.08)", border: "1px solid rgba(96, 165, 250, 0.2)", borderRadius: 4, padding: "8px 10px", fontSize: 10, color: "var(--text-secondary)", marginBottom: 16 }}>
+            <strong style={{ color: "var(--blue)" }}>PAPER ACCOUNT</strong> — no real money. Orders submitted on weekends queue for the next market open.
           </div>
-
-          {/* Quote info */}
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: 6,
-              marginBottom: 16,
-              fontSize: 11,
-            }}
-          >
-            <div>
-              <div style={{ color: "var(--text-muted)", fontSize: 9, textTransform: "uppercase" }}>Bid</div>
-              <div style={{ fontWeight: 600 }}>{fmtPrice(quote?.bid_price)}</div>
-            </div>
-            <div>
-              <div style={{ color: "var(--text-muted)", fontSize: 9, textTransform: "uppercase" }}>Ask</div>
-              <div style={{ fontWeight: 600 }}>{fmtPrice(quote?.ask_price)}</div>
-            </div>
-            <div>
-              <div style={{ color: "var(--text-muted)", fontSize: 9, textTransform: "uppercase" }}>Mid</div>
-              <div style={{ fontWeight: 600 }}>{fmtPrice(quote?.mid_price)}</div>
-            </div>
-            <div>
-              <div style={{ color: "var(--text-muted)", fontSize: 9, textTransform: "uppercase" }}>
-                Reference {side === "buy" ? "(ask)" : "(bid)"}
-              </div>
-              <div style={{ fontWeight: 600 }}>{fmtPrice(refPrice)}</div>
-            </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 16, fontSize: 11 }}>
+            <div><div style={{ color: "var(--text-muted)", fontSize: 9, textTransform: "uppercase" }}>Bid</div><div style={{ fontWeight: 600 }}>{fmtPrice(quote?.bid_price)}</div></div>
+            <div><div style={{ color: "var(--text-muted)", fontSize: 9, textTransform: "uppercase" }}>Ask</div><div style={{ fontWeight: 600 }}>{fmtPrice(quote?.ask_price)}</div></div>
+            <div><div style={{ color: "var(--text-muted)", fontSize: 9, textTransform: "uppercase" }}>Mid</div><div style={{ fontWeight: 600 }}>{fmtPrice(quote?.mid_price)}</div></div>
+            <div><div style={{ color: "var(--text-muted)", fontSize: 9, textTransform: "uppercase" }}>Reference {side === "buy" ? "(ask)" : "(bid)"}</div><div style={{ fontWeight: 600 }}>{fmtPrice(refPrice)}</div></div>
           </div>
-
-          {/* Qty input */}
           <div style={{ marginBottom: 14 }}>
-            <label style={{ display: "block", color: "var(--text-muted)", fontSize: 10, textTransform: "uppercase", marginBottom: 4 }}>
-              Shares (1-{MAX_QTY_PER_ORDER})
-            </label>
+            <label style={{ display: "block", color: "var(--text-muted)", fontSize: 10, textTransform: "uppercase", marginBottom: 4 }}>Shares (1-{MAX_QTY_PER_ORDER})</label>
             <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-              <input
-                type="number"
-                min={1}
-                max={MAX_QTY_PER_ORDER}
-                value={qty}
-                onChange={(e) => setQty(Math.max(1, Math.min(MAX_QTY_PER_ORDER, parseInt(e.target.value) || 1)))}
-                style={{
-                  flex: 1,
-                  background: "var(--bg-input)",
-                  border: "1px solid var(--border-strong)",
-                  borderRadius: 4,
-                  padding: "8px 10px",
-                  color: "var(--text-primary)",
-                  fontSize: 14,
-                  fontFamily: "inherit",
-                }}
-              />
+              <input type="number" min={1} max={MAX_QTY_PER_ORDER} value={qty} onChange={(e) => setQty(Math.max(1, Math.min(MAX_QTY_PER_ORDER, parseInt(e.target.value) || 1)))} style={{ flex: 1, background: "var(--bg-input)", border: "1px solid var(--border-strong)", borderRadius: 4, padding: "8px 10px", color: "var(--text-primary)", fontSize: 14, fontFamily: "inherit" }} />
               {[1, 5, 10, 25].map((n) => (
-                <button
-                  key={n}
-                  onClick={() => setQty(n)}
-                  style={{
-                    background: qty === n ? "var(--green-bg)" : "var(--bg-elevated)",
-                    color: qty === n ? "var(--green)" : "var(--text-secondary)",
-                    border: "1px solid var(--border)",
-                    borderRadius: 3,
-                    padding: "5px 9px",
-                    fontSize: 10,
-                    cursor: "pointer",
-                    fontFamily: "inherit",
-                  }}
-                >
-                  {n}
-                </button>
+                <button key={n} onClick={() => setQty(n)} style={{ background: qty === n ? "var(--green-bg)" : "var(--bg-elevated)", color: qty === n ? "var(--green)" : "var(--text-secondary)", border: "1px solid var(--border)", borderRadius: 3, padding: "5px 9px", fontSize: 10, cursor: "pointer", fontFamily: "inherit" }}>{n}</button>
               ))}
             </div>
           </div>
-
-          {/* Estimated total */}
-          <div
-            style={{
-              background: "var(--bg-elevated)",
-              border: "1px solid var(--border)",
-              borderRadius: 4,
-              padding: "10px 12px",
-              fontSize: 12,
-              marginBottom: 14,
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
+          <div style={{ background: "var(--bg-elevated)", border: "1px solid var(--border)", borderRadius: 4, padding: "10px 12px", fontSize: 12, marginBottom: 14, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <span style={{ color: "var(--text-muted)" }}>Estimated total</span>
-            <span style={{ fontWeight: 700, fontSize: 16 }}>
-              ${estimatedNotional.toFixed(2)}
-            </span>
+            <span style={{ fontWeight: 700, fontSize: 16 }}>${estimatedNotional.toFixed(2)}</span>
           </div>
-
-          {/* Warnings */}
-          {exceedsQty && (
-            <div style={{ color: "var(--red)", fontSize: 10, marginBottom: 8 }}>
-              ⚠ Exceeds max {MAX_QTY_PER_ORDER} shares per order
-            </div>
-          )}
-          {exceedsNotional && (
-            <div style={{ color: "var(--red)", fontSize: 10, marginBottom: 8 }}>
-              ⚠ Exceeds max ${MAX_NOTIONAL_PER_ORDER.toLocaleString()} per order
-            </div>
-          )}
-          {exceedsBP && (
-            <div style={{ color: "var(--red)", fontSize: 10, marginBottom: 8 }}>
-              ⚠ Exceeds buying power ${buyingPower?.toFixed(2)}
-            </div>
-          )}
-          {!refPrice && (
-            <div style={{ color: "var(--amber)", fontSize: 10, marginBottom: 8 }}>
-              ⚠ No live quote. Order may be rejected.
-            </div>
-          )}
-
-          {/* Buttons */}
+          {exceedsQty && <div style={{ color: "var(--red)", fontSize: 10, marginBottom: 8 }}>⚠ Exceeds max {MAX_QTY_PER_ORDER} shares per order</div>}
+          {exceedsNotional && <div style={{ color: "var(--red)", fontSize: 10, marginBottom: 8 }}>⚠ Exceeds max ${MAX_NOTIONAL_PER_ORDER.toLocaleString()} per order</div>}
+          {exceedsBP && <div style={{ color: "var(--red)", fontSize: 10, marginBottom: 8 }}>⚠ Exceeds buying power ${buyingPower?.toFixed(2)}</div>}
+          {!refPrice && <div style={{ color: "var(--amber)", fontSize: 10, marginBottom: 8 }}>⚠ No live quote. Order may be rejected.</div>}
           <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
-            <button
-              onClick={onClose}
-              style={{
-                flex: 1,
-                background: "var(--bg-elevated)",
-                color: "var(--text-secondary)",
-                border: "1px solid var(--border)",
-                borderRadius: 4,
-                padding: "10px 0",
-                fontSize: 12,
-                fontWeight: 600,
-                cursor: "pointer",
-                fontFamily: "inherit",
-              }}
-            >
-              Cancel
-            </button>
-            <button
-              onClick={() => onSubmit(qty)}
-              disabled={cannotSubmit}
-              style={{
-                flex: 2,
-                background: cannotSubmit ? "var(--bg-elevated)" : side === "buy" ? "var(--green)" : "var(--red)",
-                color: cannotSubmit ? "var(--text-muted)" : "var(--bg-base)",
-                border: "none",
-                borderRadius: 4,
-                padding: "10px 0",
-                fontSize: 12,
-                fontWeight: 700,
-                cursor: cannotSubmit ? "not-allowed" : "pointer",
-                fontFamily: "inherit",
-              }}
-            >
-              Confirm {side.toUpperCase()} {qty} {ticker}
-            </button>
+            <button onClick={onClose} style={{ flex: 1, background: "var(--bg-elevated)", color: "var(--text-secondary)", border: "1px solid var(--border)", borderRadius: 4, padding: "10px 0", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>Cancel</button>
+            <button onClick={() => onSubmit(qty)} disabled={cannotSubmit} style={{ flex: 2, background: cannotSubmit ? "var(--bg-elevated)" : side === "buy" ? "var(--green)" : "var(--red)", color: cannotSubmit ? "var(--text-muted)" : "var(--bg-base)", border: "none", borderRadius: 4, padding: "10px 0", fontSize: 12, fontWeight: 700, cursor: cannotSubmit ? "not-allowed" : "pointer", fontFamily: "inherit" }}>Confirm {side.toUpperCase()} {qty} {ticker}</button>
           </div>
         </div>
       </div>
