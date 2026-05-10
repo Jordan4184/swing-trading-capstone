@@ -265,3 +265,68 @@ if __name__ == "__main__":
 
     # Feature importance
     plot_feature_importance(df, str(results_dir / "05_feature_importance.png"))
+
+
+# ---------------------------------------------------------------------------
+# Production model: train once on all data, save, load for inference
+# ---------------------------------------------------------------------------
+
+import joblib
+
+PRODUCTION_MODEL_NAME = "rf_v1"
+PRODUCTION_MODEL_DIR = Path(__file__).parent.parent / "models"
+
+
+def train_final_model(df: pd.DataFrame, model_type: str = "RandomForest"):
+    """
+    Train a single model on all available labeled data.
+    Used for production inference (separate from walk-forward CV evaluation).
+
+    Args:
+        df: Feature dataframe from build_features()
+        model_type: Which model from make_models() to train
+
+    Returns:
+        Fitted sklearn model object
+    """
+    X, y, _ = prepare_xy(df)
+    models = make_models()
+    if model_type not in models:
+        raise ValueError(f"Unknown model_type {model_type}. Available: {list(models.keys())}")
+
+    model = models[model_type]
+    print(f"Training {model_type} on {len(X):,} rows / {X.shape[1]} features...")
+    model.fit(X, y)
+    print(f"Done. Model trained.")
+    return model
+
+
+def save_model(model, path: Path = None) -> Path:
+    """Save model + metadata as a joblib file."""
+    if path is None:
+        PRODUCTION_MODEL_DIR.mkdir(exist_ok=True)
+        path = PRODUCTION_MODEL_DIR / f"{PRODUCTION_MODEL_NAME}.joblib"
+    else:
+        path = Path(path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+
+    payload = {
+        "model": model,
+        "feature_columns": FEATURE_COLUMNS,
+        "model_version": PRODUCTION_MODEL_NAME,
+        "trained_at": pd.Timestamp.now().isoformat(),
+    }
+    joblib.dump(payload, path)
+    print(f"Saved model to {path}")
+    return path
+
+
+def load_model(path: Path = None) -> dict:
+    """Load model + metadata from joblib file."""
+    if path is None:
+        path = PRODUCTION_MODEL_DIR / f"{PRODUCTION_MODEL_NAME}.joblib"
+    path = Path(path)
+    if not path.exists():
+        raise FileNotFoundError(f"Model not found at {path}. Train it first with --train-final")
+    payload = joblib.load(path)
+    return payload
