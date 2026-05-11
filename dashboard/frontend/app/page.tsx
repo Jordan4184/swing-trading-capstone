@@ -69,6 +69,13 @@ type FlashState = "up" | "dn" | null;
 type Toast = { type: "success" | "error" | "info"; message: string };
 type OrderModalState = { ticker: string; side: "buy" | "sell" } | null;
 type ChartType = "candle" | "area";
+type RangeOption = "1D" | "5D" | "1M" | "3M" | "6M" | "1Y";
+type GranularityOption = "auto" | "1Min" | "5Min" | "15Min" | "30Min" | "1H" | "1D" | "1W";
+
+const RANGE_TO_DAYS: Record<RangeOption, number> = { "1D": 1, "5D": 5, "1M": 30, "3M": 90, "6M": 180, "1Y": 365 };
+const AUTO_GRANULARITY: Record<RangeOption, GranularityOption> = {
+  "1D": "5Min", "5D": "15Min", "1M": "1H", "3M": "1D", "6M": "1D", "1Y": "1D",
+};
 type LayoutMode = "1x1" | "2x1" | "2x2" | "3x2" | "3x3";
 type DetailTab = "overview" | "predictions" | "news" | "intel";
 type ActivityTab = "orders" | "positions" | "news";
@@ -178,6 +185,24 @@ export default function DashboardPage() {
   const [orderModal, setOrderModal] = useState<OrderModalState>(null);
   const [toast, setToast] = useState<Toast | null>(null);
   const [chartType, setChartType] = useState<ChartType>("candle");
+  const [globalRange, setGlobalRange] = useState<RangeOption>("3M");
+  const [globalGranularity, setGlobalGranularity] = useState<GranularityOption>("auto");
+  // Clear bars cache when timeframe changes so charts refetch
+  useEffect(() => {
+    setAllBars({});
+    setSelectedBars(null);
+    setSpyBars(null);
+  }, [globalRange, globalGranularity]);
+
+  // Refetch SPY bars when timeframe changes
+  useEffect(() => {
+    const tf = globalGranularity === "auto" ? AUTO_GRANULARITY[globalRange] : globalGranularity;
+    fetch(`${API_BASE}/api/historical-bars/SPY?range_days=${RANGE_TO_DAYS[globalRange]}&timeframe=${tf}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data) setSpyBars(data); })
+      .catch(() => {});
+  }, [globalRange, globalGranularity]);
+
   const [layout, setLayout] = useState<LayoutMode>("2x2");
   const [cellTickers, setCellTickers] = useState<Record<number, string>>({});
 
@@ -224,7 +249,7 @@ export default function DashboardPage() {
           fetch(`${API_BASE}/api/predictions/latest?top_n=10`),
           fetch(`${API_BASE}/api/equity-curve`),
           fetch(`${API_BASE}/api/account`),
-          fetch(`${API_BASE}/api/historical-bars/SPY?days=90`),
+          fetch(`${API_BASE}/api/historical-bars/SPY?range_days=${RANGE_TO_DAYS[globalRange]}&timeframe=${globalGranularity === "auto" ? AUTO_GRANULARITY[globalRange] : globalGranularity}`),
           fetch(`${API_BASE}/api/prev-closes`),
           fetch(`${API_BASE}/api/orders/recent`),
           fetch(`${API_BASE}/api/positions`),
@@ -314,7 +339,7 @@ export default function DashboardPage() {
       try {
         const [predRes, barsRes, newsRes] = await Promise.all([
           fetch(`${API_BASE}/api/predictions/${selectedTicker}`),
-          fetch(`${API_BASE}/api/historical-bars/${selectedTicker}?days=90`),
+          fetch(`${API_BASE}/api/historical-bars/${selectedTicker}?range_days=${RANGE_TO_DAYS[globalRange]}&timeframe=${globalGranularity === "auto" ? AUTO_GRANULARITY[globalRange] : globalGranularity}`),
           fetch(`${API_BASE}/api/news/${selectedTicker}?limit=15`),
         ]);
         if (predRes.ok) {
@@ -328,7 +353,7 @@ export default function DashboardPage() {
     loadTickerData();
     // Reset intel when ticker changes
     setIntelligence(null);
-  }, [selectedTicker]);
+  }, [selectedTicker, globalRange, globalGranularity]);
 
   // Fetch intelligence when intel tab opened or ticker changes (only if tab is intel)
   const fetchIntelligence = useCallback(async (forceRefresh = false) => {
@@ -377,14 +402,14 @@ export default function DashboardPage() {
     }
     needed.forEach(async (ticker) => {
       try {
-        const res = await fetch(`${API_BASE}/api/historical-bars/${ticker}?days=90`);
+        const res = await fetch(`${API_BASE}/api/historical-bars/${ticker}?range_days=${RANGE_TO_DAYS[globalRange]}&timeframe=${globalGranularity === "auto" ? AUTO_GRANULARITY[globalRange] : globalGranularity}`);
         if (res.ok) {
           const data = await res.json();
           setAllBars((prev) => ({ ...prev, [ticker]: data }));
         }
       } catch {}
     });
-  }, [layout, cellTickers, selectedTicker, latest, allBars]);
+  }, [layout, cellTickers, selectedTicker, latest, allBars, globalRange, globalGranularity]);
 
   async function handlePlaceOrder(ticker: string, side: "buy" | "sell", qty: number) {
     try {
@@ -514,6 +539,25 @@ export default function DashboardPage() {
             <span className="toolbar-text"><strong>Chart</strong></span>
             <button className={`layout-btn ${chartType === "candle" ? "active" : ""}`} onClick={() => setChartType("candle")}>Candle</button>
             <button className={`layout-btn ${chartType === "area" ? "active" : ""}`} onClick={() => setChartType("area")}>Area</button>
+          </div>
+          <div className="toolbar-section">
+            <span className="toolbar-text"><strong>Range</strong></span>
+            {(["1D", "5D", "1M", "3M", "6M", "1Y"] as RangeOption[]).map((r) => (
+              <button key={r} className={`layout-btn ${globalRange === r ? "active" : ""}`} onClick={() => setGlobalRange(r)}>{r}</button>
+            ))}
+          </div>
+          <div className="toolbar-section">
+            <span className="toolbar-text"><strong>Bars</strong></span>
+            <select value={globalGranularity} onChange={(e) => setGlobalGranularity(e.target.value as GranularityOption)} style={{ background: "var(--bg-elevated)", color: "var(--text-primary)", border: "1px solid var(--border-strong)", borderRadius: 3, padding: "2px 6px", fontSize: 10, fontFamily: "inherit", cursor: "pointer", outline: "none" }}>
+              <option value="auto">auto ({AUTO_GRANULARITY[globalRange]})</option>
+              <option value="1Min">1Min</option>
+              <option value="5Min">5Min</option>
+              <option value="15Min">15Min</option>
+              <option value="30Min">30Min</option>
+              <option value="1H">1H</option>
+              <option value="1D">1D</option>
+              <option value="1W">1W</option>
+            </select>
           </div>
           <div className="toolbar-section">
             <span className="toolbar-text">Polls:</span>
@@ -920,7 +964,7 @@ function PriceChartCell({ cellIndex, symbol, universe, quote, bars, change, colo
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#1F2533" />
-              <XAxis dataKey="date" stroke="#6A7488" tick={{ fontSize: 8 }} tickFormatter={(d: string) => d.slice(5)} interval={Math.max(0, Math.floor(bars.length / 5))} />
+              <XAxis dataKey="date" stroke="#6A7488" tick={{ fontSize: 8 }} tickFormatter={(d: string) => d.includes("T") ? d.slice(11, 16) : d.slice(5)} interval={Math.max(0, Math.floor(bars.length / 5))} />
               <YAxis stroke="#6A7488" tick={{ fontSize: 8 }} domain={yDomain} tickFormatter={(v: number) => `$${v.toFixed(0)}`} width={40} />
               <Tooltip contentStyle={{ backgroundColor: "#11151D", border: "1px solid #1F2533", fontSize: 10 }} formatter={(v: number, name: string, props: any) => {
                 if (chartType === "candle" && props?.payload) {
