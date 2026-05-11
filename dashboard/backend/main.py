@@ -584,6 +584,38 @@ def heatmap_reload():
     return {"reloaded": True}
 
 
+@app.get("/api/heatmap-batch")
+def heatmap_batch(tickers: str, prices: str, range_pct: float = 0.05):
+    """
+    Batch heatmap computation. One round trip for multiple tickers.
+
+    Args:
+        tickers: comma-separated, e.g. "NVDA,TSLA,META"
+        prices: comma-separated, matching ticker order, e.g. "228,446,580"
+        range_pct: width of price range (default 5%)
+
+    Returns: { ticker: heatmap_result, ... }
+    """
+    tickers_list = [t.strip().upper() for t in tickers.split(",") if t.strip()]
+    prices_list = [float(p) for p in prices.split(",") if p.strip()]
+
+    if len(tickers_list) != len(prices_list):
+        raise HTTPException(status_code=400, detail="tickers and prices must have same length")
+
+    results = {}
+    for ticker, price in zip(tickers_list, prices_list):
+        try:
+            results[ticker] = heatmap.compute_heatmap(
+                ticker=ticker,
+                current_price=price,
+                range_pct=range_pct,
+            )
+        except Exception as e:
+            results[ticker] = {"error": f"{type(e).__name__}: {str(e)}"}
+
+    return results
+
+
 # ---------------------------------------------------------------------------
 # Endpoints — Evaluation
 # ---------------------------------------------------------------------------

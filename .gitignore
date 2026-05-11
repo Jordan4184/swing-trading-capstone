@@ -31,3 +31,4 @@ dashboard/backend/auto_trader.db-journal
 
 # Trained model artifacts (regenerate via python -m src.pipeline --train-final)
 models/*.joblib
+*.bak

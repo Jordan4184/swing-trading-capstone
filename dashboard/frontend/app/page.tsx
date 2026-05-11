@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
+import HeatmapStrip from "./components/HeatmapStrip";
 import {
   ComposedChart,
   Area,
@@ -179,7 +180,30 @@ export default function DashboardPage() {
   const [chartType, setChartType] = useState<ChartType>("candle");
   const [layout, setLayout] = useState<LayoutMode>("2x2");
   const [cellTickers, setCellTickers] = useState<Record<number, string>>({});
+
+  // Fetch heatmap probability curves for currently displayed tickers.
+  // Triggered by changes in livePrices (so heatmaps stay in sync with market).
+  useEffect(() => {
+    const visibleTickers = Array.from(new Set(Object.values(cellTickers).concat([selectedTicker])));
+    if (visibleTickers.length === 0 || !livePrices) return;
+    const pricesArr: number[] = [];
+    const validTickers: string[] = [];
+    for (const t of visibleTickers) {
+      const p = livePrices.prices?.[t]?.mid_price;
+      if (p != null && Number.isFinite(p)) {
+        pricesArr.push(p);
+        validTickers.push(t);
+      }
+    }
+    if (validTickers.length === 0) return;
+    const url = `http://localhost:8000/api/heatmap-batch?tickers=${validTickers.join(",")}&prices=${pricesArr.join(",")}`;
+    fetch(url)
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => { if (data) setHeatmaps(data); })
+      .catch(() => { /* ignore - non-critical */ });
+  }, [livePrices, cellTickers, selectedTicker]);
   const [allBars, setAllBars] = useState<Record<string, BarsResponse>>({});
+  const [heatmaps, setHeatmaps] = useState<Record<string, HeatmapData>>({});
 
   const priceMap: Record<string, number | null | undefined> = {};
   if (livePrices) Object.entries(livePrices.quotes).forEach(([t, q]) => { priceMap[t] = q.mid_price; });
@@ -535,6 +559,7 @@ export default function DashboardPage() {
                   setCellTickers((prev) => ({ ...prev, [i]: newTicker }));
                   if (i === 0) setSelectedTicker(newTicker);
                 }}
+                heatmap={heatmaps[t]}
               />
             );
           })}
@@ -834,6 +859,19 @@ function CandleShape(props: any) {
   );
 }
 
+type HeatmapData = {
+  ticker: string;
+  prices: number[];
+  probabilities: number[];
+  current_price: number;
+  current_idx: number;
+  current_probability: number;
+  min_probability: number;
+  max_probability: number;
+  buy_threshold: number;
+  error?: string;
+};
+
 // ---------------------------------------------------------------------------
 // Sub-components
 // ---------------------------------------------------------------------------
@@ -848,7 +886,7 @@ function StatCell({ label, value, sub, accent }: { label: string; value: string;
   );
 }
 
-function PriceChartCell({ cellIndex, symbol, universe, quote, bars, change, color, flash, chartType, onTickerChange }: { cellIndex: number; symbol: string; universe: string[]; quote?: Quote; bars?: BarRow[]; change: { abs: number; pct: number } | null; color: string; flash?: FlashState; chartType: ChartType; onTickerChange: (newTicker: string) => void }) {
+function PriceChartCell({ cellIndex, symbol, universe, quote, bars, change, color, flash, chartType, onTickerChange, heatmap }: { cellIndex: number; symbol: string; universe: string[]; quote?: Quote; bars?: BarRow[]; change: { abs: number; pct: number } | null; color: string; flash?: FlashState; chartType: ChartType; onTickerChange: (newTicker: string) => void; heatmap?: HeatmapData }) {
   const lastClose = bars && bars.length > 0 ? bars[bars.length - 1].close : null;
   const displayPrice = quote?.mid_price ?? lastClose;
   const yDomain: [number | string, number | string] = bars && bars.length > 0
@@ -902,6 +940,17 @@ function PriceChartCell({ cellIndex, symbol, universe, quote, bars, change, colo
               )}
             </ComposedChart>
           </ResponsiveContainer>
+        )}
+        {bars && bars.length > 0 && heatmap && (
+          <div style={{ position: "absolute", top: 4, right: 4, bottom: 4, width: 48, pointerEvents: "none" }}>
+            <HeatmapStrip
+              data={heatmap}
+              yMin={Math.min(...bars.map((b) => b.low)) * 0.995}
+              yMax={Math.max(...bars.map((b) => b.high)) * 1.005}
+              height={200}
+              width={48}
+            />
+          </div>
         )}
       </div>
     </div>
