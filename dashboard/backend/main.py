@@ -24,7 +24,7 @@ from pydantic import BaseModel, Field, field_validator
 from alpaca.data.historical import StockHistoricalDataClient
 from alpaca.data.historical.news import NewsClient
 from alpaca.data.requests import StockLatestQuoteRequest, StockBarsRequest, NewsRequest
-from alpaca.data.timeframe import TimeFrame
+from alpaca.data.timeframe import TimeFrame, TimeFrameUnit
 from alpaca.trading.client import TradingClient
 from alpaca.trading.requests import MarketOrderRequest, GetOrdersRequest
 from alpaca.trading.enums import OrderSide, TimeInForce, QueryOrderStatus
@@ -341,25 +341,104 @@ def get_prev_closes():
         raise HTTPException(status_code=500, detail=f"Alpaca prev-closes request failed: {str(e)}")
 
 
+_TIMEFRAME_MAP = {
+    "1Min": (TimeFrame.Minute, "intraday"),
+    "5Min": (TimeFrame(5, TimeFrameUnit.Minute), "intraday"),
+    "15Min": (TimeFrame(15, TimeFrameUnit.Minute), "intraday"),
+    "30Min": (TimeFrame(30, TimeFrameUnit.Minute), "intraday"),
+    "1H": (TimeFrame.Hour, "intraday"),
+    "1D": (TimeFrame.Day, "daily"),
+    "1W": (TimeFrame.Week, "daily"),
+}
+
+
+def _auto_timeframe_for_range(range_days: int) -> str:
+    """Pick a sensible bar size given the range."""
+    if range_days <= 1:
+        return "5Min"
+    if range_days <= 5:
+        return "15Min"
+    if range_days <= 30:
+        return "1H"
+    return "1D"
+
+
 @app.get("/api/historical-bars/{ticker}")
-def get_historical_bars(ticker: str, days: int = 90):
+def get_historical_bars(
+    ticker: str,
+    days: int = 90,
+    range_days: int | None = None,
+    timeframe: str | None = None,
+):
+    """
+    Fetch OHLCV bars for a ticker.
+
+    Args:
+        ticker: e.g. NVDA
+        days: legacy parameter for backward compatibility (90 default, capped at 365)
+        range_days: new parameter, how many days of history to fetch
+        timeframe: bar granularity. One of: 1Min, 5Min, 15Min, 30Min, 1H, 1D, 1W.
+                   If omitted, chosen automatically based on range_days.
+    """
     if data_client is None:
         raise HTTPException(status_code=503, detail="Alpaca client not configured.")
+
     ticker = ticker.upper()
-    days = max(1, min(days, 365))
+
+    # Range: prefer range_days, fall back to days for backward compatibility
+    effective_range = range_days if range_days is not None else days
+    effective_range = max(1, min(effective_range, 365))
+
+    # Timeframe: auto-pick if not provided
+    if timeframe is None:
+        timeframe = _auto_timeframe_for_range(effective_range)
+    if timeframe not in _TIMEFRAME_MAP:
+        raise HTTPException(status_code=400, detail=f"Invalid timeframe: {timeframe}. Valid: {list(_TIMEFRAME_MAP.keys())}")
+
+    tf_obj, tf_kind = _TIMEFRAME_MAP[timeframe]
+
     try:
         end = datetime.now() - timedelta(minutes=20)
-        start = end - timedelta(days=days)
-        request = StockBarsRequest(symbol_or_symbols=[ticker], timeframe=TimeFrame.Day, start=start, end=end)
+        start = end - timedelta(days=effective_range)
+        request = StockBarsRequest(symbol_or_symbols=[ticker], timeframe=tf_obj, start=start, end=end)
         response = data_client.get_stock_bars(request)
         if ticker not in response.data:
-            return {"ticker": ticker, "n_bars": 0, "data": []}
+            return {"ticker": ticker, "n_bars": 0, "timeframe": timeframe, "range_days": effective_range, "kind": tf_kind, "data": []}
         bars = response.data[ticker]
-        formatted = [
-            {"date": b.timestamp.strftime("%Y-%m-%d"), "open": round(float(b.open), 2), "high": round(float(b.high), 2), "low": round(float(b.low), 2), "close": round(float(b.close), 2), "volume": int(b.volume)}
-            for b in bars
-        ]
-        return {"ticker": ticker, "n_bars": len(formatted), "data": formatted}
+
+        # For intraday, include full ISO timestamp; for daily/weekly, just date
+        if tf_kind == "intraday":
+            formatted = [
+                {
+                    "date": b.timestamp.isoformat(),
+                    "open": round(float(b.open), 4),
+                    "high": round(float(b.high), 4),
+                    "low": round(float(b.low), 4),
+                    "close": round(float(b.close), 4),
+                    "volume": int(b.volume),
+                }
+                for b in bars
+            ]
+        else:
+            formatted = [
+                {
+                    "date": b.timestamp.strftime("%Y-%m-%d"),
+                    "open": round(float(b.open), 2),
+                    "high": round(float(b.high), 2),
+                    "low": round(float(b.low), 2),
+                    "close": round(float(b.close), 2),
+                    "volume": int(b.volume),
+                }
+                for b in bars
+            ]
+        return {
+            "ticker": ticker,
+            "n_bars": len(formatted),
+            "timeframe": timeframe,
+            "range_days": effective_range,
+            "kind": tf_kind,
+            "data": formatted,
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Alpaca bars request failed: {str(e)}")
 
