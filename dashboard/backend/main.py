@@ -25,6 +25,7 @@ from alpaca.data.historical import StockHistoricalDataClient
 from alpaca.data.historical.news import NewsClient
 from alpaca.data.requests import StockLatestQuoteRequest, StockBarsRequest, NewsRequest
 from alpaca.data.timeframe import TimeFrame, TimeFrameUnit
+import stream_manager
 from alpaca.trading.client import TradingClient
 from alpaca.trading.requests import MarketOrderRequest, GetOrdersRequest
 from alpaca.trading.enums import OrderSide, TimeInForce, QueryOrderStatus
@@ -97,6 +98,21 @@ def _startup_autoscheduler():
             print(f"Auto-trader scheduler NOT started: {result.get('reason')}")
     except Exception as e:
         print(f"Auto-trader scheduler startup failed: {e}")
+
+    # Initialize live websocket stream
+    try:
+        if ALPACA_API_KEY and ALPACA_API_SECRET:
+            stream_manager.init_stream_manager(
+                api_key=ALPACA_API_KEY,
+                api_secret=ALPACA_API_SECRET,
+                tickers=UNIVERSE,
+                feed="iex",
+            )
+            print(f"[main] Stream manager initialized for {len(UNIVERSE)} tickers")
+        else:
+            print("[main] Skipping stream - Alpaca credentials missing")
+    except Exception as e:
+        print(f"[main] Stream init failed: {e}")
 
 app.add_middleware(
     CORSMiddleware,
@@ -693,6 +709,38 @@ def heatmap_batch(tickers: str, prices: str, range_pct: float = 0.05):
             results[ticker] = {"error": f"{type(e).__name__}: {str(e)}"}
 
     return results
+
+
+# ---------------------------------------------------------------------------
+# Endpoints — Live Stream
+# ---------------------------------------------------------------------------
+@app.get("/api/stream/status")
+def stream_status():
+    """Get the status of the live websocket stream."""
+    mgr = stream_manager.get_stream_manager()
+    if mgr is None:
+        return {"running": False, "message": "Stream not initialized"}
+    return mgr.get_status()
+
+
+@app.get("/api/stream/bars/{ticker}")
+def stream_bars(ticker: str, n: int = 100):
+    """Get the latest N bars for a ticker from the live stream buffer."""
+    mgr = stream_manager.get_stream_manager()
+    if mgr is None:
+        return {"ticker": ticker.upper(), "bars": [], "stream_running": False}
+    bars = mgr.get_latest_bars(ticker.upper(), n=n)
+    return {"ticker": ticker.upper(), "bars": bars, "stream_running": True, "n_bars": len(bars)}
+
+
+@app.get("/api/stream/trade/{ticker}")
+def stream_trade(ticker: str):
+    """Get the most recent trade tick for a ticker."""
+    mgr = stream_manager.get_stream_manager()
+    if mgr is None:
+        return {"ticker": ticker.upper(), "trade": None, "stream_running": False}
+    trade = mgr.get_latest_trade(ticker.upper())
+    return {"ticker": ticker.upper(), "trade": trade, "stream_running": True}
 
 
 # ---------------------------------------------------------------------------

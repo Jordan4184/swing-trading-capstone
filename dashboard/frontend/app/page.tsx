@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import HeatmapStrip from "./components/HeatmapStrip";
 import {
   ComposedChart,
+  Brush,
   Area,
   Bar,
   XAxis,
@@ -203,8 +204,80 @@ export default function DashboardPage() {
       .catch(() => {});
   }, [globalRange, globalGranularity]);
 
+
+
   const [layout, setLayout] = useState<LayoutMode>("2x2");
   const [cellTickers, setCellTickers] = useState<Record<number, string>>({});
+
+  // Live stream polling: when intraday timeframe is active, poll the websocket
+  // buffer every 3 seconds and merge incoming bars with existing historical data.
+  useEffect(() => {
+    const tf = globalGranularity === "auto" ? AUTO_GRANULARITY[globalRange] : globalGranularity;
+    const intraday = ["1Min", "5Min", "15Min", "30Min"].includes(tf);
+    if (!intraday) return;
+
+    let cancelled = false;
+
+    async function pollStream() {
+      // Build set of visible tickers
+      const visible = new Set<string>();
+      visible.add(selectedTicker);
+      visible.add("SPY");
+      Object.values(cellTickers).forEach((t) => { if (t) visible.add(t); });
+
+      const promises = Array.from(visible).map(async (ticker) => {
+        try {
+          const res = await fetch(`${API_BASE}/api/stream/bars/${ticker}?n=200`);
+          if (!res.ok) return null;
+          const data = await res.json();
+          if (!data?.bars?.length) return null;
+          return { ticker, bars: data.bars };
+        } catch {
+          return null;
+        }
+      });
+
+      const results = await Promise.all(promises);
+      if (cancelled) return;
+
+      results.forEach((r) => {
+        if (!r) return;
+        const streamBars = r.bars;
+        // Merge: keep historical bars whose timestamp is before earliest stream bar,
+        // then append all stream bars. This avoids duplicates.
+        const earliestStream = streamBars[0].date;
+
+        if (r.ticker === selectedTicker) {
+          setSelectedBars((prev) => {
+            if (!prev?.data) return { ...prev, data: streamBars, n_bars: streamBars.length } as any;
+            const historical = prev.data.filter((b: any) => b.date < earliestStream);
+            return { ...prev, data: [...historical, ...streamBars], n_bars: historical.length + streamBars.length };
+          });
+        }
+        if (r.ticker === "SPY") {
+          setSpyBars((prev) => {
+            if (!prev?.data) return { ...prev, data: streamBars, n_bars: streamBars.length } as any;
+            const historical = prev.data.filter((b: any) => b.date < earliestStream);
+            return { ...prev, data: [...historical, ...streamBars], n_bars: historical.length + streamBars.length };
+          });
+        }
+        // For other cells, update allBars
+        if (r.ticker !== selectedTicker && r.ticker !== "SPY") {
+          setAllBars((prev) => {
+            const existing = prev[r.ticker];
+            if (!existing?.data) return { ...prev, [r.ticker]: { ticker: r.ticker, data: streamBars, n_bars: streamBars.length } as any };
+            const historical = existing.data.filter((b: any) => b.date < earliestStream);
+            return { ...prev, [r.ticker]: { ...existing, data: [...historical, ...streamBars], n_bars: historical.length + streamBars.length } };
+          });
+        }
+      });
+    }
+
+    // Initial fetch + interval
+    pollStream();
+    const id = setInterval(pollStream, 3000);
+    return () => { cancelled = true; clearInterval(id); };
+  }, [globalRange, globalGranularity, selectedTicker, cellTickers]);
 
   // Fetch heatmap probability curves for currently displayed tickers.
   // Triggered by changes in livePrices (so heatmaps stay in sync with market).
@@ -982,6 +1055,14 @@ function PriceChartCell({ cellIndex, symbol, universe, quote, bars, change, colo
               ) : (
                 <Area type="monotone" dataKey="close" stroke={color} strokeWidth={1.5} fill={`url(#grad-${cellIndex}-${symbol})`} />
               )}
+              <Brush
+                dataKey="date"
+                height={18}
+                stroke="#4A5568"
+                fill="#11151D"
+                travellerWidth={6}
+                tickFormatter={(d: string) => typeof d === "string" && d.includes("T") ? d.slice(11, 16) : (typeof d === "string" ? d.slice(5) : "")}
+              />
             </ComposedChart>
           </ResponsiveContainer>
         )}
