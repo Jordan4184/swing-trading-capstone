@@ -33,6 +33,7 @@ import llm_analyzer
 import auto_trader_db
 import position_manager
 import auto_scheduler
+import heatmap
 
 # Make src.evaluate importable from the project root
 import sys
@@ -171,6 +172,7 @@ def root():
             "/api/autotrader/exit-cycle (POST)",
             "/api/autotrader/predict-cycle (POST)",
             "/api/evaluation/report",
+            "/api/heatmap/{ticker}?current_price=X",
         ],
     }
 
@@ -543,6 +545,43 @@ def autotrader_exit(dry_run: bool = True):
     Defaults to dry_run=True for safety. Set dry_run=false to actually exit positions.
     """
     return auto_scheduler.run_exit_cycle(dry_run=dry_run)
+
+
+# ---------------------------------------------------------------------------
+# Endpoints — Heatmap (probability curve at varying prices)
+# ---------------------------------------------------------------------------
+
+@app.get("/api/heatmap/{ticker}")
+def heatmap_curve(ticker: str, current_price: float, range_pct: float = 0.05):
+    """
+    Return the model\'s predicted y_proba across a range of hypothetical
+    "today close" prices for the given ticker.
+
+    Args:
+        ticker: e.g. NVDA
+        current_price: Current intraday price (centers the range)
+        range_pct: How wide to span around current_price (default ±5%)
+
+    Returns: prices[], probabilities[], current_idx, current_probability, etc.
+    """
+    try:
+        result = heatmap.compute_heatmap(
+            ticker=ticker.upper(),
+            current_price=float(current_price),
+            range_pct=float(range_pct),
+        )
+        return result
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"{type(e).__name__}: {str(e)}")
+
+
+@app.post("/api/heatmap/reload")
+def heatmap_reload():
+    """Force reload of OHLCV cache (call after predict-cycle updates parquet)."""
+    heatmap.reload_ohlcv()
+    return {"reloaded": True}
 
 
 # ---------------------------------------------------------------------------
