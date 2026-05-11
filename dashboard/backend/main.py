@@ -191,11 +191,19 @@ def get_latest_predictions(top_n: Optional[int] = None):
     if top_n:
         latest = latest.head(top_n)
 
+    out = latest.assign(date=latest["date"].dt.strftime("%Y-%m-%d"))
+    records = out.to_dict(orient="records")
+    # Replace NaN with None in records since JSON cannot serialize NaN
+    import math
+    cleaned = []
+    for rec in records:
+        cleaned.append({
+            k: (None if isinstance(v, float) and math.isnan(v) else v)
+            for k, v in rec.items()
+        })
     return {
         "date": latest_date.strftime("%Y-%m-%d"),
-        "predictions": latest.assign(
-            date=latest["date"].dt.strftime("%Y-%m-%d")
-        ).to_dict(orient="records"),
+        "predictions": cleaned,
     }
 
 
@@ -206,10 +214,18 @@ def get_ticker_predictions(ticker: str):
     if sub.empty:
         raise HTTPException(status_code=404, detail=f"Ticker '{ticker}' not found.")
     sub = sub.sort_values("date")
+    sub_records = sub.assign(date=sub["date"].dt.strftime("%Y-%m-%d")).to_dict(orient="records")
+    import math
+    sub_cleaned = []
+    for rec in sub_records:
+        sub_cleaned.append({
+            k: (None if isinstance(v, float) and math.isnan(v) else v)
+            for k, v in rec.items()
+        })
     return {
         "ticker": ticker,
         "n_predictions": len(sub),
-        "data": sub.assign(date=sub["date"].dt.strftime("%Y-%m-%d")).to_dict(orient="records"),
+        "data": sub_cleaned,
     }
 
 
