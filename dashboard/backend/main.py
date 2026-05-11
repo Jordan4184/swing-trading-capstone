@@ -34,6 +34,13 @@ import auto_trader_db
 import position_manager
 import auto_scheduler
 
+# Make src.evaluate importable from the project root
+import sys
+from pathlib import Path
+_PROJECT_ROOT = Path(__file__).parent.parent.parent
+if str(_PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(_PROJECT_ROOT))
+
 # ---------------------------------------------------------------------------
 # Environment + Alpaca clients
 # ---------------------------------------------------------------------------
@@ -163,6 +170,7 @@ def root():
             "/api/autotrader/entry-cycle (POST)",
             "/api/autotrader/exit-cycle (POST)",
             "/api/autotrader/predict-cycle (POST)",
+            "/api/evaluation/report",
         ],
     }
 
@@ -536,6 +544,39 @@ def autotrader_exit(dry_run: bool = True):
     """
     return auto_scheduler.run_exit_cycle(dry_run=dry_run)
 
+
+# ---------------------------------------------------------------------------
+# Endpoints — Evaluation
+# ---------------------------------------------------------------------------
+
+@app.get("/api/evaluation/report")
+def evaluation_report():
+    """
+    Run the full evaluation report:
+      A. Trade-level (auto-trader closed trades)
+      B. Model quality (predictions vs realized returns)
+      C. Drift detection (recent vs historical predictions)
+
+    Returns the same JSON shape as `python -m src.evaluate --json`.
+    """
+    try:
+        # Import lazily so import errors don't kill app startup
+        from src import evaluate as eval_mod
+        # Force fresh evaluation each call
+        report = eval_mod.run_full_report()
+        return report
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return {
+            "error": f"{type(e).__name__}: {str(e)}",
+            "trace": traceback.format_exc(),
+        }
+
+
+# ---------------------------------------------------------------------------
+# Endpoints — Autonomous Trader (continued)
+# ---------------------------------------------------------------------------
 
 @app.post("/api/autotrader/predict-cycle")
 def autotrader_predict(timeout: int = 120):
