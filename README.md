@@ -6,19 +6,21 @@ A machine-learning swing trading system built as a capstone project for the Inst
 
 ## Results Summary
 
-Out-of-sample backtest, 2019-07 to 2025-12 (6.4 years), 10bps round-trip transaction costs, walk-forward validated:
+Out-of-sample backtest, 2019-07 to 2025-12 (6.4 years), 20bps round-trip transaction costs, walk-forward validated:
 
-| Metric            | ML Strategy | Equal-Weight Universe | SPY    |
-| ----------------- | ----------- | --------------------- | ------ |
-| Total Return      | **561%**    | 413%                  | 151%   |
-| Annualized Return | **34.1%**   | 28.9%                 | 15.4%  |
-| Sharpe Ratio      | **2.13**    | 1.22                  | 0.81   |
-| Max Drawdown      | -54.1%      | -32.1%                | -33.7% |
-| Hit Rate          | 54.8%       | 56.6%                 | 55.5%  |
+| Metric            | v1 (no risk layer) | v2 (vol-target + regime gate) | Equal-Weight Universe | SPY    |
+| ----------------- | ------------------ | ----------------------------- | --------------------- | ------ |
+| Total Return      | 561%               | **314%**                      | 413%                  | 151%   |
+| Annualized Return | 34.1%              | **24.7%**                     | 28.9%                 | 15.4%  |
+| Sharpe Ratio      | 0.95               | **1.09**                      | 1.22                  | 0.81   |
+| Max Drawdown      | -54.1%             | **-34.3%**                    | -32.1%                | -33.7% |
+| Hit Rate          | 54.8%              | 54.5%                         | 56.6%                 | 55.5%  |
 
-**Honest alpha vs. equal-weight benchmark: +5.19pp annualized, +0.91 Sharpe.** The strategy outperforms a naive equal-weight allocation across the same universe — meaning the ML edge is distinct from simply being long high-momentum names.
+**Two flavours of the strategy.** v1 is the original ML ranker: top-2 picks per day, equal-weighted, non-overlapping 5-day holds. v2 layers vol-targeted position sizing (15% annualized per pick, 0.40 max weight), a regime gate (half-size when SPY < 200dMA AND VIX > 75th percentile of trailing 2y), and a 60-day correlation filter on the 2nd pick. v2 trades headline return for risk-adjusted return: roughly +0.14 Sharpe and -20pp on max drawdown, at the cost of ~9pp of annualized return.
 
-Random Forest selected as best model by AUC (0.595) across walk-forward folds; LightGBM and Logistic Regression performed similarly, suggesting the predictive signal is captured by feature engineering rather than complex non-linear interactions.
+Random Forest selected as best model by AUC (0.594) across walk-forward folds; LightGBM and Logistic Regression performed similarly, suggesting the predictive signal is captured by feature engineering rather than complex non-linear interactions.
+
+> **Note on Sharpe.** Earlier versions of this README quoted 2.13 for v1; that figure annualized 5-day-trade returns with √252 instead of √(252/5). With the correct annualization (matching the convention used for the benchmarks), v1 lands at 0.95 — still well ahead of SPY but slightly behind the equal-weight benchmark on risk-adjusted terms. The v2 risk layer was built primarily to address the -54% drawdown that this corrected comparison surfaced.
 
 ## Methodology
 

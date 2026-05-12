@@ -9,10 +9,13 @@ ML swing-trading capstone for the **Institute of Data — Data Science & AI** pr
 - **Universe (11)**: AAPL, AMZN, JNJ, JPM, MCD, META, NVDA, PFE, SPY, TSLA, UNH
 - **Strategy**: 5-day swing, cross-sectional top-quintile ranker, Random Forest production model
 - **Validation**: walk-forward CV — best fold-mean AUC ≈ **0.594**
-- **Backtest (2019-07 → 2025-12, 10bps RT cost)**: total return **561%**, CAGR **34.1%**, Sharpe **2.13**, max drawdown **-54.1%**
+- **Backtest v1** (no risk layer, 2019-07 → 2025-12, 20bps RT): 561% / **CAGR 34.1% / Sharpe 0.95 / MaxDD -54.1%**
+- **Backtest v2** (vol-target + regime gate + correlation filter, same window): 314% / **CAGR 24.7% / Sharpe 1.09 / MaxDD -34.3%**
 - **Stack**: Python 3.12 (pipeline + FastAPI backend), Next.js 16 + TypeScript + Tailwind v4 (frontend), SQLite for auto-trader state
 - **Production model**: `models/rf_v1.joblib` (Random Forest, hand-promoted)
 - **Venvs**: top-level `venv/` for the capstone pipeline; separate `dashboard/backend/venv/` for the API
+
+> **Sharpe annualization gotcha.** `src/backtest.py::compute_metrics` annualizes with √(periods_per_year) where periods_per_year = 252/HOLDING_DAYS ≈ 50.4 (correct for 5-day-trade returns). An earlier version of the README used √252 instead, inflating v1 Sharpe from 0.95 to 2.13. If you re-encounter "Sharpe 2.13" anywhere, that's the bug. The numbers above use the corrected √50.4.
 
 ## Two layers, one project
 
@@ -66,6 +69,8 @@ No test suite exists in this repo.
 
 **Backtest invariant**: trades are **non-overlapping** (`backtest.py::simulate_strategy` takes every Nth row where N = `HOLDING_DAYS`). The naïve overlapping version was an earlier bug that double-counted overlapping forward-return windows and tripled apparent returns. Two benchmarks: SPY (market) and equal-weighted universe (apples-to-apples for the selection edge).
 
+**Risk-managed variant (v2)**: `src/backtest_v2.py` runs the same picks through `src/risk.py::size_basket`, which adds vol-targeted sizing (target 15% annualized, max 0.40 weight, gross cap 1.0), a regime gate (half-size when SPY < 200dMA **AND** VIX > 75th percentile rolling-2y), and a 60-day correlation filter that drops pick #2 if its trailing correlation with pick #1 exceeds 0.80. VIX comes from `src/data_loader.py::load_vix` (yfinance `^VIX`, cached at `data/raw/vix.parquet`). v2 saves to `results/backtest_v2_riskmanaged.json`, `results/backtest_v2_diagnostics.json`, `results/v2_trades.parquet`, and the overlay `results/06b_equity_curve_v2.png` — never touches v1 artifacts. The acceptance bar is "MaxDD ≥ 10pp better AND Sharpe within ±0.3 of v1."
+
 > `src/backtest.py` currently has duplicate `simulate_strategy` / `plot_equity_curves` / CLI blocks left over from a refactor — the first definitions are the live ones; the trailing dupes are dead code that gets shadowed when the module loads. Don't be alarmed.
 
 ## Architecture — production model lifecycle
@@ -77,7 +82,9 @@ No test suite exists in this repo.
 
 ## Architecture — dashboard
 
-**Backend** (`dashboard/backend/main.py`): FastAPI app exposing capstone artifacts (`/api/predictions/*`, `/api/equity-curve`, `/api/summary`), Alpaca paper-trading endpoints (`/api/account`, `/api/orders/*`, `/api/live-price/*`, `/api/historical-bars/*`), news (`/api/news/*`), Claude-powered analysis (`/api/intelligence/*`), heatmap (`/api/heatmap/*`), and auto-trader control (`/api/autotrader/*`). Reads `.env` from `dashboard/backend/.env`: `ALPACA_API_KEY`, `ALPACA_API_SECRET`, `ANTHROPIC_API_KEY`, `AUTO_TRADER_ENABLED`.
+**Backend** (`dashboard/backend/main.py`): FastAPI app exposing capstone artifacts (`/api/predictions/*`, `/api/equity-curve`, `/api/equity-curve/v2`, `/api/summary`, `/api/summary/v2`, `/api/risk/today`), Alpaca paper-trading endpoints (`/api/account`, `/api/orders/*`, `/api/live-price/*`, `/api/historical-bars/*`), news (`/api/news/*`), Claude-powered analysis (`/api/intelligence/*`), heatmap (`/api/heatmap/*`), trade journal (`/api/journal/*`), and auto-trader control (`/api/autotrader/*`). Reads `.env` from `dashboard/backend/.env`: `ALPACA_API_KEY`, `ALPACA_API_SECRET`, `ANTHROPIC_API_KEY`, `AUTO_TRADER_ENABLED`, `AUTO_STREAM_ENABLED`.
+
+**Live risk sizing**: `dashboard/backend/position_manager.py::build_risk_context` pulls ~210 days of Alpaca daily bars + the cached VIX parquet, then `select_signals_to_trade` calls `src.risk.size_basket` to assign per-pick weights. The auto-scheduler forwards each weight to `calculate_position_size(buying_power, ref_price, weight)`. Falls back to flat 20% if the risk module can't be imported or Alpaca bars fail. The Decision Card on the main dashboard reads `/api/risk/today` which exposes regime + weights + recommended notional/shares as a single payload.
 
 **Live data**: `stream_manager.py` runs an Alpaca `StockDataStream` on a daemon thread, buffering bars in `deque(maxlen=500)` per ticker. Initialized on FastAPI startup if creds are present. Frontend polls REST endpoints rather than connecting to the websocket directly — see `/api/historical-bars/{ticker}` (intraday timeframes supported: `1Min/5Min/15Min/30Min/1H/1D/1W`).
 

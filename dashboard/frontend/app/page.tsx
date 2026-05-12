@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import HeatmapStrip from "./components/HeatmapStrip";
+import DecisionCard from "./components/DecisionCard";
 import {
   ComposedChart,
   Brush,
@@ -594,6 +595,7 @@ export default function DashboardPage() {
       </aside>
 
       <main className="main">
+        <DecisionCard />
         <div className="stat-bar">
           <StatCell label="Total Return" value={fmtPct(s.total_return)} sub={`+${((s.total_return - summary.spy.total_return) * 100).toFixed(0)}pp vs SPY`} accent="up" />
           <StatCell label="Annualized" value={fmtPct(s.annualized_return)} sub={`+${((s.annualized_return - ew.annualized_return) * 100).toFixed(2)}pp vs EW`} accent="up" />
@@ -894,7 +896,7 @@ export default function DashboardPage() {
         .nav-btn.active { background: var(--green-bg-strong); color: var(--green); }
         .nav-divider { height: 1px; width: 20px; background: var(--border); margin: 4px 0; }
         .nav-spacer { flex: 1; }
-        .main { grid-column: 2; grid-row: 2; display: grid; grid-template-rows: auto auto 1fr 180px; overflow: hidden; background: var(--bg-base); }
+        .main { grid-column: 2; grid-row: 2; display: grid; grid-template-rows: auto auto auto 1fr 180px; overflow: hidden; background: var(--bg-base); }
         .stat-bar { background: var(--bg-panel); border-bottom: 1px solid var(--border); display: grid; grid-template-columns: repeat(8, 1fr); }
         .toolbar { background: var(--bg-panel); border-bottom: 1px solid var(--border); padding: 5px 8px; display: flex; gap: 10px; align-items: center; font-size: 10px; }
         .toolbar-section { display: flex; gap: 3px; align-items: center; padding-right: 10px; border-right: 1px solid var(--border); }
@@ -1091,32 +1093,114 @@ function PriceChartCell({ cellIndex, symbol, universe, quote, bars, change, colo
   );
 }
 
+type EquityV2Point = { date: string; equity: number; return: number; regime?: string; gross_weight?: number; picks?: string };
+type EquityV2Response = { config: object; v1: EquityPoint[]; v2: EquityV2Point[] };
+
 function EquityChartCell({ equityCurve }: { equityCurve: EquityCurveResponse }) {
+  const [mode, setMode] = useState<"v1" | "v2" | "overlay">("v1");
+  const [v2Data, setV2Data] = useState<EquityV2Response | null>(null);
+  const [v2Loading, setV2Loading] = useState(false);
+
+  const loadV2 = useCallback(async () => {
+    if (v2Data || v2Loading) return;
+    setV2Loading(true);
+    try {
+      const r = await fetch(`${API_BASE}/api/equity-curve/v2`);
+      if (r.ok) setV2Data(await r.json());
+    } catch {
+      // silent fail; v1 still works
+    } finally {
+      setV2Loading(false);
+    }
+  }, [v2Data, v2Loading]);
+
+  const switchMode = (next: "v1" | "v2" | "overlay") => {
+    setMode(next);
+    if (next !== "v1") loadV2();
+  };
+
+  // Build the chart's data: align v1 and v2 by date so both render on one axis
+  const chartData = (() => {
+    if (mode === "v1") return equityCurve.data.map((d) => ({ date: d.date, v1: d.equity }));
+    if (!v2Data) return equityCurve.data.map((d) => ({ date: d.date, v1: d.equity }));
+    const byDate = new Map<string, { date: string; v1?: number; v2?: number }>();
+    for (const p of v2Data.v1) byDate.set(p.date, { date: p.date, v1: p.equity });
+    for (const p of v2Data.v2) {
+      const row = byDate.get(p.date) ?? { date: p.date };
+      row.v2 = p.equity;
+      byDate.set(p.date, row);
+    }
+    return Array.from(byDate.values()).sort((a, b) => a.date.localeCompare(b.date));
+  })();
+
+  const lastV1 = equityCurve.data[equityCurve.data.length - 1]?.equity ?? 0;
+  const lastV2 = v2Data?.v2[v2Data.v2.length - 1]?.equity ?? null;
+
   return (
     <div style={{ background: "var(--bg-base)", display: "flex", flexDirection: "column", overflow: "hidden" }}>
-      <div style={{ background: "var(--bg-panel)", borderBottom: "1px solid var(--border)", padding: "5px 8px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div style={{ display: "flex", gap: 8, alignItems: "baseline" }}>
+      <div style={{ background: "var(--bg-panel)", borderBottom: "1px solid var(--border)", padding: "5px 8px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+        <div style={{ display: "flex", gap: 8, alignItems: "baseline", flex: 1, minWidth: 0 }}>
           <span style={{ fontSize: 12, fontWeight: 700 }}>STRATEGY</span>
-          <span style={{ fontSize: 9, color: "var(--text-muted)" }}>ML Equity · ALL · {equityCurve.n_trades} trades</span>
+          <span style={{ fontSize: 9, color: "var(--text-muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+            ML Equity · {equityCurve.n_trades} trades
+          </span>
         </div>
-        <div style={{ display: "flex", gap: 6, alignItems: "baseline" }}>
-          <span style={{ fontSize: 12, fontWeight: 700 }} className="up">${(equityCurve.data[equityCurve.data.length - 1]?.equity ?? 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+        <div style={{ display: "flex", gap: 2 }}>
+          {(["v1", "overlay", "v2"] as const).map((m) => (
+            <button
+              key={m}
+              onClick={() => switchMode(m)}
+              style={{
+                background: mode === m ? "var(--bg-row-hover)" : "transparent",
+                color: mode === m ? "var(--text-primary)" : "var(--text-muted)",
+                border: "1px solid " + (mode === m ? "var(--border-strong)" : "transparent"),
+                borderRadius: 3,
+                padding: "1px 6px",
+                fontSize: 9,
+                fontWeight: 700,
+                cursor: "pointer",
+                fontFamily: "inherit",
+                textTransform: "uppercase",
+                letterSpacing: "0.04em",
+              }}
+              title={m === "v1" ? "Original strategy" : m === "v2" ? "Risk-managed (vol-target + regime gate)" : "Both"}
+            >
+              {m}
+            </button>
+          ))}
+        </div>
+        <div style={{ display: "flex", gap: 8, alignItems: "baseline" }}>
+          {(mode === "v1" || mode === "overlay") && (
+            <span style={{ fontSize: 11, fontWeight: 700 }} className="up">${lastV1.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+          )}
+          {(mode === "v2" || mode === "overlay") && lastV2 != null && (
+            <span style={{ fontSize: 11, fontWeight: 700, color: "var(--cyan)" }}>${lastV2.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+          )}
         </div>
       </div>
       <div style={{ flex: 1, minHeight: 0 }}>
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={equityCurve.data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+          <ComposedChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
             <defs>
               <linearGradient id="strat-grad" x1="0" x2="0" y1="0" y2="1">
                 <stop offset="0%" stopColor="#4ADE80" stopOpacity={0.35} />
                 <stop offset="100%" stopColor="#4ADE80" stopOpacity={0} />
               </linearGradient>
+              <linearGradient id="strat-grad-v2" x1="0" x2="0" y1="0" y2="1">
+                <stop offset="0%" stopColor="#22D3EE" stopOpacity={0.35} />
+                <stop offset="100%" stopColor="#22D3EE" stopOpacity={0} />
+              </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="#1F2533" />
-            <XAxis dataKey="date" stroke="#6A7488" tick={{ fontSize: 9 }} tickFormatter={(d: string) => d.slice(0, 7)} interval={Math.floor(equityCurve.data.length / 6)} />
+            <XAxis dataKey="date" stroke="#6A7488" tick={{ fontSize: 9 }} tickFormatter={(d: string) => d.slice(0, 7)} interval={Math.floor(chartData.length / 6)} />
             <YAxis stroke="#6A7488" tick={{ fontSize: 9 }} tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`} width={40} />
-            <Tooltip contentStyle={{ backgroundColor: "#11151D", border: "1px solid #1F2533", fontSize: 10 }} formatter={(v: number) => [`$${v.toLocaleString()}`, "Equity"]} />
-            <Area type="monotone" dataKey="equity" stroke="#4ADE80" strokeWidth={1.5} fill="url(#strat-grad)" />
+            <Tooltip contentStyle={{ backgroundColor: "#11151D", border: "1px solid #1F2533", fontSize: 10 }} formatter={(v: number, name: string) => [`$${v.toLocaleString()}`, name === "v1" ? "v1" : "v2"]} />
+            {(mode === "v1" || mode === "overlay") && (
+              <Area type="monotone" dataKey="v1" stroke="#4ADE80" strokeWidth={1.5} fill={mode === "overlay" ? "none" : "url(#strat-grad)"} fillOpacity={mode === "overlay" ? 0 : 1} dot={false} />
+            )}
+            {(mode === "v2" || mode === "overlay") && v2Data && (
+              <Area type="monotone" dataKey="v2" stroke="#22D3EE" strokeWidth={2} fill={mode === "v2" ? "url(#strat-grad-v2)" : "none"} fillOpacity={mode === "v2" ? 1 : 0} dot={false} />
+            )}
           </ComposedChart>
         </ResponsiveContainer>
       </div>

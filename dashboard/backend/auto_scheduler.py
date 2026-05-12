@@ -124,20 +124,38 @@ def run_entry_cycle(dry_run: bool = False) -> dict:
         predictions = _load_latest_predictions(top_n=10)
         summary["signals_evaluated"] = len(predictions)
 
-        # Use position_manager to filter
-        selected = pm.select_signals_to_trade(predictions, max_new=MAX_ORDERS_PER_RUN)
+        # Set up Alpaca clients early so we can build the risk context
+        data_client, trading_client, StockLatestQuoteRequest = _get_alpaca_clients()
+
+        # Build risk context (Alpaca daily bars for the universe + cached VIX).
+        # If this fails for any reason, select_signals_to_trade falls back to
+        # the flat-20% weighting — sizing degrades gracefully, no crash.
+        universe_tickers = sorted(set(p["ticker"] for p in predictions) | {"SPY"})
+        risk_context = pm.build_risk_context(data_client, universe_tickers)
+
+        selected, risk_diag = pm.select_signals_to_trade(
+            predictions,
+            max_new=MAX_ORDERS_PER_RUN,
+            risk_context=risk_context,
+        )
         summary["signals_selected"] = len(selected)
+        summary["risk"] = risk_diag
 
         if dry_run:
             summary["trades"] = [
-                {"ticker": p["ticker"], "y_proba": p["y_proba"], "would_trade": True}
-                for p, _ in selected
+                {
+                    "ticker": p["ticker"],
+                    "y_proba": p["y_proba"],
+                    "weight": round(w, 4),
+                    "would_trade": True,
+                }
+                for p, w in selected
             ]
             db.log_run(
                 run_type="entry_dryrun",
                 n_signals_evaluated=summary["signals_evaluated"],
                 n_orders_placed=0,
-                notes=f"dry run, would trade {len(selected)}",
+                notes=f"dry run [{risk_diag.get('regime')}], would trade {len(selected)}",
             )
             summary["completed_at"] = datetime.now().isoformat()
             return summary
@@ -147,13 +165,11 @@ def run_entry_cycle(dry_run: bool = False) -> dict:
                 run_type="entry",
                 n_signals_evaluated=summary["signals_evaluated"],
                 n_orders_placed=0,
-                notes="no signals met criteria",
+                notes=f"no signals met criteria [{risk_diag.get('regime')}]",
             )
             summary["completed_at"] = datetime.now().isoformat()
             return summary
 
-        # Set up Alpaca
-        data_client, trading_client, StockLatestQuoteRequest = _get_alpaca_clients()
         from alpaca.trading.requests import MarketOrderRequest
         from alpaca.trading.enums import OrderSide, TimeInForce
 
@@ -162,7 +178,7 @@ def run_entry_cycle(dry_run: bool = False) -> dict:
         buying_power = float(account.buying_power)
 
         # Place orders
-        for pred, _ in selected:
+        for pred, weight in selected:
             ticker = pred["ticker"]
             signal_proba = pred["y_proba"]
             signal_date = pred["signal_date"]
@@ -177,7 +193,7 @@ def run_entry_cycle(dry_run: bool = False) -> dict:
                     continue
 
                 ref_price = quote["ask"] or quote["mid"]
-                qty = pm.calculate_position_size(buying_power, ref_price)
+                qty = pm.calculate_position_size(buying_power, ref_price, weight=weight)
                 if qty < 1:
                     summary["orders_failed"] += 1
                     summary["errors"].append(f"{ticker}: sized to 0 shares")

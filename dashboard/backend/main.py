@@ -151,8 +151,29 @@ def _load_backtest_summary() -> dict:
         return json.load(f)
 
 
+def _load_backtest_v2_summary() -> dict | None:
+    """Risk-managed v2 backtest summary. None if pipeline hasn't generated it yet."""
+    path = RESULTS_DIR / "backtest_v2_riskmanaged.json"
+    if not path.exists():
+        return None
+    with open(path) as f:
+        return json.load(f)
+
+
+def _load_v2_trades() -> pd.DataFrame | None:
+    """Per-rebalance v2 trades (date, basket_return_net, gross_weight, regime, picks_csv)."""
+    path = RESULTS_DIR / "v2_trades.parquet"
+    if not path.exists():
+        return None
+    df = pd.read_parquet(path)
+    df["date"] = pd.to_datetime(df["date"])
+    return df
+
+
 PREDICTIONS = _load_predictions()
 BACKTEST = _load_backtest_summary()
+BACKTEST_V2 = _load_backtest_v2_summary()
+V2_TRADES = _load_v2_trades()
 UNIVERSE = sorted(PREDICTIONS["ticker"].unique().tolist())
 
 # ---------------------------------------------------------------------------
@@ -195,6 +216,9 @@ def root():
             "/api/heatmap/{ticker}?current_price=X",
             "/api/journal/comparison",
             "/api/journal/equity",
+            "/api/summary/v2",
+            "/api/equity-curve/v2",
+            "/api/risk/today",
         ],
     }
 
@@ -205,6 +229,14 @@ def root():
 @app.get("/api/summary")
 def get_summary():
     return BACKTEST
+
+
+@app.get("/api/summary/v2")
+def get_summary_v2():
+    """Risk-managed v2 backtest summary (vol-target + regime gate + correlation filter)."""
+    if BACKTEST_V2 is None:
+        raise HTTPException(status_code=404, detail="v2 backtest not yet generated. Run `python -m src.backtest_v2`.")
+    return BACKTEST_V2
 
 
 @app.get("/api/tickers")
@@ -286,6 +318,64 @@ def get_equity_curve(top_n: int = 2, holding_days: int = 5, cost_bps: float = 10
             for _, row in trades.iterrows()
         ],
     }
+
+
+@app.get("/api/equity-curve/v2")
+def get_equity_curve_v2(initial_capital: float = 10000.0):
+    """
+    Overlay v1 + v2 equity curves on the same date axis for the dashboard
+    before/after panel. v1 is recomputed inline from PREDICTIONS (same logic
+    as /api/equity-curve); v2 is read from results/v2_trades.parquet.
+    """
+    if V2_TRADES is None:
+        raise HTTPException(status_code=404, detail="v2 trades not yet generated. Run `python -m src.backtest_v2`.")
+
+    # v1: top-2, 5-day non-overlapping, 10bps cost — matches existing /api/equity-curve defaults
+    v1_pr = PREDICTIONS.copy()
+    v1_pr["rank"] = v1_pr.groupby("date")["y_proba"].rank(method="first", ascending=False)
+    v1_picks = v1_pr[v1_pr["rank"] <= 2]
+    v1_daily = (
+        v1_picks.groupby("date", as_index=False)["fwd_return_5d"]
+        .mean()
+        .rename(columns={"fwd_return_5d": "basket_return"})
+        .sort_values("date")
+        .reset_index(drop=True)
+    )
+    v1_trades = v1_daily.iloc[::5].copy().reset_index(drop=True)
+    v1_trades["return_net"] = v1_trades["basket_return"] - 0.0020  # 20bps round-trip per leg, matches code
+    v1_trades["equity"] = initial_capital * (1 + v1_trades["return_net"]).cumprod()
+
+    # v2: load from artifact
+    v2 = V2_TRADES.sort_values("date").reset_index(drop=True).copy()
+    v2["equity"] = initial_capital * (1 + v2["basket_return_net"]).cumprod()
+
+    return {
+        "config": {
+            "initial_capital": initial_capital,
+            "v1": {"top_n": 2, "holding_days": 5, "cost_bps": 20.0, "sizing": "equal-weight"},
+            "v2": {
+                "top_n": 2, "holding_days": 5, "cost_bps": 20.0, "sizing": "vol-targeted",
+                "target_vol": 0.15, "max_weight": 0.40, "gross_cap": 1.0,
+                "regime_off_multiplier": 0.5, "corr_threshold": 0.80,
+            },
+        },
+        "v1": [
+            {"date": row["date"].strftime("%Y-%m-%d"),
+             "equity": round(float(row["equity"]), 2),
+             "return": round(float(row["return_net"]), 6)}
+            for _, row in v1_trades.iterrows()
+        ],
+        "v2": [
+            {"date": row["date"].strftime("%Y-%m-%d"),
+             "equity": round(float(row["equity"]), 2),
+             "return": round(float(row["basket_return_net"]), 6),
+             "regime": row["regime"],
+             "gross_weight": round(float(row["gross_weight"]), 4),
+             "picks": row["picks_csv"]}
+            for _, row in v2.iterrows()
+        ],
+    }
+
 
 # ---------------------------------------------------------------------------
 # Endpoints — Alpaca live data
@@ -776,6 +866,132 @@ def evaluation_report():
             "error": f"{type(e).__name__}: {str(e)}",
             "trace": traceback.format_exc(),
         }
+
+
+# ---------------------------------------------------------------------------
+# Endpoints — Risk / Decision Card
+# ---------------------------------------------------------------------------
+
+@app.get("/api/risk/today")
+def risk_today(top_n: int = 5):
+    """
+    Single-payload feed for the Decision Card. Returns today's regime,
+    risk-managed weights for the top-N predictions, recommended $ and
+    share counts based on current buying power, and edge-over-universe.
+    """
+    if PREDICTIONS.empty:
+        raise HTTPException(status_code=404, detail="No predictions loaded.")
+
+    latest_date = PREDICTIONS["date"].max()
+    today_rows = (
+        PREDICTIONS[PREDICTIONS["date"] == latest_date]
+        .sort_values("y_proba", ascending=False)
+        .copy()
+    )
+    if today_rows.empty:
+        raise HTTPException(status_code=404, detail="No predictions for latest date.")
+
+    top_picks = today_rows.head(top_n)
+    universe_mean_proba = float(today_rows["y_proba"].mean())
+    top_proba = float(top_picks.iloc[0]["y_proba"])
+    edge_over_universe = top_proba - universe_mean_proba
+
+    # Build risk context (Alpaca bars + cached VIX). Falls back gracefully.
+    risk_context = position_manager.build_risk_context(
+        data_client,
+        tickers=top_picks["ticker"].tolist() + ["SPY"],
+    )
+
+    # Display-only sizing: call size_basket directly, bypassing the freshness
+    # and capacity filters that select_signals_to_trade applies for live trading.
+    regime = "unknown"
+    spy_close_val = spy_ma200_val = vix_val = vix_pct = None
+    regime_mult = 1.0
+    gross_weight = 0.0
+    weight_by_ticker: dict[str, float] = {}
+    drop_reason_by_ticker: dict[str, str | None] = {}
+    realized_vol_by_ticker: dict[str, float | None] = {}
+    risk_layer_state = "off"
+
+    if risk_context is not None:
+        try:
+            from src.risk import size_basket
+            picks = top_picks["ticker"].tolist()
+            asof_ts = pd.Timestamp(latest_date)
+            weights, diag = size_basket(
+                picks,
+                risk_context["prices_long"],
+                risk_context["spy_history"],
+                risk_context["vix_history"],
+                asof_ts,
+            )
+            regime = diag.regime
+            spy_close_val = diag.spy_close
+            spy_ma200_val = diag.spy_ma200
+            vix_val = diag.vix
+            vix_pct = diag.vix_pct_rank
+            regime_mult = diag.regime_multiplier
+            gross_weight = diag.gross_weight
+            weight_by_ticker = {t: float(w) for t, w in weights.items()}
+            drop_reason_by_ticker = {p.ticker: p.dropped_reason for p in diag.picks}
+            realized_vol_by_ticker = {p.ticker: p.realized_vol_20d for p in diag.picks}
+            risk_layer_state = "on"
+        except Exception as e:
+            print(f"[risk_today] size_basket failed: {e}")
+
+    # Recommended size in $/shares using current buying power and last close
+    buying_power = None
+    try:
+        if trading_client is not None:
+            account = trading_client.get_account()
+            buying_power = float(account.buying_power)
+    except Exception as e:
+        print(f"[risk_today] buying_power fetch failed: {e}")
+
+    # Latest close per ticker from the risk context's price history
+    last_close: dict[str, float] = {}
+    if risk_context is not None and not risk_context["prices_long"].empty:
+        prices = risk_context["prices_long"]
+        last = (
+            prices.sort_values("date").groupby("ticker").tail(1)
+            .set_index("ticker")["close"]
+        )
+        last_close = last.to_dict()
+
+    picks_out = []
+    for rank, (_, row) in enumerate(top_picks.iterrows(), start=1):
+        t = row["ticker"]
+        w = weight_by_ticker.get(t, 0.0)
+        price = last_close.get(t)
+        notional = (buying_power or 0.0) * w if buying_power else None
+        rec_shares = int(notional // price) if (notional and price and price > 0) else None
+        picks_out.append({
+            "ticker": t,
+            "y_proba": float(row["y_proba"]),
+            "rank": rank,
+            "weight_pct": round(w, 4),
+            "rec_notional": round(notional, 2) if notional is not None else None,
+            "rec_shares": rec_shares,
+            "last_close": float(price) if price is not None else None,
+            "realized_vol_20d": realized_vol_by_ticker.get(t),
+            "dropped_reason": drop_reason_by_ticker.get(t),
+        })
+
+    return {
+        "asof": latest_date.strftime("%Y-%m-%d"),
+        "regime": regime,
+        "risk_layer": risk_layer_state,
+        "spy_close": spy_close_val,
+        "spy_ma200": spy_ma200_val,
+        "vix": vix_val,
+        "vix_pct_rank": vix_pct,
+        "regime_multiplier": regime_mult,
+        "gross_weight": gross_weight,
+        "buying_power": buying_power,
+        "edge_over_universe": round(edge_over_universe, 6),
+        "universe_mean_proba": round(universe_mean_proba, 6),
+        "picks": picks_out,
+    }
 
 
 # ---------------------------------------------------------------------------

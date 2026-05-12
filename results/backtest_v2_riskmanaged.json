@@ -1,0 +1,58 @@
+{
+  "v2_strategy": {
+    "total_return": 3.136268453495892,
+    "annualized_return": 0.2466807227988479,
+    "sharpe_ratio": 1.0920661453789748,
+    "max_drawdown": -0.3427868896325233,
+    "hit_rate": 0.5446153846153846,
+    "n_periods": 325.0,
+    "n_years": 6.44
+  },
+  "v1_strategy": {
+    "total_return": 5.61190018371018,
+    "annualized_return": 0.3408840712149208,
+    "sharpe_ratio": 0.9506650717231405,
+    "max_drawdown": -0.5407746906023844,
+    "hit_rate": 0.5476923076923077,
+    "n_periods": 325.0,
+    "n_years": 6.44
+  },
+  "spy": {
+    "total_return": 1.5086515519480326,
+    "annualized_return": 0.15353409599710321,
+    "sharpe_ratio": 0.806648622491449,
+    "max_drawdown": -0.3371727469129618,
+    "hit_rate": 0.554595928439235,
+    "n_periods": 1621.0,
+    "n_years": 6.44
+  },
+  "equal_weight": {
+    "total_return": 4.127239414724029,
+    "annualized_return": 0.2889622972593082,
+    "sharpe_ratio": 1.2169020868482894,
+    "max_drawdown": -0.3209507150262732,
+    "hit_rate": 0.5663170882171499,
+    "n_periods": 1621.0,
+    "n_years": 6.44
+  },
+  "config": {
+    "top_n": 2,
+    "holding_days": 5,
+    "cost_per_leg_bps": 20.0,
+    "initial_capital": 10000,
+    "target_vol_annual": 0.15,
+    "max_weight": 0.4,
+    "gross_cap": 1.0,
+    "regime_off_multiplier": 0.5,
+    "corr_threshold": 0.8
+  },
+  "regime_counts": {
+    "risk_on": 284,
+    "risk_off": 41
+  },
+  "acceptance": {
+    "maxdd_improvement_pp": 19.7988,
+    "sharpe_delta": 0.1414,
+    "passed": true
+  }
+}

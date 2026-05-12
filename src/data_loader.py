@@ -122,6 +122,45 @@ def load_data(
     return df
 
 
+# VIX loader (separate from the universe OHLCV cache because it's a single
+# series, daily close only, and is consumed by the risk layer not the model).
+
+
+def load_vix(
+    start: str = "2018-01-01",
+    end: str = "2025-12-31",
+    use_cache: bool = True,
+) -> pd.DataFrame:
+    """
+    Daily VIX close from yfinance ^VIX. Returns columns: date, vix_close.
+    Cached at data/raw/vix.parquet.
+    """
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    cache_path = DATA_DIR / "vix.parquet"
+
+    if use_cache and cache_path.exists():
+        print(f"Loading cached VIX from {cache_path}")
+        return pd.read_parquet(cache_path)
+
+    print(f"Downloading ^VIX from {start} to {end}...")
+    raw = yf.download("^VIX", start=start, end=end, auto_adjust=False, progress=False)
+    if raw.empty:
+        raise RuntimeError("yfinance returned no VIX data")
+
+    # yfinance returns a multi-index columns DataFrame for single-ticker too;
+    # flatten and pick Close.
+    if isinstance(raw.columns, pd.MultiIndex):
+        raw.columns = raw.columns.get_level_values(0)
+    out = raw[["Close"]].reset_index()
+    out.columns = ["date", "vix_close"]
+    out["date"] = pd.to_datetime(out["date"])
+    out = out.dropna().sort_values("date").reset_index(drop=True)
+
+    out.to_parquet(cache_path, index=False)
+    print(f"Saved VIX cache to {cache_path} ({len(out):,} rows)")
+    return out
+
+
 # CLI entry point:
 
 if __name__ == "__main__":
