@@ -150,6 +150,43 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+# Rank-feature variant (Phase 2 Block 2)
+#
+# Motivation: the model's target is cross-sectional ("top quintile per date")
+# but its features are absolute (RSI-14 = 50, volatility_20d = 0.02). Recasting
+# each numeric feature as its **per-date rank-pct across the universe** removes
+# the absolute-vs-relative mismatch and lets the tree splits operate directly on
+# the comparison that matters. Quant agent's call: "highest leverage-per-hour
+# bet on the board." Expected lift: 1-3pp walk-forward AUC.
+
+FEATURE_COLUMNS_TO_RANK = [
+    "return_1d",
+    "return_5d",
+    "return_20d",
+    "return_60d",
+    "volatility_20d",
+    "volatility_60d",
+    "rsi_14",
+    "bb_pct",
+    "volume_ratio_20d",
+    "spy_return_1d",       # constant across tickers on a given date — rank will collapse to 1.0
+    "excess_return_1d",
+]
+
+
+def build_features_ranked(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Like build_features() but every numeric feature is replaced by its per-date
+    rank-pct in [0, 1] across the universe. Preserves column names so the
+    downstream model code doesn't need to change.
+    """
+    df = build_features(df)
+    for col in FEATURE_COLUMNS_TO_RANK:
+        if col in df.columns:
+            df[col] = df.groupby("date")[col].rank(pct=True)
+    return df
+
+
 # CLI entry point
 
 if __name__ == "__main__":

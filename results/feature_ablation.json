@@ -1,0 +1,41 @@
+{
+  "generated_at": "2026-05-12T13:31:01.020921",
+  "n_splits": 5,
+  "feature_columns": [
+    "return_1d",
+    "return_5d",
+    "return_20d",
+    "return_60d",
+    "volatility_20d",
+    "volatility_60d",
+    "rsi_14",
+    "bb_pct",
+    "volume_ratio_20d",
+    "spy_return_1d",
+    "excess_return_1d"
+  ],
+  "absolute": {
+    "fold_aucs": [
+      0.5545951131646958,
+      0.5666175024582104,
+      0.6145946635804886,
+      0.6396089487561021,
+      0.592989604452914
+    ],
+    "mean_auc": 0.5936811664824823,
+    "std_auc": 0.031007661239963267
+  },
+  "ranked": {
+    "fold_aucs": [
+      0.5807589198956964,
+      0.5788877069175056,
+      0.6166058277715416,
+      0.6360695608287432,
+      0.6154641014261971
+    ],
+    "mean_auc": 0.6055572233679368,
+    "std_auc": 0.022259557912285136
+  },
+  "delta_auc": 0.011876056885454567,
+  "recommendation": "PROMOTE: rank features lift AUC meaningfully"
+}

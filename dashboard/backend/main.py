@@ -179,6 +179,15 @@ def _load_ablation() -> dict | None:
         return json.load(f)
 
 
+def _load_feature_ablation() -> dict | None:
+    """Absolute-vs-rank feature ablation. None if not yet generated."""
+    path = RESULTS_DIR / "feature_ablation.json"
+    if not path.exists():
+        return None
+    with open(path) as f:
+        return json.load(f)
+
+
 # Calibration buckets — match src/evaluate.py so the ribbon agrees with the
 # existing calibration bar chart on the evaluation page.
 CALIBRATION_BINS = [0.0, 0.45, 0.50, 0.55, 0.60, 1.01]  # 1.01 so exactly-1.0 lands in last bucket
@@ -232,6 +241,7 @@ BACKTEST = _load_backtest_summary()
 BACKTEST_V2 = _load_backtest_v2_summary()
 V2_TRADES = _load_v2_trades()
 ABLATION = _load_ablation()
+FEATURE_ABLATION = _load_feature_ablation()
 CALIBRATION_BUCKETS = _compute_calibration_buckets(PREDICTIONS)
 UNIVERSE = sorted(PREDICTIONS["ticker"].unique().tolist())
 
@@ -278,6 +288,7 @@ def root():
             "/api/summary/v2",
             "/api/equity-curve/v2",
             "/api/ablation",
+            "/api/feature-ablation",
             "/api/calibration/buckets",
             "/api/risk/today",
         ],
@@ -329,6 +340,18 @@ def get_ablation():
     if ABLATION is None:
         raise HTTPException(status_code=404, detail="Ablation not yet generated. Run `python -m src.ablation`.")
     return ABLATION
+
+
+@app.get("/api/feature-ablation")
+def get_feature_ablation():
+    """
+    Absolute-features-vs-per-date-rank-features comparison on the same
+    walk-forward TimeSeriesSplit. Research artifact — does NOT reflect the
+    current production model, which still uses absolute features.
+    """
+    if FEATURE_ABLATION is None:
+        raise HTTPException(status_code=404, detail="Feature ablation not yet generated. Run `python -m src.feature_ablation`.")
+    return FEATURE_ABLATION
 
 
 @app.get("/api/tickers")

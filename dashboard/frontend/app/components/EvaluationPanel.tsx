@@ -95,9 +95,20 @@ type Ablation = {
   rows: AblationRow[];
 };
 
+type FeatureAblation = {
+  generated_at: string;
+  n_splits: number;
+  feature_columns: string[];
+  absolute: { fold_aucs: number[]; mean_auc: number; std_auc: number };
+  ranked: { fold_aucs: number[]; mean_auc: number; std_auc: number };
+  delta_auc: number;
+  recommendation: string;
+};
+
 export default function EvaluationPanel() {
   const [report, setReport] = useState<Report | null>(null);
   const [ablation, setAblation] = useState<Ablation | null>(null);
+  const [featureAblation, setFeatureAblation] = useState<FeatureAblation | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -105,9 +116,10 @@ export default function EvaluationPanel() {
     setLoading(true);
     setError(null);
     try {
-      const [reportRes, ablRes] = await Promise.all([
+      const [reportRes, ablRes, featAblRes] = await Promise.all([
         fetch(`${API_BASE}/api/evaluation/report`),
         fetch(`${API_BASE}/api/ablation`),
+        fetch(`${API_BASE}/api/feature-ablation`),
       ]);
       if (!reportRes.ok) {
         throw new Error(`HTTP ${reportRes.status}`);
@@ -120,6 +132,9 @@ export default function EvaluationPanel() {
       }
       if (ablRes.ok) {
         setAblation(await ablRes.json());
+      }
+      if (featAblRes.ok) {
+        setFeatureAblation(await featAblRes.json());
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to fetch");
@@ -175,6 +190,17 @@ export default function EvaluationPanel() {
           </div>
         ) : (
           <AblationTable rows={ablation.rows} nResamples={ablation.n_resamples} />
+        )}
+      </Section>
+
+      {/* === Feature Ablation: absolute vs per-date rank === */}
+      <Section title="Feature Ablation — absolute vs cross-sectional rank (research)">
+        {!featureAblation ? (
+          <div style={{ color: "var(--text-muted)", fontSize: 12, padding: "8px 0" }}>
+            No feature ablation artifact found. Run <code style={{ background: "var(--bg-row)", padding: "1px 4px", borderRadius: 2 }}>python -m src.feature_ablation</code>.
+          </div>
+        ) : (
+          <FeatureAblationTable data={featureAblation} />
         )}
       </Section>
 
@@ -471,6 +497,83 @@ function AblationTable({ rows, nResamples }: { rows: AblationRow[]; nResamples: 
         Subsequent layers each contribute &lt; ±0.05 Sharpe — small enough that the
         correlation filter actually shows a negative marginal on this 6.4-year window,
         a finding worth owning rather than hiding.
+      </div>
+    </div>
+  );
+}
+
+function FeatureAblationTable({ data }: { data: FeatureAblation }) {
+  const cols = "260px 90px 90px 200px";
+  const headerStyle: React.CSSProperties = {
+    display: "grid",
+    gridTemplateColumns: cols,
+    gap: 8,
+    padding: "6px 0",
+    fontSize: 10,
+    color: "var(--text-muted)",
+    textTransform: "uppercase",
+    letterSpacing: "0.04em",
+    fontWeight: 700,
+    borderBottom: "1px solid var(--border-soft)",
+  };
+  const rowStyle: React.CSSProperties = {
+    display: "grid",
+    gridTemplateColumns: cols,
+    gap: 8,
+    padding: "8px 0",
+    fontSize: 11,
+    borderBottom: "1px solid var(--border-soft)",
+    alignItems: "center",
+  };
+
+  const rows = [
+    { label: "Absolute features (current production)", v: data.absolute, isCurrent: true },
+    { label: "Per-date rank features", v: data.ranked, isCurrent: false },
+  ];
+
+  const deltaColorClass =
+    data.delta_auc > 0.005 ? "var(--green)" : data.delta_auc < -0.005 ? "var(--red)" : "var(--text-muted)";
+
+  return (
+    <div>
+      <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 12, lineHeight: 1.5 }}>
+        Same Random Forest, same walk-forward {data.n_splits}-fold split. Only the
+        feature representation differs: absolute (RSI=50, return=2%) vs per-date
+        cross-sectional rank-pct across the 11-ticker universe. Aligns the feature
+        scale to the target&apos;s cross-sectional nature.
+      </div>
+      <div style={headerStyle}>
+        <span>Feature set</span>
+        <span>Mean AUC</span>
+        <span>Std (folds)</span>
+        <span>Fold AUCs</span>
+      </div>
+      {rows.map((r) => (
+        <div key={r.label} style={{ ...rowStyle, background: r.isCurrent ? "transparent" : "rgba(34, 211, 238, 0.05)" }}>
+          <span style={{ fontWeight: 600 }}>{r.label}</span>
+          <span style={{ fontFeatureSettings: "'tnum'", fontWeight: 600 }}>{r.v.mean_auc.toFixed(4)}</span>
+          <span style={{ fontFeatureSettings: "'tnum'", color: "var(--text-muted)" }}>± {r.v.std_auc.toFixed(4)}</span>
+          <span style={{ fontFeatureSettings: "'tnum'", fontSize: 10, color: "var(--text-muted)" }}>
+            {r.v.fold_aucs.map((a) => a.toFixed(3)).join(" · ")}
+          </span>
+        </div>
+      ))}
+      <div style={{ marginTop: 12, padding: "10px 12px", background: "var(--bg-elevated)", border: "1px solid var(--border)", borderRadius: 4 }}>
+        <div style={{ display: "flex", gap: 16, alignItems: "baseline", flexWrap: "wrap" }}>
+          <span style={{ fontSize: 10, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 700 }}>Δ AUC</span>
+          <span style={{ fontSize: 18, fontWeight: 700, color: deltaColorClass, fontFeatureSettings: "'tnum'" }}>
+            {data.delta_auc >= 0 ? "+" : ""}{data.delta_auc.toFixed(4)}
+          </span>
+          <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
+            {data.recommendation}
+          </span>
+        </div>
+        <div style={{ marginTop: 6, fontSize: 10, color: "var(--text-faint)", lineHeight: 1.5 }}>
+          Research artifact — does not reflect the current production model
+          (still absolute features). Promoting rank features to production
+          would cascade through predictions.parquet, v2 backtest, ablation,
+          and every dashboard view — a deliberate, separate decision.
+        </div>
       </div>
     </div>
   );
