@@ -84,7 +84,7 @@ MAX_NOTIONAL_PER_ORDER = 10_000
 # App setup
 # ---------------------------------------------------------------------------
 
-app = FastAPI(title="Swing Trading Dashboard API", version="0.9.0")
+app = FastAPI(title="Swing Trading Dashboard API", version="0.9.1")
 
 
 @app.on_event("startup")
@@ -99,9 +99,15 @@ def _startup_autoscheduler():
     except Exception as e:
         print(f"Auto-trader scheduler startup failed: {e}")
 
-    # Initialize live websocket stream
-    try:
-        if ALPACA_API_KEY and ALPACA_API_SECRET:
+    # Initialize live websocket stream. Disable with AUTO_STREAM_ENABLED=false
+    # to keep `uvicorn --reload` happy (the websocket thread breaks reloads).
+    stream_enabled = os.getenv("AUTO_STREAM_ENABLED", "true").strip().lower() not in ("false", "0", "no", "off")
+    if not stream_enabled:
+        print("[main] Skipping stream - AUTO_STREAM_ENABLED=false")
+    elif not (ALPACA_API_KEY and ALPACA_API_SECRET):
+        print("[main] Skipping stream - Alpaca credentials missing")
+    else:
+        try:
             stream_manager.init_stream_manager(
                 api_key=ALPACA_API_KEY,
                 api_secret=ALPACA_API_SECRET,
@@ -109,10 +115,8 @@ def _startup_autoscheduler():
                 feed="iex",
             )
             print(f"[main] Stream manager initialized for {len(UNIVERSE)} tickers")
-        else:
-            print("[main] Skipping stream - Alpaca credentials missing")
-    except Exception as e:
-        print(f"[main] Stream init failed: {e}")
+        except Exception as e:
+            print(f"[main] Stream init failed: {e}")
 
 app.add_middleware(
     CORSMiddleware,
@@ -189,6 +193,8 @@ def root():
             "/api/autotrader/predict-cycle (POST)",
             "/api/evaluation/report",
             "/api/heatmap/{ticker}?current_price=X",
+            "/api/journal/comparison",
+            "/api/journal/equity",
         ],
     }
 
@@ -770,6 +776,217 @@ def evaluation_report():
             "error": f"{type(e).__name__}: {str(e)}",
             "trace": traceback.format_exc(),
         }
+
+
+# ---------------------------------------------------------------------------
+# Endpoints — Trade Journal (live vs backtest)
+# ---------------------------------------------------------------------------
+
+# Mirrors src.backtest.simulate_strategy without pulling matplotlib into the
+# dashboard venv. Keep the constants in sync with src/backtest.py.
+_JOURNAL_TOP_N = 2
+_JOURNAL_HOLDING_DAYS = 5
+_JOURNAL_ROUND_TRIP_COST = (0.0005 + 0.0005) * 2  # 10bps total
+
+
+def _simulate_strategy_local(preds: pd.DataFrame, top_n: int = _JOURNAL_TOP_N) -> pd.DataFrame:
+    """Non-overlapping top-N rebalance. Returns date + basket_return_net."""
+    if preds.empty:
+        return pd.DataFrame(columns=["date", "basket_return_5d", "basket_return_net"])
+    ranked = preds.copy()
+    ranked["rank"] = ranked.groupby("date")["y_proba"].rank(method="first", ascending=False)
+    picks = ranked[ranked["rank"] <= top_n]
+    daily_basket = (
+        picks.groupby("date", as_index=False)["fwd_return_5d"]
+        .mean()
+        .rename(columns={"fwd_return_5d": "basket_return_5d"})
+        .sort_values("date")
+        .reset_index(drop=True)
+    )
+    rebalance = daily_basket.iloc[::_JOURNAL_HOLDING_DAYS].copy().reset_index(drop=True)
+    rebalance["basket_return_net"] = rebalance["basket_return_5d"] - _JOURNAL_ROUND_TRIP_COST
+    return rebalance
+
+
+def _journal_collect_trades() -> list[dict]:
+    """Pull all autotrader trades ordered chronologically by signal_date."""
+    with auto_trader_db.get_conn() as conn:
+        rows = conn.execute(
+            "SELECT * FROM trades ORDER BY signal_date ASC, signal_rank ASC"
+        ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def _journal_status(row: dict) -> str:
+    if row.get("exit_filled_at"):
+        return "closed"
+    if row.get("entry_filled_at"):
+        return "open"
+    return "pending"
+
+
+@app.get("/api/journal/comparison")
+def journal_comparison():
+    """
+    Per-trade live vs backtest comparison.
+
+    For each autotrader trade we attach:
+      - backtest_predict_pnl_pct: fwd_return_5d from predictions.parquet for
+        the same (ticker, signal_date). What the historical backtester "saw"
+        this pick deliver. NaN/None for live signals after the historical
+        prediction window (no realized 5d forward yet).
+      - backtest_basket_pnl_pct: the net basket return from re-running
+        simulate_strategy() over the live window. Portfolio-level (top-N
+        rebalance), matched to this trade's signal_date if it falls on a
+        rebalance day.
+    Plus the two corresponding gaps vs realized live_pnl_pct.
+    """
+    trades = _journal_collect_trades()
+    if not trades:
+        return {
+            "rows": [],
+            "n_trades": 0,
+            "n_closed": 0,
+            "n_open": 0,
+            "n_pending": 0,
+        }
+
+    # Per-trade backtest counterfactual from predictions.parquet
+    preds = PREDICTIONS.copy()
+    preds["signal_date_str"] = preds["date"].dt.strftime("%Y-%m-%d")
+    preds_lookup = preds.set_index(["ticker", "signal_date_str"])
+
+    # Portfolio-level counterfactual from simulate_strategy over the live window
+    go_live = trades[0]["signal_date"]
+    bt_window = PREDICTIONS[PREDICTIONS["date"] >= pd.Timestamp(go_live)].copy()
+    basket_by_date: dict[str, float] = {}
+    if len(bt_window) > 0:
+        baskets = _simulate_strategy_local(bt_window, top_n=2)
+        for _, b in baskets.iterrows():
+            basket_by_date[b["date"].strftime("%Y-%m-%d")] = float(b["basket_return_net"])
+
+    enriched: list[dict] = []
+    for r in trades:
+        live_pnl_pct = float(r["pnl_pct"]) if r.get("pnl_pct") is not None else None
+
+        # Predict counterfactual
+        try:
+            pred_row = preds_lookup.loc[(r["ticker"], r["signal_date"])]
+            if isinstance(pred_row, pd.DataFrame):
+                pred_row = pred_row.iloc[0]
+            fwd = pred_row["fwd_return_5d"]
+            predict_pnl_pct = float(fwd) if pd.notna(fwd) else None
+        except KeyError:
+            predict_pnl_pct = None
+
+        # Basket counterfactual (portfolio-level)
+        basket_pnl_pct = basket_by_date.get(r["signal_date"])
+
+        gap_predict = (
+            live_pnl_pct - predict_pnl_pct
+            if (live_pnl_pct is not None and predict_pnl_pct is not None)
+            else None
+        )
+        gap_basket = (
+            live_pnl_pct - basket_pnl_pct
+            if (live_pnl_pct is not None and basket_pnl_pct is not None)
+            else None
+        )
+
+        enriched.append({
+            "id": r["id"],
+            "ticker": r["ticker"],
+            "signal_date": r["signal_date"],
+            "signal_proba": float(r["signal_proba"]),
+            "signal_rank": r["signal_rank"],
+            "entry_price": r.get("entry_price"),
+            "entry_filled_at": r.get("entry_filled_at"),
+            "exit_price": r.get("exit_price"),
+            "exit_filled_at": r.get("exit_filled_at"),
+            "qty": r.get("qty"),
+            "live_pnl": r.get("pnl"),
+            "live_pnl_pct": live_pnl_pct,
+            "backtest_predict_pnl_pct": predict_pnl_pct,
+            "backtest_basket_pnl_pct": basket_pnl_pct,
+            "gap_vs_predict": gap_predict,
+            "gap_vs_basket": gap_basket,
+            "model_version": r.get("model_version"),
+            "status": _journal_status(r),
+        })
+
+    n_closed = sum(1 for r in enriched if r["status"] == "closed")
+    n_open = sum(1 for r in enriched if r["status"] == "open")
+    n_pending = sum(1 for r in enriched if r["status"] == "pending")
+
+    return {
+        "rows": enriched,
+        "n_trades": len(enriched),
+        "n_closed": n_closed,
+        "n_open": n_open,
+        "n_pending": n_pending,
+        "go_live_date": go_live,
+    }
+
+
+@app.get("/api/journal/equity")
+def journal_equity():
+    """
+    Live cumulative equity curve (compounded closed-trade pnl_pct) overlaid
+    on a backtest reference curve generated by simulate_strategy() over the
+    same live window. Both rebased to $10K at go-live.
+    """
+    trades = _journal_collect_trades()
+    if not trades:
+        return {
+            "go_live_date": None,
+            "initial_capital": 10000,
+            "live": [],
+            "backtest": [],
+            "n_live_trades_closed": 0,
+            "n_backtest_baskets": 0,
+        }
+
+    go_live = trades[0]["signal_date"]
+    closed = [
+        r for r in trades
+        if r.get("exit_filled_at") is not None and r.get("pnl_pct") is not None
+    ]
+    closed.sort(key=lambda r: r["exit_filled_at"])
+
+    live_curve: list[dict] = []
+    capital = 10000.0
+    for t in closed:
+        capital *= 1 + float(t["pnl_pct"])
+        live_curve.append({
+            "date": t["exit_filled_at"][:10],
+            "equity": round(capital, 2),
+            "ticker": t["ticker"],
+            "trade_return": float(t["pnl_pct"]),
+        })
+
+    # Backtest reference curve over the live window
+    bt_curve: list[dict] = []
+    bt_window = PREDICTIONS[PREDICTIONS["date"] >= pd.Timestamp(go_live)].copy()
+    if len(bt_window) > 0:
+        baskets = _simulate_strategy_local(bt_window, top_n=2)
+        cap2 = 10000.0
+        for _, b in baskets.iterrows():
+            ret = float(b["basket_return_net"]) if pd.notna(b["basket_return_net"]) else 0.0
+            cap2 *= 1 + ret
+            bt_curve.append({
+                "date": b["date"].strftime("%Y-%m-%d"),
+                "equity": round(cap2, 2),
+                "return": ret,
+            })
+
+    return {
+        "go_live_date": go_live,
+        "initial_capital": 10000,
+        "live": live_curve,
+        "backtest": bt_curve,
+        "n_live_trades_closed": len(closed),
+        "n_backtest_baskets": len(bt_curve),
+    }
 
 
 # ---------------------------------------------------------------------------

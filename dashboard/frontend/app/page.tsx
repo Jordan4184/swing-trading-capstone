@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
+import Link from "next/link";
 import HeatmapStrip from "./components/HeatmapStrip";
 import {
   ComposedChart,
@@ -544,6 +545,11 @@ export default function DashboardPage() {
     <div className="layout">
       <header className="ticker-strip">
         <div className="brand-cell"><div className="brand-logo">C</div></div>
+        <div className="nav-cell">
+          <Link href="/journal" className="nav-pill">Journal</Link>
+          <Link href="/auto-trader" className="nav-pill">Auto-Trader</Link>
+          <Link href="/evaluation" className="nav-pill">Evaluation</Link>
+        </div>
         <div className="ticker-tape">
           {universeOrdered.map((ticker) => {
             const q = livePrices?.quotes[ticker];
@@ -863,6 +869,9 @@ export default function DashboardPage() {
         .ticker-strip { grid-column: 1 / -1; background: var(--bg-panel); border-bottom: 1px solid var(--border); display: flex; align-items: stretch; }
         .brand-cell { flex: 0 0 44px; display: flex; align-items: center; justify-content: center; border-right: 1px solid var(--border); }
         .brand-logo { width: 24px; height: 24px; border-radius: 5px; background: linear-gradient(135deg, var(--green), var(--cyan)); display: flex; align-items: center; justify-content: center; font-weight: 700; color: var(--bg-base); font-size: 12px; }
+        .nav-cell { display: flex; align-items: center; gap: 4px; padding: 0 8px; border-right: 1px solid var(--border); }
+        .nav-pill { font-size: 10px; font-weight: 600; color: var(--text-muted); text-decoration: none; padding: 3px 8px; border-radius: 3px; letter-spacing: 0.02em; }
+        .nav-pill:hover { background: var(--bg-row); color: var(--text-primary); }
         .ticker-tape { flex: 1; display: flex; align-items: center; overflow-x: auto; padding: 0 4px; }
         .ticker-tape::-webkit-scrollbar { display: none; }
         .tape-item { padding: 0 10px; display: flex; gap: 6px; align-items: center; white-space: nowrap; border-right: 1px solid var(--border-soft); font-size: 10px; }

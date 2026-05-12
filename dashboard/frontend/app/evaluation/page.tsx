@@ -13,6 +13,9 @@ export default function EvaluationPage() {
         <Link href="/auto-trader" style={{ color: "var(--text-muted)", fontSize: 11, textDecoration: "none" }}>
           Auto-Trader →
         </Link>
+        <Link href="/journal" style={{ color: "var(--text-muted)", fontSize: 11, textDecoration: "none" }}>
+          Journal →
+        </Link>
         <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: "-0.02em" }}>
           <span style={{ background: "linear-gradient(90deg, var(--cyan), var(--green))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
             Model Evaluation
