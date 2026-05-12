@@ -105,10 +105,20 @@ type FeatureAblation = {
   recommendation: string;
 };
 
+type ExitPolicy = {
+  v3_strategy: { sharpe_ratio: number; annualized_return: number; max_drawdown: number; hit_rate: number; total_return: number };
+  v2_strategy: { sharpe_ratio: number; annualized_return: number; max_drawdown: number; hit_rate: number; total_return: number };
+  config: { atr_multiplier: number; atr_window: number };
+  exit_reasons: Record<string, number>;
+  n_per_trade: number;
+  acceptance: { maxdd_delta_pp: number; cagr_delta_pp: number; sharpe_delta: number; passed: boolean };
+};
+
 export default function EvaluationPanel() {
   const [report, setReport] = useState<Report | null>(null);
   const [ablation, setAblation] = useState<Ablation | null>(null);
   const [featureAblation, setFeatureAblation] = useState<FeatureAblation | null>(null);
+  const [exitPolicy, setExitPolicy] = useState<ExitPolicy | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -116,10 +126,11 @@ export default function EvaluationPanel() {
     setLoading(true);
     setError(null);
     try {
-      const [reportRes, ablRes, featAblRes] = await Promise.all([
+      const [reportRes, ablRes, featAblRes, exitRes] = await Promise.all([
         fetch(`${API_BASE}/api/evaluation/report`),
         fetch(`${API_BASE}/api/ablation`),
         fetch(`${API_BASE}/api/feature-ablation`),
+        fetch(`${API_BASE}/api/exit-policy`),
       ]);
       if (!reportRes.ok) {
         throw new Error(`HTTP ${reportRes.status}`);
@@ -135,6 +146,9 @@ export default function EvaluationPanel() {
       }
       if (featAblRes.ok) {
         setFeatureAblation(await featAblRes.json());
+      }
+      if (exitRes.ok) {
+        setExitPolicy(await exitRes.json());
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to fetch");
@@ -201,6 +215,17 @@ export default function EvaluationPanel() {
           </div>
         ) : (
           <FeatureAblationTable data={featureAblation} />
+        )}
+      </Section>
+
+      {/* === Exit Policy: scheduled vs ATR stop === */}
+      <Section title="Exit Policy — scheduled (v2) vs ATR trailing stop (v3, research)">
+        {!exitPolicy ? (
+          <div style={{ color: "var(--text-muted)", fontSize: 12, padding: "8px 0" }}>
+            No v3 artifact found. Run <code style={{ background: "var(--bg-row)", padding: "1px 4px", borderRadius: 2 }}>python -m src.backtest_v3</code>.
+          </div>
+        ) : (
+          <ExitPolicyTable data={exitPolicy} />
         )}
       </Section>
 
@@ -573,6 +598,106 @@ function FeatureAblationTable({ data }: { data: FeatureAblation }) {
           (still absolute features). Promoting rank features to production
           would cascade through predictions.parquet, v2 backtest, ablation,
           and every dashboard view — a deliberate, separate decision.
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ExitPolicyTable({ data }: { data: ExitPolicy }) {
+  const cols = "200px 100px 100px 100px 100px";
+  const header: React.CSSProperties = {
+    display: "grid",
+    gridTemplateColumns: cols,
+    gap: 8,
+    padding: "6px 0",
+    fontSize: 10,
+    color: "var(--text-muted)",
+    textTransform: "uppercase",
+    letterSpacing: "0.04em",
+    fontWeight: 700,
+    borderBottom: "1px solid var(--border-soft)",
+  };
+  const row: React.CSSProperties = {
+    display: "grid",
+    gridTemplateColumns: cols,
+    gap: 8,
+    padding: "8px 0",
+    fontSize: 11,
+    borderBottom: "1px solid var(--border-soft)",
+    alignItems: "center",
+  };
+
+  const rows = [
+    { label: "v2 — scheduled 5-day exit (production)", v: data.v2_strategy, isCurrent: true },
+    { label: `v3 — ${data.config.atr_multiplier}x ATR(${data.config.atr_window}) stop`, v: data.v3_strategy, isCurrent: false },
+  ];
+  const exitReasons = Object.entries(data.exit_reasons);
+  const totalTrades = data.n_per_trade;
+  const stoppedCount = (data.exit_reasons.stop_gap ?? 0) + (data.exit_reasons.stop_intraday ?? 0);
+  const stoppedPct = totalTrades ? (stoppedCount / totalTrades) * 100 : 0;
+
+  const verdictColor = data.acceptance.passed ? "var(--green)" : "var(--amber)";
+  const verdictText = data.acceptance.passed
+    ? "PASS — MaxDD improved within target band"
+    : "INVESTIGATE — stop did not deliver the predicted MaxDD improvement";
+
+  return (
+    <div>
+      <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 12, lineHeight: 1.5 }}>
+        v3 keeps v2&apos;s sizing logic but adds a per-day price-based exit: stop =
+        entry close − {data.config.atr_multiplier}× ATR({data.config.atr_window}). If the next day&apos;s low
+        breaches the stop the trade exits at the stop price; if the open gaps
+        through the stop the fill is at the open (honest gap risk).
+      </div>
+      <div style={header}>
+        <span>Variant</span>
+        <span>Sharpe</span>
+        <span>CAGR</span>
+        <span>MaxDD</span>
+        <span>Hit Rate</span>
+      </div>
+      {rows.map((r) => (
+        <div key={r.label} style={{ ...row, background: r.isCurrent ? "transparent" : "rgba(251,191,36,0.04)" }}>
+          <span style={{ fontWeight: 600 }}>{r.label}</span>
+          <span style={{ fontFeatureSettings: "'tnum'", fontWeight: 600 }}>{r.v.sharpe_ratio.toFixed(3)}</span>
+          <span style={{ fontFeatureSettings: "'tnum'" }}>{(r.v.annualized_return * 100).toFixed(2)}%</span>
+          <span style={{ fontFeatureSettings: "'tnum'", color: "var(--red)" }}>{(r.v.max_drawdown * 100).toFixed(2)}%</span>
+          <span style={{ fontFeatureSettings: "'tnum'" }}>{(r.v.hit_rate * 100).toFixed(1)}%</span>
+        </div>
+      ))}
+
+      <div style={{ marginTop: 12, display: "flex", gap: 16, flexWrap: "wrap" }}>
+        <div style={{ flex: "1 1 240px", padding: "10px 12px", background: "var(--bg-elevated)", border: "1px solid var(--border)", borderRadius: 4 }}>
+          <div style={{ fontSize: 10, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 700, marginBottom: 6 }}>Exit reasons</div>
+          {exitReasons.map(([reason, count]) => (
+            <div key={reason} style={{ display: "flex", justifyContent: "space-between", fontSize: 11, padding: "2px 0" }}>
+              <span style={{ color: reason === "scheduled" ? "var(--text-secondary)" : "var(--amber)" }}>{reason}</span>
+              <span style={{ fontFeatureSettings: "'tnum'", color: "var(--text-muted)" }}>{count} ({(count / totalTrades * 100).toFixed(1)}%)</span>
+            </div>
+          ))}
+          <div style={{ marginTop: 6, fontSize: 10, color: "var(--text-faint)", paddingTop: 6, borderTop: "1px dashed var(--border-soft)" }}>
+            Stop-out rate: {stoppedPct.toFixed(1)}% of {totalTrades.toLocaleString()} per-trade legs.
+          </div>
+        </div>
+
+        <div style={{ flex: "2 1 320px", padding: "10px 12px", background: "var(--bg-elevated)", border: "1px solid var(--border)", borderRadius: 4 }}>
+          <div style={{ fontSize: 10, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 700, marginBottom: 6 }}>Verdict</div>
+          <div style={{ fontSize: 12, fontWeight: 600, color: verdictColor, marginBottom: 6 }}>{verdictText}</div>
+          <div style={{ display: "flex", gap: 14, fontSize: 11, marginBottom: 6 }}>
+            <span><span style={{ color: "var(--text-faint)" }}>Δ Sharpe </span><span style={{ fontFeatureSettings: "'tnum'", color: data.acceptance.sharpe_delta >= 0 ? "var(--green)" : "var(--red)" }}>{data.acceptance.sharpe_delta >= 0 ? "+" : ""}{data.acceptance.sharpe_delta.toFixed(3)}</span></span>
+            <span><span style={{ color: "var(--text-faint)" }}>Δ CAGR </span><span style={{ fontFeatureSettings: "'tnum'", color: data.acceptance.cagr_delta_pp >= 0 ? "var(--green)" : "var(--red)" }}>{data.acceptance.cagr_delta_pp >= 0 ? "+" : ""}{data.acceptance.cagr_delta_pp.toFixed(2)}pp</span></span>
+            <span><span style={{ color: "var(--text-faint)" }}>Δ MaxDD </span><span style={{ fontFeatureSettings: "'tnum'", color: data.acceptance.maxdd_delta_pp >= 0 ? "var(--green)" : "var(--red)" }}>{data.acceptance.maxdd_delta_pp >= 0 ? "+" : ""}{data.acceptance.maxdd_delta_pp.toFixed(2)}pp</span></span>
+          </div>
+          <div style={{ fontSize: 10, color: "var(--text-faint)", lineHeight: 1.5 }}>
+            Read: vol-targeted sizing in v2 has already shrunk position size on
+            high-vol names, so the absolute $ loss the stop would catch is
+            smaller than the trader-memo expected. The stop also forces exits
+            on trades that would have recovered by day 5. Net: stop adds little
+            value on top of vol-targeting on this 6.4-year sample. Owning this
+            finding is the win — &quot;I tried the recommended stop; it didn&apos;t help
+            here, and I can explain why.&quot;
+          </div>
         </div>
       </div>
     </div>

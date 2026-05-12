@@ -188,6 +188,15 @@ def _load_feature_ablation() -> dict | None:
         return json.load(f)
 
 
+def _load_v3_summary() -> dict | None:
+    """ATR-trailing-stop v3 research artifact. None if not yet generated."""
+    path = RESULTS_DIR / "backtest_v3_atrstop.json"
+    if not path.exists():
+        return None
+    with open(path) as f:
+        return json.load(f)
+
+
 # Calibration buckets — match src/evaluate.py so the ribbon agrees with the
 # existing calibration bar chart on the evaluation page.
 CALIBRATION_BINS = [0.0, 0.45, 0.50, 0.55, 0.60, 1.01]  # 1.01 so exactly-1.0 lands in last bucket
@@ -242,6 +251,7 @@ BACKTEST_V2 = _load_backtest_v2_summary()
 V2_TRADES = _load_v2_trades()
 ABLATION = _load_ablation()
 FEATURE_ABLATION = _load_feature_ablation()
+V3_SUMMARY = _load_v3_summary()
 CALIBRATION_BUCKETS = _compute_calibration_buckets(PREDICTIONS)
 UNIVERSE = sorted(PREDICTIONS["ticker"].unique().tolist())
 
@@ -289,6 +299,7 @@ def root():
             "/api/equity-curve/v2",
             "/api/ablation",
             "/api/feature-ablation",
+            "/api/exit-policy",
             "/api/calibration/buckets",
             "/api/honesty-footer",
             "/api/risk/today",
@@ -412,6 +423,19 @@ def get_feature_ablation():
     if FEATURE_ABLATION is None:
         raise HTTPException(status_code=404, detail="Feature ablation not yet generated. Run `python -m src.feature_ablation`.")
     return FEATURE_ABLATION
+
+
+@app.get("/api/exit-policy")
+def get_exit_policy():
+    """
+    v2 (scheduled 5-day exit) vs v3 (3x ATR(10) trailing stop + gap-aware fill).
+    Research artifact — v3 is NOT in production. Honest finding: vol-targeted
+    sizing in v2 absorbs most of what an ATR stop would have caught, so adding
+    a stop yields only marginal MaxDD improvement and a small Sharpe penalty.
+    """
+    if V3_SUMMARY is None:
+        raise HTTPException(status_code=404, detail="v3 backtest not yet generated. Run `python -m src.backtest_v3`.")
+    return V3_SUMMARY
 
 
 @app.get("/api/tickers")
