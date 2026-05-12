@@ -201,6 +201,12 @@ if __name__ == "__main__":
     spy_metrics = compute_metrics(spy_equity, spy_returns, periods_per_year=252)
     eq_metrics = compute_metrics(eq_weight_equity, eq_weight_returns, periods_per_year=252)
 
+    # Bootstrap 95% CIs on both v1 and v2 (IID resample, sound because trades
+    # are non-overlapping).
+    from src.bootstrap import bootstrap_metrics
+    v1_cis = bootstrap_metrics(v1_returns, periods_per_year=252 / HOLDING_DAYS)
+    v2_cis = bootstrap_metrics(v2_returns, periods_per_year=252 / HOLDING_DAYS)
+
     def banner(title: str, m: dict) -> None:
         print(f"\n=== {title} ===")
         for k, v in m.items():
@@ -230,10 +236,19 @@ if __name__ == "__main__":
     accept = bool((maxdd_gain >= 0.10) and (abs(sharpe_delta) <= 0.3))
     print(f"  Result: {'PASS' if accept else 'INVESTIGATE'}")
 
+    print("\n=== Bootstrap 95% CIs (1000 resamples) ===")
+    for label, cis in (("v1", v1_cis), ("v2", v2_cis)):
+        print(f"  -- {label} --")
+        for k in ("sharpe_ratio", "annualized_return", "max_drawdown", "hit_rate", "total_return"):
+            c = cis[k]
+            print(f"    {k:22s} {c['point']:+.4f}   CI [{c['ci_low']:+.4f}, {c['ci_high']:+.4f}]")
+
     # Persist
     summary = {
         "v2_strategy": {k: float(v) for k, v in v2_metrics.items()},
+        "v2_strategy_ci": v2_cis,
         "v1_strategy": {k: float(v) for k, v in v1_metrics.items()},
+        "v1_strategy_ci": v1_cis,
         "spy": {k: float(v) for k, v in spy_metrics.items()},
         "equal_weight": {k: float(v) for k, v in eq_metrics.items()},
         "config": {

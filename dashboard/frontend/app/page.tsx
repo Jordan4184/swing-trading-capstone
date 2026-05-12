@@ -24,7 +24,17 @@ import {
 type Prediction = { date: string; ticker: string; y_true: number; y_proba: number; fwd_return_5d: number; fold: number };
 type LatestPredictionsResponse = { date: string; predictions: Prediction[] };
 type StrategyMetrics = { total_return: number; annualized_return: number; sharpe_ratio: number; max_drawdown: number; hit_rate: number };
-type BacktestSummary = { strategy: StrategyMetrics; equal_weight: StrategyMetrics; spy: StrategyMetrics };
+type MetricCI = { point: number; ci_low: number; ci_high: number; ci_alpha: number };
+type StrategyCIs = {
+  n_resamples: number;
+  ci_level: number;
+  sharpe_ratio: MetricCI;
+  annualized_return: MetricCI;
+  max_drawdown: MetricCI;
+  hit_rate: MetricCI;
+  total_return: MetricCI;
+};
+type BacktestSummary = { strategy: StrategyMetrics; equal_weight: StrategyMetrics; spy: StrategyMetrics; strategy_ci?: StrategyCIs };
 type EquityPoint = { date: string; equity: number; return: number };
 type EquityCurveResponse = { config: { top_n: number; holding_days: number; cost_bps: number; initial_capital: number }; n_trades: number; data: EquityPoint[] };
 type Quote = { ticker: string; bid_price: number | null; ask_price: number | null; mid_price?: number | null; bid_size?: number | null; ask_size?: number | null; timestamp?: string | null };
@@ -106,6 +116,10 @@ const MAX_NOTIONAL_PER_ORDER = 10_000;
 const fmtMoney = (n: number) => (n >= 1000 ? `$${(n / 1000).toFixed(1)}k` : `$${n.toFixed(2)}`);
 const fmtPct = (n: number, withSign = true) => { const v = (n * 100).toFixed(2); return withSign && n > 0 ? `+${v}%` : `${v}%`; };
 const fmtPrice = (n: number | null | undefined) => (n == null ? "—" : n.toFixed(2));
+const fmtCIPct = (ci: { ci_low: number; ci_high: number } | undefined): string | undefined =>
+  ci ? `95% CI [${(ci.ci_low * 100).toFixed(1)}%, ${(ci.ci_high * 100).toFixed(1)}%]` : undefined;
+const fmtCINum = (ci: { ci_low: number; ci_high: number } | undefined): string | undefined =>
+  ci ? `95% CI [${ci.ci_low.toFixed(2)}, ${ci.ci_high.toFixed(2)}]` : undefined;
 const computeBarChange = (bars: BarRow[] | undefined): { abs: number; pct: number } | null => {
   if (!bars || bars.length < 2) return null;
   const first = bars[0].close;
@@ -593,11 +607,11 @@ export default function DashboardPage() {
       <main className="main">
         <DecisionCard />
         <div className="stat-bar">
-          <StatCell label="Total Return" value={fmtPct(s.total_return)} sub={`+${((s.total_return - summary.spy.total_return) * 100).toFixed(0)}pp vs SPY`} accent="up" />
-          <StatCell label="Annualized" value={fmtPct(s.annualized_return)} sub={`+${((s.annualized_return - ew.annualized_return) * 100).toFixed(2)}pp vs EW`} accent="up" />
-          <StatCell label="Sharpe" value={s.sharpe_ratio.toFixed(2)} sub={`+${(s.sharpe_ratio - ew.sharpe_ratio).toFixed(2)} vs EW`} accent="up" />
-          <StatCell label="Max DD" value={fmtPct(s.max_drawdown, false)} sub="2023 cluster" accent="dn" />
-          <StatCell label="Hit Rate" value={`${(s.hit_rate * 100).toFixed(1)}%`} sub={`${equityCurve.n_trades} trades`} accent="muted" />
+          <StatCell label="Total Return" value={fmtPct(s.total_return)} sub={fmtCIPct(summary.strategy_ci?.total_return) ?? `+${((s.total_return - summary.spy.total_return) * 100).toFixed(0)}pp vs SPY`} accent="up" />
+          <StatCell label="Annualized" value={fmtPct(s.annualized_return)} sub={fmtCIPct(summary.strategy_ci?.annualized_return) ?? `+${((s.annualized_return - ew.annualized_return) * 100).toFixed(2)}pp vs EW`} accent="up" />
+          <StatCell label="Sharpe" value={s.sharpe_ratio.toFixed(2)} sub={fmtCINum(summary.strategy_ci?.sharpe_ratio) ?? `+${(s.sharpe_ratio - ew.sharpe_ratio).toFixed(2)} vs EW`} accent="up" />
+          <StatCell label="Max DD" value={fmtPct(s.max_drawdown, false)} sub={fmtCIPct(summary.strategy_ci?.max_drawdown) ?? "v1 baseline"} accent="dn" />
+          <StatCell label="Hit Rate" value={`${(s.hit_rate * 100).toFixed(1)}%`} sub={fmtCIPct(summary.strategy_ci?.hit_rate) ?? `${equityCurve.n_trades} trades`} accent="muted" />
           <StatCell label="Trades" value={equityCurve.n_trades.toString()} sub="non-overlapping" accent="muted" />
           <StatCell label="Universe" value="11" sub="tickers" accent="muted" />
           <StatCell label="Buying Power" value={account ? fmtMoney(account.buying_power) : "—"} sub="paper" accent="muted" />

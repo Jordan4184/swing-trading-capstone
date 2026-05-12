@@ -322,9 +322,19 @@ if __name__ == "__main__":
     plot_drawdown(strategy_equity, results_dir / "07_drawdown.png")
     print(f"\nPlots saved to {results_dir}/")
 
+    # Bootstrap CIs on strategy metrics (IID resample of per-trade returns;
+    # sound because trades are non-overlapping).
+    from src.bootstrap import bootstrap_metrics
+    strategy_cis = bootstrap_metrics(strategy_returns, periods_per_year=252 / HOLDING_DAYS)
+    print("\n=== Bootstrap CIs (95%, 1000 resamples) ===")
+    for k in ("sharpe_ratio", "annualized_return", "max_drawdown", "hit_rate", "total_return"):
+        c = strategy_cis[k]
+        print(f"  {k:22s} {c['point']:+.4f}   CI [{c['ci_low']:+.4f}, {c['ci_high']:+.4f}]")
+
     # Persist metrics
     summary = {
         "strategy": {k: float(v) for k, v in strategy_metrics.items()},
+        "strategy_ci": strategy_cis,
         "spy": {k: float(v) for k, v in spy_metrics.items()},
         "equal_weight": {k: float(v) for k, v in eq_metrics.items()},
         "config": {
