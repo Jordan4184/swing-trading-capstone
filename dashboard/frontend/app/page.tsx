@@ -878,7 +878,7 @@ export default function DashboardPage() {
       )}
 
       <style jsx>{`
-        .layout { display: grid; grid-template-columns: 44px 1fr 320px; grid-template-rows: 32px 1fr 20px; height: 100vh; width: 100vw; }
+        .layout { display: grid; grid-template-columns: 44px 1fr 320px; grid-template-rows: 32px 1fr 20px; height: calc(100vh - 22px); width: 100vw; }
         .ticker-strip { grid-column: 1 / -1; background: var(--bg-panel); border-bottom: 1px solid var(--border); display: flex; align-items: stretch; }
         .brand-cell { flex: 0 0 44px; display: flex; align-items: center; justify-content: center; border-right: 1px solid var(--border); }
         .brand-logo { width: 24px; height: 24px; border-radius: 5px; background: linear-gradient(135deg, var(--green), var(--cyan)); display: flex; align-items: center; justify-content: center; font-weight: 700; color: var(--bg-base); font-size: 12px; }

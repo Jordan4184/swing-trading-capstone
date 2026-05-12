@@ -290,6 +290,7 @@ def root():
             "/api/ablation",
             "/api/feature-ablation",
             "/api/calibration/buckets",
+            "/api/honesty-footer",
             "/api/risk/today",
         ],
     }
@@ -340,6 +341,65 @@ def get_ablation():
     if ABLATION is None:
         raise HTTPException(status_code=404, detail="Ablation not yet generated. Run `python -m src.ablation`.")
     return ABLATION
+
+
+@app.get("/api/honesty-footer")
+def get_honesty_footer():
+    """
+    Snapshot for the persistent footer strip on the dashboard: trading
+    mode, live trade-state counts, v1/v2 backtest Sharpe, and model
+    freshness. Cheap to compute — composed from already-loaded state.
+    """
+    # Live trade-state counts (auto_trader_db already exposes a stats helper)
+    stats = auto_trader_db.get_performance_stats()
+    n_open = int(stats.get("n_open_positions") or 0)
+    n_pending = int(stats.get("n_pending_orders") or 0)
+    n_closed = int(stats.get("n_closed_trades") or 0)
+
+    # Backtest summaries (already loaded at startup)
+    v1_sharpe = None
+    if BACKTEST and "strategy" in BACKTEST:
+        v1_sharpe = float(BACKTEST["strategy"].get("sharpe_ratio") or 0.0)
+    v2_sharpe = None
+    if BACKTEST_V2 and "v2_strategy" in BACKTEST_V2:
+        v2_sharpe = float(BACKTEST_V2["v2_strategy"].get("sharpe_ratio") or 0.0)
+
+    # Model freshness — read from the production joblib's trained_at metadata.
+    model_version: Optional[str] = None
+    days_since_train: Optional[float] = None
+    trained_at: Optional[str] = None
+    try:
+        import joblib
+        model_path = PROJECT_ROOT / "models" / "rf_v1.joblib"
+        if model_path.exists():
+            payload = joblib.load(model_path)
+            model_version = payload.get("model_version")
+            trained_at = payload.get("trained_at")
+            if trained_at:
+                age = pd.Timestamp.now() - pd.Timestamp(trained_at)
+                days_since_train = round(age.total_seconds() / 86400, 1)
+    except Exception as e:
+        print(f"[honesty_footer] model metadata load failed: {e}")
+
+    return {
+        "mode": "PAPER",
+        "trading_mode_safe": True,
+        "positions": {
+            "pending": n_pending,
+            "open": n_open,
+            "closed": n_closed,
+        },
+        "backtest": {
+            "v1_sharpe": round(v1_sharpe, 2) if v1_sharpe is not None else None,
+            "v2_sharpe": round(v2_sharpe, 2) if v2_sharpe is not None else None,
+        },
+        "model": {
+            "version": model_version,
+            "trained_at": trained_at,
+            "days_since_train": days_since_train,
+        },
+        "universe_size": len(UNIVERSE),
+    }
 
 
 @app.get("/api/feature-ablation")
