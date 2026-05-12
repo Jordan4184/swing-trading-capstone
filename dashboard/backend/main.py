@@ -170,10 +170,20 @@ def _load_v2_trades() -> pd.DataFrame | None:
     return df
 
 
+def _load_ablation() -> dict | None:
+    """Stacked-additive ablation of the v2 risk components. None if not yet generated."""
+    path = RESULTS_DIR / "ablation_v2.json"
+    if not path.exists():
+        return None
+    with open(path) as f:
+        return json.load(f)
+
+
 PREDICTIONS = _load_predictions()
 BACKTEST = _load_backtest_summary()
 BACKTEST_V2 = _load_backtest_v2_summary()
 V2_TRADES = _load_v2_trades()
+ABLATION = _load_ablation()
 UNIVERSE = sorted(PREDICTIONS["ticker"].unique().tolist())
 
 # ---------------------------------------------------------------------------
@@ -218,6 +228,7 @@ def root():
             "/api/journal/equity",
             "/api/summary/v2",
             "/api/equity-curve/v2",
+            "/api/ablation",
             "/api/risk/today",
         ],
     }
@@ -237,6 +248,18 @@ def get_summary_v2():
     if BACKTEST_V2 is None:
         raise HTTPException(status_code=404, detail="v2 backtest not yet generated. Run `python -m src.backtest_v2`.")
     return BACKTEST_V2
+
+
+@app.get("/api/ablation")
+def get_ablation():
+    """
+    Stacked-additive ablation of the v2 risk components:
+      v1 baseline → +vol target → +regime gate → +corr filter (= v2).
+    Each row has metrics + 95% CIs + delta-vs-previous-row + delta-vs-baseline.
+    """
+    if ABLATION is None:
+        raise HTTPException(status_code=404, detail="Ablation not yet generated. Run `python -m src.ablation`.")
+    return ABLATION
 
 
 @app.get("/api/tickers")

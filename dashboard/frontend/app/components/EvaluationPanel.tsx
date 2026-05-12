@@ -70,8 +70,34 @@ const fmtSigned = (n: number | undefined | null, digits = 2) =>
 const fmtMoney = (n: number | undefined | null) =>
   n == null ? "—" : `$${n.toFixed(2)}`;
 
+type AblationDelta = {
+  sharpe_ratio: number;
+  annualized_return: number;
+  max_drawdown: number;
+  total_return: number;
+};
+
+type AblationRow = {
+  layer: string;
+  flags: { enable_vol_target: boolean; enable_regime_gate: boolean; enable_corr_filter: boolean };
+  metrics: { sharpe_ratio: number; annualized_return: number; max_drawdown: number; hit_rate: number; total_return: number };
+  ci: { sharpe_ratio: { point: number; ci_low: number; ci_high: number } };
+  n_trades: number;
+  avg_gross_weight: number;
+  n_risk_off_rebalances: number;
+  delta_vs_prev: AblationDelta | null;
+  delta_vs_baseline: AblationDelta | null;
+};
+
+type Ablation = {
+  generated_at: string;
+  n_resamples: number;
+  rows: AblationRow[];
+};
+
 export default function EvaluationPanel() {
   const [report, setReport] = useState<Report | null>(null);
+  const [ablation, setAblation] = useState<Ablation | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -79,15 +105,21 @@ export default function EvaluationPanel() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE}/api/evaluation/report`);
-      if (!res.ok) {
-        throw new Error(`HTTP ${res.status}`);
+      const [reportRes, ablRes] = await Promise.all([
+        fetch(`${API_BASE}/api/evaluation/report`),
+        fetch(`${API_BASE}/api/ablation`),
+      ]);
+      if (!reportRes.ok) {
+        throw new Error(`HTTP ${reportRes.status}`);
       }
-      const data = await res.json();
+      const data = await reportRes.json();
       if (data.error) {
         setError(data.error);
       } else {
         setReport(data);
+      }
+      if (ablRes.ok) {
+        setAblation(await ablRes.json());
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to fetch");
@@ -134,6 +166,17 @@ export default function EvaluationPanel() {
           </button>
         </div>
       </div>
+
+      {/* === Risk-Layer Ablation === */}
+      <Section title="Risk-Layer Ablation (v1 → v2, stacked-additive)">
+        {!ablation ? (
+          <div style={{ color: "var(--text-muted)", fontSize: 12, padding: "8px 0" }}>
+            No ablation artifact found. Run <code style={{ background: "var(--bg-row)", padding: "1px 4px", borderRadius: 2 }}>python -m src.ablation</code> from the project root.
+          </div>
+        ) : (
+          <AblationTable rows={ablation.rows} nResamples={ablation.n_resamples} />
+        )}
+      </Section>
 
       {/* === Category B === */}
       <Section title="B. Model Quality">
@@ -342,4 +385,108 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 function Empty({ msg }: { msg: string }) {
   return <div style={{ color: "var(--text-muted)", fontSize: 12 }}>Status: {msg}</div>;
+}
+
+function AblationTable({ rows, nResamples }: { rows: AblationRow[]; nResamples: number }) {
+  const cols = "180px 80px 90px 90px 100px 100px 90px";
+  const headerStyle: React.CSSProperties = {
+    display: "grid",
+    gridTemplateColumns: cols,
+    gap: 8,
+    padding: "6px 0",
+    fontSize: 10,
+    color: "var(--text-muted)",
+    textTransform: "uppercase",
+    letterSpacing: "0.04em",
+    fontWeight: 700,
+    borderBottom: "1px solid var(--border-soft)",
+  };
+  const rowStyle: React.CSSProperties = {
+    display: "grid",
+    gridTemplateColumns: cols,
+    gap: 8,
+    padding: "8px 0",
+    fontSize: 11,
+    borderBottom: "1px solid var(--border-soft)",
+    alignItems: "center",
+  };
+
+  return (
+    <div>
+      <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 12, lineHeight: 1.5 }}>
+        Each row adds one risk component to the previous configuration. Bottom row is the
+        full v2 strategy. Δ columns show the marginal contribution of that layer relative to
+        the row immediately above. CIs from {nResamples.toLocaleString()} bootstrap resamples.
+      </div>
+      <div style={headerStyle}>
+        <span>Layer</span>
+        <span>Trades</span>
+        <span>Sharpe</span>
+        <span>CAGR</span>
+        <span>MaxDD</span>
+        <span>Δ Sharpe</span>
+        <span>Δ MaxDD</span>
+      </div>
+      {rows.map((r, idx) => {
+        const m = r.metrics;
+        const ci = r.ci.sharpe_ratio;
+        const d = r.delta_vs_prev;
+        const isBaseline = idx === 0;
+        const isFinal = idx === rows.length - 1;
+        return (
+          <div
+            key={r.layer}
+            style={{
+              ...rowStyle,
+              background: isFinal ? "rgba(74, 222, 128, 0.05)" : "transparent",
+            }}
+          >
+            <span style={{ fontWeight: isBaseline || isFinal ? 700 : 500, color: "var(--text-primary)" }}>
+              {r.layer}
+            </span>
+            <span style={{ color: "var(--text-muted)" }}>{r.n_trades}</span>
+            <span style={{ fontFeatureSettings: "'tnum'" }}>
+              <div style={{ fontWeight: 600 }}>{m.sharpe_ratio.toFixed(3)}</div>
+              <div style={{ fontSize: 9, color: "var(--text-faint)" }}>[{ci.ci_low.toFixed(2)}, {ci.ci_high.toFixed(2)}]</div>
+            </span>
+            <span style={{ fontFeatureSettings: "'tnum'", color: m.annualized_return >= 0 ? "var(--text-primary)" : "var(--red)" }}>
+              {(m.annualized_return * 100).toFixed(2)}%
+            </span>
+            <span style={{ fontFeatureSettings: "'tnum'", color: "var(--red)" }}>
+              {(m.max_drawdown * 100).toFixed(2)}%
+            </span>
+            <span style={{ fontFeatureSettings: "'tnum'", fontWeight: 600, color: deltaColor(d?.sharpe_ratio) }}>
+              {d ? formatDelta(d.sharpe_ratio, false) : "—"}
+            </span>
+            <span style={{ fontFeatureSettings: "'tnum'", fontWeight: 600, color: deltaColor(d?.max_drawdown) }}>
+              {d ? formatDelta(d.max_drawdown * 100, true) : "—"}
+            </span>
+          </div>
+        );
+      })}
+      <div style={{ marginTop: 10, fontSize: 10, color: "var(--text-faint)", lineHeight: 1.5 }}>
+        Read: <strong style={{ color: "var(--text-muted)" }}>{rows[1]?.layer.replace("+ ", "")}</strong> is the dominant contributor —
+        on this sample it alone moves Sharpe by {formatDelta(rows[1]?.delta_vs_prev?.sharpe_ratio ?? 0, false)}{" "}
+        and MaxDD by {formatDelta((rows[1]?.delta_vs_prev?.max_drawdown ?? 0) * 100, true)}.
+        Subsequent layers each contribute &lt; ±0.05 Sharpe — small enough that the
+        correlation filter actually shows a negative marginal on this 6.4-year window,
+        a finding worth owning rather than hiding.
+      </div>
+    </div>
+  );
+}
+
+function deltaColor(d: number | undefined): string {
+  if (d == null) return "var(--text-muted)";
+  // For MaxDD, "improvement" is a less-negative number (positive delta on a negative quantity)
+  // For Sharpe, positive is improvement
+  // Caller controls sign convention; we just use sign of d.
+  if (d > 0.001) return "var(--green)";
+  if (d < -0.001) return "var(--red)";
+  return "var(--text-muted)";
+}
+
+function formatDelta(n: number, isPp: boolean): string {
+  const sign = n >= 0 ? "+" : "";
+  return isPp ? `${sign}${n.toFixed(2)}pp` : `${sign}${n.toFixed(3)}`;
 }

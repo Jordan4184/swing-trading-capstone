@@ -190,13 +190,22 @@ def size_basket(
     corr_threshold: float = CORR_THRESHOLD,
     vol_window: int = VOL_WINDOW,
     corr_window: int = CORR_WINDOW,
+    enable_vol_target: bool = True,
+    enable_regime_gate: bool = True,
+    enable_corr_filter: bool = True,
 ) -> tuple[dict[str, float], BasketDiagnostics]:
     """
     Convert a ranked list of picks into per-pick portfolio weights using:
-      1. 20d realized-vol-targeted sizing per pick
-      2. correlation filter to drop redundant later picks
+      1. 20d realized-vol-targeted sizing per pick  (enable_vol_target)
+      2. correlation filter to drop redundant later picks  (enable_corr_filter)
       3. regime multiplier (half-size when SPY < 200dMA AND VIX > 75th pct)
+         (enable_regime_gate)
       4. gross cap (normalize down only if sum > gross_cap)
+
+    The three `enable_*` flags exist for ablation studies. When False:
+      - vol_target off  → equal weight 1/N per pick (matches v1 baseline)
+      - regime_gate off → multiplier always 1.0
+      - corr_filter off → no picks dropped on correlation
 
     Returns (weights, diagnostics). weights only contains kept tickers.
     """
@@ -216,41 +225,51 @@ def size_basket(
     if not picks_in_rank_order:
         return {}, diag
 
-    # 1. Per-pick realized vol from prices
+    # 1. Per-pick raw weight. Either vol-targeted or equal-weight (baseline).
     returns_wide = _wide_returns_from_prices(prices_long, picks_in_rank_order)
     returns_upto = returns_wide.loc[:asof]
 
     pick_diags: dict[str, PickDiagnostic] = {t: PickDiagnostic(ticker=t) for t in picks_in_rank_order}
+    equal_w = 1.0 / len(picks_in_rank_order)
     for t in picks_in_rank_order:
         if t in returns_upto.columns:
             rv = realized_vol(returns_upto[t], window=vol_window)
             pick_diags[t].realized_vol_20d = None if np.isnan(rv) else float(rv)
-            if not np.isnan(rv):
-                pick_diags[t].raw_weight = vol_target_weight(rv, target=target_vol, max_w=max_weight)
+            if enable_vol_target:
+                if not np.isnan(rv):
+                    pick_diags[t].raw_weight = vol_target_weight(rv, target=target_vol, max_w=max_weight)
+            else:
+                # Baseline: equal weight as long as the ticker has any history.
+                pick_diags[t].raw_weight = equal_w
         else:
             pick_diags[t].dropped_reason = "no price history"
 
-    # 2. Correlation filter using the trailing CORR_WINDOW of returns
-    corr_window_df = returns_upto.tail(corr_window).dropna(how="all")
+    # 2. Correlation filter (optional)
     pickable = [t for t in picks_in_rank_order if pick_diags[t].raw_weight is not None]
-    kept, dropped_by_corr = correlation_filter(pickable, corr_window_df, threshold=corr_threshold)
-    for t, reason in dropped_by_corr.items():
-        pick_diags[t].dropped_reason = reason
-    for t in pickable:
-        if t not in kept and pick_diags[t].dropped_reason is None:
-            pick_diags[t].dropped_reason = "filtered"
+    if enable_corr_filter:
+        corr_window_df = returns_upto.tail(corr_window).dropna(how="all")
+        kept, dropped_by_corr = correlation_filter(pickable, corr_window_df, threshold=corr_threshold)
+        for t, reason in dropped_by_corr.items():
+            pick_diags[t].dropped_reason = reason
+        for t in pickable:
+            if t not in kept and pick_diags[t].dropped_reason is None:
+                pick_diags[t].dropped_reason = "filtered"
+    else:
+        kept = pickable
 
-    # 3. Regime gate
-    spy_upto = spy_history.loc[:asof].dropna()
-    if len(spy_upto) >= 200:
-        diag.spy_close = float(spy_upto.iloc[-1])
-        diag.spy_ma200 = float(spy_upto.tail(200).mean())
-    vix_upto = vix_history.loc[:asof].dropna()
-    if len(vix_upto) > 0:
-        diag.vix = float(vix_upto.iloc[-1])
-        diag.vix_pct_rank = vix_percentile_rank(vix_history, asof)
-    diag.regime = regime_label(diag.spy_close, diag.spy_ma200, diag.vix, diag.vix_pct_rank)
-    diag.regime_multiplier = REGIME_OFF_MULTIPLIER if diag.regime == "risk_off" else 1.0
+    # 3. Regime gate (optional). When disabled the multiplier stays 1.0 and
+    # we don't even compute the regime label — keeps the ablation honest.
+    if enable_regime_gate:
+        spy_upto = spy_history.loc[:asof].dropna()
+        if len(spy_upto) >= 200:
+            diag.spy_close = float(spy_upto.iloc[-1])
+            diag.spy_ma200 = float(spy_upto.tail(200).mean())
+        vix_upto = vix_history.loc[:asof].dropna()
+        if len(vix_upto) > 0:
+            diag.vix = float(vix_upto.iloc[-1])
+            diag.vix_pct_rank = vix_percentile_rank(vix_history, asof)
+        diag.regime = regime_label(diag.spy_close, diag.spy_ma200, diag.vix, diag.vix_pct_rank)
+        diag.regime_multiplier = REGIME_OFF_MULTIPLIER if diag.regime == "risk_off" else 1.0
 
     # 4. Apply regime + gross cap, write final weights
     raw_total = sum(pick_diags[t].raw_weight for t in kept)

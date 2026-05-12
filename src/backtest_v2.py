@@ -40,9 +40,15 @@ def simulate_strategy_riskmanaged(
     vix: pd.DataFrame,
     top_n: int = TOP_N,
     holding_days: int = HOLDING_DAYS,
+    enable_vol_target: bool = True,
+    enable_regime_gate: bool = True,
+    enable_corr_filter: bool = True,
 ) -> tuple[pd.DataFrame, list[dict]]:
     """
     Non-overlapping risk-managed backtest.
+
+    The three enable_* flags exist so the ablation harness can disable
+    each risk layer independently (see src/ablation.py). All True = full v2.
 
     Returns:
         trades: DataFrame with date, picks, weights, regime, basket_return_net
@@ -76,7 +82,12 @@ def simulate_strategy_riskmanaged(
         if not tickers:
             continue
 
-        weights, diag = size_basket(tickers, ohlcv, spy, vix_series, asof_ts)
+        weights, diag = size_basket(
+            tickers, ohlcv, spy, vix_series, asof_ts,
+            enable_vol_target=enable_vol_target,
+            enable_regime_gate=enable_regime_gate,
+            enable_corr_filter=enable_corr_filter,
+        )
 
         # Per-pick weighted forward return; tickers absent from `weights` are dropped
         fwd_by_ticker = dict(zip(day_picks["ticker"], day_picks["fwd_return_5d"]))
