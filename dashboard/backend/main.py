@@ -179,11 +179,60 @@ def _load_ablation() -> dict | None:
         return json.load(f)
 
 
+# Calibration buckets — match src/evaluate.py so the ribbon agrees with the
+# existing calibration bar chart on the evaluation page.
+CALIBRATION_BINS = [0.0, 0.45, 0.50, 0.55, 0.60, 1.01]  # 1.01 so exactly-1.0 lands in last bucket
+CALIBRATION_LABELS = ["<0.45", "0.45-0.50", "0.50-0.55", "0.55-0.60", ">0.60"]
+
+
+def _compute_calibration_buckets(preds: pd.DataFrame) -> list[dict]:
+    """
+    Bucketize historical predictions by y_proba and compute, per bucket:
+      - count of predictions
+      - actual_top_quintile_rate (realized "top 20% of 5d fwd return on date")
+      - hit_rate_mean, hit_rate_low/high (1-sigma standard error for the rate)
+
+    Only uses rows with non-null fwd_return_5d (live predictions are excluded
+    because we don't know their outcome yet).
+    """
+    df = preds.dropna(subset=["fwd_return_5d"]).copy()
+    if df.empty:
+        return []
+    df["proba_bucket"] = pd.cut(df["y_proba"], bins=CALIBRATION_BINS, labels=CALIBRATION_LABELS, include_lowest=True)
+    df["actual_top_quintile"] = (
+        df.groupby("date")["fwd_return_5d"].rank(pct=True) >= 0.8
+    ).astype(int)
+
+    out: list[dict] = []
+    for label in CALIBRATION_LABELS:
+        sub = df[df["proba_bucket"] == label]
+        n = int(len(sub))
+        if n == 0:
+            out.append({
+                "proba_bucket": label,
+                "count": 0,
+                "actual_top_quintile_rate": None,
+                "se": None,
+            })
+            continue
+        rate = float(sub["actual_top_quintile"].mean())
+        # Standard error for a proportion: sqrt(p(1-p)/n)
+        se = float(((rate * (1 - rate)) / n) ** 0.5) if n > 0 else None
+        out.append({
+            "proba_bucket": label,
+            "count": n,
+            "actual_top_quintile_rate": round(rate, 4),
+            "se": round(se, 4) if se is not None else None,
+        })
+    return out
+
+
 PREDICTIONS = _load_predictions()
 BACKTEST = _load_backtest_summary()
 BACKTEST_V2 = _load_backtest_v2_summary()
 V2_TRADES = _load_v2_trades()
 ABLATION = _load_ablation()
+CALIBRATION_BUCKETS = _compute_calibration_buckets(PREDICTIONS)
 UNIVERSE = sorted(PREDICTIONS["ticker"].unique().tolist())
 
 # ---------------------------------------------------------------------------
@@ -229,6 +278,7 @@ def root():
             "/api/summary/v2",
             "/api/equity-curve/v2",
             "/api/ablation",
+            "/api/calibration/buckets",
             "/api/risk/today",
         ],
     }
@@ -248,6 +298,25 @@ def get_summary_v2():
     if BACKTEST_V2 is None:
         raise HTTPException(status_code=404, detail="v2 backtest not yet generated. Run `python -m src.backtest_v2`.")
     return BACKTEST_V2
+
+
+@app.get("/api/calibration/buckets")
+def get_calibration_buckets():
+    """
+    Historical resolution rate per probability bucket. Used by the
+    CalibrationRibbon component next to every y_proba on the dashboard.
+    Computed once at startup from predictions.parquet.
+
+    Returns: { baseline_rate, buckets: [{ proba_bucket, count,
+    actual_top_quintile_rate, se }, ...], total_n }.
+    The baseline is 0.20 because the target is "top quintile per date".
+    """
+    return {
+        "baseline_rate": 0.20,
+        "bins": CALIBRATION_BINS,
+        "buckets": CALIBRATION_BUCKETS,
+        "total_n": sum(b["count"] for b in CALIBRATION_BUCKETS),
+    }
 
 
 @app.get("/api/ablation")

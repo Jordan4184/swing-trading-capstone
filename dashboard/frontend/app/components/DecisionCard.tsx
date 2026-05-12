@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import CalibrationRibbon from "./CalibrationRibbon";
 
 const API_BASE = "http://localhost:8000";
 
@@ -158,7 +159,12 @@ export default function DecisionCard() {
             <span style={{ fontSize: 12, color: "var(--text-secondary)" }}>${top.last_close?.toFixed(2)}</span>
           </div>
           <div style={{ display: "flex", gap: 16, marginTop: 6 }}>
-            <Metric label="Confidence" value={(top.y_proba * 100).toFixed(1) + "%"} sub={`${top.y_proba >= 0.6 ? "high" : top.y_proba >= 0.55 ? "above threshold" : "marginal"}`} accent="up" />
+            <div>
+              <Metric label="Confidence" value={(top.y_proba * 100).toFixed(1) + "%"} sub={`${top.y_proba >= 0.6 ? "high" : top.y_proba >= 0.55 ? "above threshold" : "marginal"}`} accent="up" />
+              <div style={{ marginTop: 4 }}>
+                <CalibrationRibbon proba={top.y_proba} size="sm" />
+              </div>
+            </div>
             <Metric label="Edge vs Universe" value={fmtSignedPct(risk.edge_over_universe, 2)} sub={`mean ${(risk.universe_mean_proba * 100).toFixed(1)}%`} accent={risk.edge_over_universe > 0 ? "up" : "dn"} />
           </div>
         </div>
@@ -227,6 +233,7 @@ export default function DecisionCard() {
             <span key={p.ticker} style={{ display: "flex", gap: 6, alignItems: "center" }}>
               <span style={{ fontWeight: 600, color: "var(--text-secondary)" }}>#{p.rank} {p.ticker}</span>
               <span>{(p.y_proba * 100).toFixed(1)}%</span>
+              <CalibrationRibbon proba={p.y_proba} size="xs" />
               <span style={{ color: "var(--text-faint)" }}>·</span>
               <span>{fmtPct(p.weight_pct, 1)}</span>
               <span style={{ color: "var(--text-faint)" }}>·</span>

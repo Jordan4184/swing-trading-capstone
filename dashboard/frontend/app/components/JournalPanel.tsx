@@ -14,6 +14,7 @@ import {
   ReferenceLine,
   Legend,
 } from "recharts";
+import CalibrationRibbon from "./CalibrationRibbon";
 
 const API_BASE = "http://localhost:8000";
 
@@ -238,7 +239,10 @@ export default function JournalPanel() {
                 <span>{r.signal_date}</span>
                 <span style={{ fontWeight: 600 }}>{r.ticker}</span>
                 <span>#{r.signal_rank}</span>
-                <span style={{ color: "var(--text-muted)" }}>{r.signal_proba.toFixed(3)}</span>
+                <span style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                  <span style={{ color: "var(--text-muted)" }}>{r.signal_proba.toFixed(3)}</span>
+                  <CalibrationRibbon proba={r.signal_proba} size="xs" />
+                </span>
                 <span>{fmtMoney(r.entry_price)}</span>
                 <span>{fmtMoney(r.exit_price)}</span>
                 <span style={{ fontWeight: 600, color: pctColor(r.live_pnl_pct) }}>{fmtSigned(r.live_pnl_pct)}</span>
@@ -431,7 +435,7 @@ const btn: React.CSSProperties = {
 
 const tableHead: React.CSSProperties = {
   display: "grid",
-  gridTemplateColumns: "90px 60px 50px 60px 70px 70px 80px 90px 90px 100px 70px",
+  gridTemplateColumns: "90px 60px 50px 92px 70px 70px 80px 90px 90px 100px 70px",
   gap: 8,
   padding: "6px 0",
   color: "var(--text-muted)",
@@ -444,7 +448,7 @@ const tableHead: React.CSSProperties = {
 
 const tableRow: React.CSSProperties = {
   display: "grid",
-  gridTemplateColumns: "90px 60px 50px 60px 70px 70px 80px 90px 90px 100px 70px",
+  gridTemplateColumns: "90px 60px 50px 92px 70px 70px 80px 90px 90px 100px 70px",
   gap: 8,
   padding: "6px 0",
   fontSize: 11,

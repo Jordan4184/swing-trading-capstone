@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import HeatmapStrip from "./components/HeatmapStrip";
 import DecisionCard from "./components/DecisionCard";
 import TopNav from "./components/TopNav";
+import CalibrationRibbon from "./components/CalibrationRibbon";
 import {
   ComposedChart,
   Brush,
@@ -1227,13 +1228,16 @@ function SignalsTable({ predictions, onSelect, selectedTicker }: { predictions: 
       </div>
       <div style={{ flex: 1, overflow: "auto" }}>
         {predictions.map((p, idx) => (
-          <div key={p.ticker} onClick={() => onSelect(p.ticker)} style={{ display: "grid", gridTemplateColumns: "24px 60px 1fr 50px 50px", gap: 8, padding: "5px 10px", borderBottom: "1px solid var(--border-soft)", alignItems: "center", cursor: "pointer", background: p.ticker === selectedTicker ? "var(--bg-row)" : undefined, fontSize: 11 }}>
+          <div key={p.ticker} onClick={() => onSelect(p.ticker)} style={{ display: "grid", gridTemplateColumns: "24px 60px 1fr 86px 50px", gap: 8, padding: "5px 10px", borderBottom: "1px solid var(--border-soft)", alignItems: "center", cursor: "pointer", background: p.ticker === selectedTicker ? "var(--bg-row)" : undefined, fontSize: 11 }}>
             <span style={{ color: "var(--text-muted)", fontSize: 9, fontWeight: 700, textAlign: "center" }}>#{idx + 1}</span>
             <span style={{ fontWeight: 600 }}>{p.ticker}</span>
             <div style={{ height: 4, background: "var(--bg-row)", borderRadius: 2 }}>
               <div style={{ height: "100%", width: `${p.y_proba * 100}%`, background: idx <= 1 ? "linear-gradient(90deg, var(--green), var(--cyan))" : "var(--text-muted)", borderRadius: 2 }}></div>
             </div>
-            <span style={{ fontWeight: 600, textAlign: "right" }}>{p.y_proba.toFixed(3)}</span>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 1 }}>
+              <span style={{ fontWeight: 600 }}>{p.y_proba.toFixed(3)}</span>
+              <CalibrationRibbon proba={p.y_proba} size="xs" />
+            </div>
             <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 3, textAlign: "center", background: p.y_proba >= 0.55 ? "var(--green-bg)" : p.y_proba >= 0.50 ? "rgba(251,191,36,0.1)" : "var(--bg-row)", color: p.y_proba >= 0.55 ? "var(--green)" : p.y_proba >= 0.50 ? "var(--amber)" : "var(--text-muted)" }}>
               {p.y_proba >= 0.55 ? "BUY" : p.y_proba >= 0.50 ? "WATCH" : "HOLD"}
             </span>
