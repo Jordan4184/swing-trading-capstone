@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
-import Link from "next/link";
 import HeatmapStrip from "./components/HeatmapStrip";
 import DecisionCard from "./components/DecisionCard";
+import TopNav from "./components/TopNav";
 import {
   ComposedChart,
   Brush,
@@ -546,11 +546,7 @@ export default function DashboardPage() {
     <div className="layout">
       <header className="ticker-strip">
         <div className="brand-cell"><div className="brand-logo">C</div></div>
-        <div className="nav-cell">
-          <Link href="/journal" className="nav-pill">Journal</Link>
-          <Link href="/auto-trader" className="nav-pill">Auto-Trader</Link>
-          <Link href="/evaluation" className="nav-pill">Evaluation</Link>
-        </div>
+        <div className="nav-cell"><TopNav variant="compact" /></div>
         <div className="ticker-tape">
           {universeOrdered.map((ticker) => {
             const q = livePrices?.quotes[ticker];
