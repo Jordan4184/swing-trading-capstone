@@ -8,9 +8,10 @@ ML swing-trading capstone for the **Institute of Data — Data Science & AI** pr
 
 - **Universe (11)**: AAPL, AMZN, JNJ, JPM, MCD, META, NVDA, PFE, SPY, TSLA, UNH
 - **Strategy**: 5-day swing, cross-sectional top-quintile ranker, Random Forest production model
-- **Validation**: walk-forward CV — best fold-mean AUC ≈ **0.594**
-- **Backtest v1** (no risk layer, 2019-07 → 2025-12, 20bps RT): 561% / **CAGR 34.1% / Sharpe 0.95 / MaxDD -54.1%**
-- **Backtest v2** (vol-target + regime gate + correlation filter, same window): 314% / **CAGR 24.7% / Sharpe 1.09 / MaxDD -34.3%**
+- **Features**: per-date rank-pct across the universe (production swap on 2026-05-12; see `src/features.py::build_features_ranked` and "Production model lifecycle" below). Pre-swap model preserved as `models/rf_v1_pre_rank.joblib`.
+- **Validation**: walk-forward CV — best fold-mean AUC **0.606** on rank features (vs 0.594 on absolute features), fold-to-fold std 0.022 (vs 0.031)
+- **Backtest v1** (no risk layer, 2019-07 → 2025-12, 20bps RT): 375% / **CAGR 26.1% / Sharpe 0.76 / MaxDD -54.9%**
+- **Backtest v2** (vol-target + regime gate + correlation filter, same window): 194% / **CAGR 17.4% / Sharpe 0.82 / MaxDD -32.8%**
 - **Stack**: Python 3.12 (pipeline + FastAPI backend), Next.js 16 + TypeScript + Tailwind v4 (frontend), SQLite for auto-trader state
 - **Production model**: `models/rf_v1.joblib` (Random Forest, hand-promoted)
 - **Venvs**: top-level `venv/` for the capstone pipeline; separate `dashboard/backend/venv/` for the API
@@ -75,8 +76,9 @@ No test suite exists in this repo.
 
 ## Architecture — production model lifecycle
 
-- Models live in `models/` as `rf_v1.joblib`, `rf_v2.joblib`, …
+- Models live in `models/` as `rf_v1.joblib`, `rf_v2.joblib`, `rf_v3.joblib`, …
 - `PRODUCTION_MODEL_NAME` in `src/models.py` is **hard-coded to `rf_v1`** — `load_model()` always loads that file. Promotion is **manual**: `cp models/rf_vN.joblib models/rf_v1.joblib`. There is no auto-promotion, by design.
+- **Current production**: `rf_v3` content (rank-feature trained, 2026-05-12) copied over `rf_v1.joblib`. The pre-swap model is preserved as `rf_v1_pre_rank.joblib`.
 - `--retrain-final` trains `rf_v{next}.joblib` and runs a side-by-side walk-forward comparison vs. the current `rf_v1`. It prints a `PROMOTE / KEEP CURRENT / INVESTIGATE` recommendation but never moves the file.
 - Each joblib payload is a dict with `model`, `feature_columns`, `model_version`, `trained_at` — load via `load_model()`, never raw `joblib.load`.
 

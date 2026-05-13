@@ -6,21 +6,27 @@ A machine-learning swing trading system built as a capstone project for the Inst
 
 ## Results Summary
 
-Out-of-sample backtest, 2019-07 to 2025-12 (6.4 years), 20bps round-trip transaction costs, walk-forward validated:
+Out-of-sample backtest, 2019-07 to 2025-12 (6.4 years), 20bps round-trip transaction costs, walk-forward validated. **Production features are per-date cross-sectional ranks across the 11-ticker universe** (see "Feature design" below).
 
 | Metric            | v1 (no risk layer) | v2 (vol-target + regime gate) | Equal-Weight Universe | SPY    |
 | ----------------- | ------------------ | ----------------------------- | --------------------- | ------ |
-| Total Return      | 561%               | **314%**                      | 413%                  | 151%   |
-| Annualized Return | 34.1%              | **24.7%**                     | 28.9%                 | 15.4%  |
-| Sharpe Ratio      | 0.95               | **1.09**                      | 1.22                  | 0.81   |
-| Max Drawdown      | -54.1%             | **-34.3%**                    | -32.1%                | -33.7% |
-| Hit Rate          | 54.8%              | 54.5%                         | 56.6%                 | 55.5%  |
+| Total Return      | 375%               | **194%**                      | 413%                  | 151%   |
+| Annualized Return | 26.1%              | **17.4%**                     | 28.9%                 | 15.4%  |
+| Sharpe Ratio      | 0.76               | **0.82**                      | 1.22                  | 0.81   |
+| Max Drawdown      | -54.9%             | **-32.8%**                    | -32.1%                | -33.7% |
+| Hit Rate          | 53.4%              | 54.3%                         | 56.6%                 | 55.5%  |
 
-**Two flavours of the strategy.** v1 is the original ML ranker: top-2 picks per day, equal-weighted, non-overlapping 5-day holds. v2 layers vol-targeted position sizing (15% annualized per pick, 0.40 max weight), a regime gate (half-size when SPY < 200dMA AND VIX > 75th percentile of trailing 2y), and a 60-day correlation filter on the 2nd pick. v2 trades headline return for risk-adjusted return: roughly +0.14 Sharpe and -20pp on max drawdown, at the cost of ~9pp of annualized return.
+**Two flavours of the strategy.** v1 is the original ML ranker: top-2 picks per day, equal-weighted, non-overlapping 5-day holds. v2 layers vol-targeted position sizing (15% annualized per pick, 0.40 max weight), a regime gate (half-size when SPY < 200dMA AND VIX > 75th percentile of trailing 2y), and a 60-day correlation filter on the 2nd pick. v2 trades headline return for risk-adjusted return: +0.06 Sharpe and **+22pp on max drawdown** (the rank-feature model's v1→v2 improvement is even larger than the absolute-feature version's was).
 
-Random Forest selected as best model by AUC (0.594) across walk-forward folds; LightGBM and Logistic Regression performed similarly, suggesting the predictive signal is captured by feature engineering rather than complex non-linear interactions.
+Random Forest selected by walk-forward AUC (**0.606** on rank features, up from 0.594 on absolute features) and lower fold-to-fold std (0.022 vs 0.031). LightGBM and Logistic Regression performed similarly on the original feature set, suggesting the predictive signal is captured by feature engineering rather than complex non-linear interactions.
 
-> **Note on Sharpe.** Earlier versions of this README quoted 2.13 for v1; that figure annualized 5-day-trade returns with √252 instead of √(252/5). With the correct annualization (matching the convention used for the benchmarks), v1 lands at 0.95 — still well ahead of SPY but slightly behind the equal-weight benchmark on risk-adjusted terms. The v2 risk layer was built primarily to address the -54% drawdown that this corrected comparison surfaced.
+### Feature design — what changed in production
+
+The model's target is cross-sectional ("top quintile per date") but earlier versions used absolute features (RSI=50, return=2%). On 2026-05-12 the production model was re-trained with **per-date rank-pct** versions of every feature: each value is replaced by its rank across the 11-ticker universe on that date. Documented at `src/features.py::build_features_ranked` and in `results/feature_ablation.json`.
+
+This swap traded **point-estimate Sharpe for AUC + calibration stability**. Sharpe CIs from 1,000 bootstrap resamples overlap heavily (v1: 0.76 [0.06, 1.59] vs prior 0.95 [0.16, 1.69]) — the headline number moved but is within sampling noise. AUC and calibration improvements are statistically more meaningful: the model's top probability bucket (>0.60) now contains nearly twice as many predictions (n=2,170 vs 1,133) at a slightly better historical resolution rate (37.8% vs 37.3% vs the 20% baseline). The pre-rank model and its predictions are preserved at `models/rf_v1_pre_rank.joblib` and `results/predictions_pre_rank.parquet`.
+
+> **Note on Sharpe annualization.** Earlier versions of this README quoted 2.13 for v1; that figure annualized 5-day-trade returns with √252 instead of √(252/5). All numbers above use the correct √50.4 annualization, matching the convention used for the daily-frequency benchmarks (SPY, equal-weight).
 
 ## Methodology
 

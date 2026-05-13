@@ -18,7 +18,7 @@ from pathlib import Path
 import pandas as pd
 
 from src.data_loader import download_data, get_universe, DATA_DIR
-from src.features import build_features
+from src.features import build_features_ranked as build_features
 from src.models import FEATURE_COLUMNS, load_model
 
 
@@ -132,16 +132,21 @@ def _most_recent_market_date(df: pd.DataFrame) -> pd.Timestamp:
 
 def _build_features_for_inference(raw_df: pd.DataFrame, target_date: pd.Timestamp) -> pd.DataFrame:
     """
-    Like build_features() but does NOT drop the most recent N rows that lack
-    forward returns. We need predictions for the latest row, even though we
-    can't compute the realized 5-day forward return yet.
+    Like build_features_ranked() but does NOT drop the most recent N rows
+    that lack forward returns. We need predictions for the latest row, even
+    though we can't compute the realized 5-day forward return yet.
+
+    Crucially, the per-date rank-pct is computed across the universe
+    BEFORE filtering to target_date — that's what makes it a cross-
+    sectional rank rather than a degenerate single-row constant.
     """
     from src.features import (
-        add_return_features,
-        add_volatility_features,
-        add_technical_features,
-        add_volume_features,
+        FEATURE_COLUMNS_TO_RANK,
         add_market_relative_features,
+        add_return_features,
+        add_technical_features,
+        add_volatility_features,
+        add_volume_features,
     )
 
     df = raw_df.copy()
@@ -151,6 +156,11 @@ def _build_features_for_inference(raw_df: pd.DataFrame, target_date: pd.Timestam
     df = add_technical_features(df)
     df = add_volume_features(df)
     df = add_market_relative_features(df)
+
+    # Cross-sectional rank-pct per date (matches production training).
+    for col in FEATURE_COLUMNS_TO_RANK:
+        if col in df.columns:
+            df[col] = df.groupby("date")[col].rank(pct=True)
 
     # Filter to target date
     df = df[df["date"] == target_date].copy()
