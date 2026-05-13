@@ -151,7 +151,7 @@ export default function DecisionCard() {
         </div>
       )}
 
-      <div style={{ display: "grid", gridTemplateColumns: "minmax(280px, 1.2fr) 1fr 1fr minmax(220px, 1.4fr)", gap: 0 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "minmax(280px, 1.2fr) 1fr 1fr minmax(220px, 1.4fr)", gap: 0, minHeight: 110 }}>
         {/* Top pick — hero */}
         <div style={{ padding: "12px 16px", borderRight: "1px solid var(--border-soft)" }}>
           <div style={labelStyle}>Top Pick · Rank 1 · asof {risk.asof}</div>
@@ -220,6 +220,7 @@ export default function DecisionCard() {
             fontSize: 11, color: "var(--text-secondary)", marginTop: 6,
             lineHeight: 1.5, display: "-webkit-box",
             WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden",
+            minHeight: 54,
           }}>
             {thesis ?? <span style={{ color: "var(--text-faint)" }}>Pulling thesis (first load takes ~5s)…</span>}
           </div>

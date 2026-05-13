@@ -286,7 +286,6 @@ export default function ShapInteractionSurface() {
               font: { color: "#F0F3F8", size: 11, family: "Inter, sans-serif" },
               align: "left" as const,
             },
-            transition: { duration: 600, easing: "cubic-in-out" } as unknown as Record<string, unknown>,
           }}
           config={{
             displayModeBar: false,

@@ -225,6 +225,15 @@ def _load_shap_surface() -> dict | None:
         return json.load(f)
 
 
+def _load_null_test() -> dict | None:
+    """Strategy vs vol-targeted SPY null test."""
+    path = RESULTS_DIR / "null_test.json"
+    if not path.exists():
+        return None
+    with open(path) as f:
+        return json.load(f)
+
+
 # Calibration buckets — match src/evaluate.py so the ribbon agrees with the
 # existing calibration bar chart on the evaluation page.
 CALIBRATION_BINS = [0.0, 0.45, 0.50, 0.55, 0.60, 1.01]  # 1.01 so exactly-1.0 lands in last bucket
@@ -283,6 +292,7 @@ V3_SUMMARY = _load_v3_summary()
 SHAP_VALUES = _load_shap_values()
 FAILURE_MODES = _load_failure_modes()
 SHAP_SURFACE = _load_shap_surface()
+NULL_TEST = _load_null_test()
 FEATURE_COLUMNS_FOR_SHAP = (
     [c for c in SHAP_VALUES.columns if c not in ("date", "ticker", "base_value")]
     if SHAP_VALUES is not None else []
@@ -338,6 +348,7 @@ def root():
             "/api/explain/{ticker}/{date}",
             "/api/failure-modes",
             "/api/shap-surface",
+            "/api/null-test",
             "/api/calibration/buckets",
             "/api/honesty-footer",
             "/api/risk/today",
@@ -503,6 +514,19 @@ def get_explain(ticker: str, date: str, top_n: int = 5):
         "top_contributors": top,
         "all_contributors": contribs,
     }
+
+
+@app.get("/api/null-test")
+def get_null_test():
+    """
+    Strategy v2 vs vol-targeted SPY null test. Same dates, same vol-target
+    + regime gate + cost model — but the "signal" is just hold SPY. Output
+    includes overlaid equity series, per-row 95% bootstrap CIs on both
+    sides, and a paired-bootstrap p-value on the Sharpe difference.
+    """
+    if NULL_TEST is None:
+        raise HTTPException(status_code=404, detail="Null test artifact not yet generated. Run `python -m src.null_test`.")
+    return NULL_TEST
 
 
 @app.get("/api/shap-surface")

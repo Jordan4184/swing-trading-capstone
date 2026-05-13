@@ -1,6 +1,16 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
+import {
+  CartesianGrid,
+  Legend,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import ShapInteractionSurface from "./ShapInteractionSurface";
 
 const API_BASE = "http://localhost:8000";
@@ -140,12 +150,38 @@ type FailureModes = {
   cases: FailureCase[];
 };
 
+type EquityPt = { date: string; equity: number; return: number };
+type MetricCI = { point: number; ci_low: number; ci_high: number };
+type NullTest = {
+  generated_at: string;
+  n_paired_rebalances: number;
+  strategy_metrics: { sharpe_ratio: number; annualized_return: number; max_drawdown: number; total_return: number; hit_rate: number };
+  strategy_ci: { sharpe_ratio: MetricCI; annualized_return: MetricCI; max_drawdown: MetricCI; total_return: MetricCI };
+  null_metrics: { sharpe_ratio: number; annualized_return: number; max_drawdown: number; total_return: number; hit_rate: number };
+  null_ci: { sharpe_ratio: MetricCI; annualized_return: MetricCI; max_drawdown: MetricCI; total_return: MetricCI };
+  sharpe_diff_test: {
+    n_resamples: number;
+    point_diff: number;
+    ci_low: number;
+    ci_high: number;
+    strategy_sharpe: number;
+    null_sharpe: number;
+    p_value_one_sided: number;
+    p_value_two_sided: number;
+  };
+  verdict: "PASS" | "INVESTIGATE";
+  verdict_caption: string;
+  strategy_series: EquityPt[];
+  null_series: EquityPt[];
+};
+
 export default function EvaluationPanel() {
   const [report, setReport] = useState<Report | null>(null);
   const [ablation, setAblation] = useState<Ablation | null>(null);
   const [featureAblation, setFeatureAblation] = useState<FeatureAblation | null>(null);
   const [exitPolicy, setExitPolicy] = useState<ExitPolicy | null>(null);
   const [failureModes, setFailureModes] = useState<FailureModes | null>(null);
+  const [nullTest, setNullTest] = useState<NullTest | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -153,12 +189,13 @@ export default function EvaluationPanel() {
     setLoading(true);
     setError(null);
     try {
-      const [reportRes, ablRes, featAblRes, exitRes, failRes] = await Promise.all([
+      const [reportRes, ablRes, featAblRes, exitRes, failRes, nullRes] = await Promise.all([
         fetch(`${API_BASE}/api/evaluation/report`),
         fetch(`${API_BASE}/api/ablation`),
         fetch(`${API_BASE}/api/feature-ablation`),
         fetch(`${API_BASE}/api/exit-policy`),
         fetch(`${API_BASE}/api/failure-modes`),
+        fetch(`${API_BASE}/api/null-test`),
       ]);
       if (!reportRes.ok) {
         throw new Error(`HTTP ${reportRes.status}`);
@@ -180,6 +217,9 @@ export default function EvaluationPanel() {
       }
       if (failRes.ok) {
         setFailureModes(await failRes.json());
+      }
+      if (nullRes.ok) {
+        setNullTest(await nullRes.json());
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to fetch");
@@ -226,6 +266,17 @@ export default function EvaluationPanel() {
           </button>
         </div>
       </div>
+
+      {/* === Null Test: strategy vs vol-targeted SPY === */}
+      <Section title="Null Test — strategy vs vol-targeted SPY (paired bootstrap)">
+        {!nullTest ? (
+          <div style={{ color: "var(--text-muted)", fontSize: 12, padding: "8px 0" }}>
+            No null-test artifact found. Run <code style={{ background: "var(--bg-row)", padding: "1px 4px", borderRadius: 2 }}>python -m src.null_test</code>.
+          </div>
+        ) : (
+          <NullTestPanel data={nullTest} />
+        )}
+      </Section>
 
       {/* === Risk-Layer Ablation === */}
       <Section title="Risk-Layer Ablation (v1 → v2, stacked-additive)">
@@ -664,6 +715,97 @@ const FEATURE_LABELS: Record<string, string> = {
   spy_return_1d: "SPY 1d",
   excess_return_1d: "excess 1d",
 };
+
+function NullTestPanel({ data }: { data: NullTest }) {
+  const merged = useMemo(() => {
+    const byDate = new Map<string, { date: string; strategy?: number; null_?: number }>();
+    for (const p of data.strategy_series) {
+      byDate.set(p.date, { date: p.date, strategy: p.equity });
+    }
+    for (const p of data.null_series) {
+      const row = byDate.get(p.date) ?? { date: p.date };
+      row.null_ = p.equity;
+      byDate.set(p.date, row);
+    }
+    return Array.from(byDate.values()).sort((a, b) => a.date.localeCompare(b.date));
+  }, [data]);
+
+  const diff = data.sharpe_diff_test;
+  const passColor = data.verdict === "PASS" ? "var(--green)" : "var(--amber)";
+
+  return (
+    <div>
+      <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 12, lineHeight: 1.5 }}>
+        Tests the panel-chair&apos;s kill question: <em style={{ color: "var(--text-secondary)" }}>&quot;is your alpha just vol-targeting in disguise?&quot;</em> Builds a benchmark
+        that holds <strong>only SPY</strong> with the <strong>same vol-target rule, same regime gate, same rebalance dates, same cost model</strong>
+        as v2 — but no model, no ranker. Then runs a paired bootstrap on per-rebalance Sharpe difference.
+      </div>
+
+      {/* Verdict block */}
+      <div style={{
+        padding: "12px 14px",
+        background: "var(--bg-elevated)",
+        border: `1px solid ${data.verdict === "PASS" ? "rgba(74, 222, 128, 0.35)" : "rgba(251, 191, 36, 0.35)"}`,
+        borderRadius: 4,
+        marginBottom: 12,
+      }}>
+        <div style={{ display: "flex", gap: 10, alignItems: "baseline", marginBottom: 6 }}>
+          <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: passColor }}>
+            {data.verdict}
+          </span>
+          <span style={{ fontSize: 11, color: "var(--text-secondary)" }}>
+            n = {data.n_paired_rebalances} paired rebalances · {diff.n_resamples.toLocaleString()} bootstrap resamples
+          </span>
+        </div>
+        <div style={{ fontSize: 12, color: "var(--text-primary)", lineHeight: 1.55 }}>
+          {data.verdict_caption}
+        </div>
+      </div>
+
+      {/* Headline grid */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, marginBottom: 12 }}>
+        <StatBox label="Strategy Sharpe" value={diff.strategy_sharpe.toFixed(3)} sub={`CI [${data.strategy_ci.sharpe_ratio.ci_low.toFixed(2)}, ${data.strategy_ci.sharpe_ratio.ci_high.toFixed(2)}]`} accent="up" />
+        <StatBox label="Vol-targeted SPY Sharpe" value={diff.null_sharpe.toFixed(3)} sub={`CI [${data.null_ci.sharpe_ratio.ci_low.toFixed(2)}, ${data.null_ci.sharpe_ratio.ci_high.toFixed(2)}]`} accent="muted" />
+        <StatBox label="Δ Sharpe" value={(diff.point_diff >= 0 ? "+" : "") + diff.point_diff.toFixed(3)} sub={`95% CI [${diff.ci_low >= 0 ? "+" : ""}${diff.ci_low.toFixed(2)}, ${diff.ci_high >= 0 ? "+" : ""}${diff.ci_high.toFixed(2)}]`} accent={diff.ci_low > 0 ? "up" : "muted"} />
+        <StatBox label="p-value (two-sided)" value={diff.p_value_two_sided.toFixed(4)} sub={diff.p_value_two_sided < 0.05 ? "significant at 5%" : diff.p_value_two_sided < 0.10 ? "significant at 10%" : "not significant"} accent={diff.p_value_two_sided < 0.05 ? "up" : "muted"} />
+      </div>
+
+      {/* Overlaid equity curves */}
+      <div style={{ height: 340, background: "var(--bg-elevated)", border: "1px solid var(--border)", borderRadius: 4, padding: 10 }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={merged} margin={{ top: 6, right: 14, left: 6, bottom: 6 }}>
+            <CartesianGrid stroke="#1F2533" strokeDasharray="3 3" />
+            <XAxis dataKey="date" stroke="#6A7488" tick={{ fontSize: 9, fill: "#6A7488" }} tickFormatter={(d: string) => d.slice(0, 7)} interval={Math.floor(merged.length / 8)} />
+            <YAxis stroke="#6A7488" tick={{ fontSize: 9, fill: "#6A7488" }} tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`} width={50} />
+            <Tooltip
+              contentStyle={{ background: "#0A0D13", border: "1px solid #2D3548", fontSize: 11 }}
+              formatter={(v: number) => [`$${v.toLocaleString()}`, ""]}
+              labelStyle={{ color: "#A0A8B8" }}
+            />
+            <Legend wrapperStyle={{ fontSize: 10, color: "#A0A8B8" }} />
+            <Line type="monotone" dataKey="null_" stroke="#A0A8B8" strokeWidth={1.5} strokeDasharray="4 3" dot={false} name="vol-targeted SPY (null)" connectNulls />
+            <Line type="monotone" dataKey="strategy" stroke="#4ADE80" strokeWidth={2.2} dot={false} name="v2 strategy" connectNulls />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+
+      <div style={{ fontSize: 10, color: "var(--text-faint)", lineHeight: 1.55, marginTop: 10 }}>
+        Both curves rebased to $10K at the same start date. The gap between them is the residual edge attributable to the ML ranker after vol-targeting and regime gating are equalised. Paired bootstrap resamples the per-rebalance return PAIRS (preserving within-period correlation) and recomputes both Sharpes per resample.
+      </div>
+    </div>
+  );
+}
+
+function StatBox({ label, value, sub, accent }: { label: string; value: string; sub: string; accent: "up" | "muted" }) {
+  const color = accent === "up" ? "var(--green)" : "var(--text-primary)";
+  return (
+    <div style={{ background: "var(--bg-panel)", border: "1px solid var(--border)", borderRadius: 4, padding: "9px 11px" }}>
+      <div style={{ fontSize: 9, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em", fontWeight: 700, marginBottom: 4 }}>{label}</div>
+      <div style={{ fontSize: 16, fontWeight: 700, color, fontFeatureSettings: "'tnum'", letterSpacing: "-0.01em" }}>{value}</div>
+      <div style={{ fontSize: 9, color: "var(--text-faint)", marginTop: 3 }}>{sub}</div>
+    </div>
+  );
+}
 
 function FailureModesPanel({ data }: { data: FailureModes }) {
   return (

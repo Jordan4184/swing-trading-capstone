@@ -4,6 +4,14 @@ A machine-learning swing trading system built as a capstone project for the Inst
 
 **Why this project, why now:** FINRA's removal of the Pattern Day Trader rule on June 4, 2026 eliminates the $25,000 minimum equity requirement that has historically gated retail algorithmic trading. Small-account algo strategies are about to become viable for a much larger audience. This project explores whether retail-grade ML — with cheap data and standard tools — can produce a genuine, defensible edge over passive benchmarks.
 
+## Why I built this
+
+I came to ML from a neuroscience background, and quantitative finance turned out to be the same problem in different clothing: noisy signals, low signal-to-noise ratio, the constant temptation to overfit within-subject variance, and the very human seduction of telling post-hoc stories about a single trial that should have been a single observation. Every failure mode that kills a neuroscience PhD's first model kills a quant model the same way. That made markets feel like a forcing function for the discipline I wanted to practice next.
+
+The most important thing I learned wasn't in the headline numbers. At week 2 I believed that lifting walk-forward AUC was equivalent to lifting realized return — I had to ship and then *revert* a feature engineering change to learn otherwise. AUC measures ranking across the whole distribution; the strategy only takes the extreme tail of that distribution; the relationship between those two metrics at small N is not monotonic. That experiment is preserved in `results/feature_ablation.json` — I shipped it because the result is the lesson.
+
+With three more months I'd build the implied-vol / earnings-proximity feature block the failure-mode case studies on the Evaluation page already point at, and a point-in-time-universe robustness test against survivorship bias. The architecture is set up for both; the artifact list keeps me honest about what's earned and what's still aspirational.
+
 ## Results Summary
 
 Out-of-sample backtest, 2019-07 to 2025-12 (6.4 years), 20bps round-trip transaction costs, walk-forward validated:
