@@ -216,6 +216,15 @@ def _load_failure_modes() -> dict | None:
         return json.load(f)
 
 
+def _load_shap_surface() -> dict | None:
+    """3D SHAP interaction surface artifact (grid + failure-case pins)."""
+    path = RESULTS_DIR / "shap_surface.json"
+    if not path.exists():
+        return None
+    with open(path) as f:
+        return json.load(f)
+
+
 # Calibration buckets — match src/evaluate.py so the ribbon agrees with the
 # existing calibration bar chart on the evaluation page.
 CALIBRATION_BINS = [0.0, 0.45, 0.50, 0.55, 0.60, 1.01]  # 1.01 so exactly-1.0 lands in last bucket
@@ -273,6 +282,7 @@ FEATURE_ABLATION = _load_feature_ablation()
 V3_SUMMARY = _load_v3_summary()
 SHAP_VALUES = _load_shap_values()
 FAILURE_MODES = _load_failure_modes()
+SHAP_SURFACE = _load_shap_surface()
 FEATURE_COLUMNS_FOR_SHAP = (
     [c for c in SHAP_VALUES.columns if c not in ("date", "ticker", "base_value")]
     if SHAP_VALUES is not None else []
@@ -327,6 +337,7 @@ def root():
             "/api/exit-policy",
             "/api/explain/{ticker}/{date}",
             "/api/failure-modes",
+            "/api/shap-surface",
             "/api/calibration/buckets",
             "/api/honesty-footer",
             "/api/risk/today",
@@ -492,6 +503,20 @@ def get_explain(ticker: str, date: str, top_n: int = 5):
         "top_contributors": top,
         "all_contributors": contribs,
     }
+
+
+@app.get("/api/shap-surface")
+def get_shap_surface():
+    """
+    3D SHAP interaction surface — the dominant feature pair's Φ_ij rendered
+    on a 20×20 grid, plus failure-case picks as pinned (x, y, z) markers.
+    The grid is intentionally piecewise-constant (no smoothing) because the
+    underlying RandomForest is a step function, not a continuous response
+    surface.
+    """
+    if SHAP_SURFACE is None:
+        raise HTTPException(status_code=404, detail="SHAP surface artifact not yet generated. Run `python -m src.shap_surface`.")
+    return SHAP_SURFACE
 
 
 @app.get("/api/failure-modes")

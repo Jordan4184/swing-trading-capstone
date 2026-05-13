@@ -10,15 +10,19 @@
   },
   "dependencies": {
     "next": "16.2.5",
+    "plotly.js-gl3d-dist-min": "^3.5.1",
     "react": "19.2.4",
     "react-dom": "19.2.4",
+    "react-plotly.js": "^2.6.0",
     "recharts": "^3.8.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
+    "@types/plotly.js": "^3.0.10",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/react-plotly.js": "^2.6.4",
     "eslint": "^9",
     "eslint-config-next": "16.2.5",
     "tailwindcss": "^4",

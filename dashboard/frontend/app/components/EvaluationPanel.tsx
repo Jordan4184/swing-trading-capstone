@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import ShapInteractionSurface from "./ShapInteractionSurface";
 
 const API_BASE = "http://localhost:8000";
 
@@ -246,6 +247,11 @@ export default function EvaluationPanel() {
         ) : (
           <FeatureAblationTable data={featureAblation} />
         )}
+      </Section>
+
+      {/* === 3D SHAP Interaction Surface === */}
+      <Section title="SHAP Interaction Surface — where the model sees synergy vs antagonism">
+        <ShapInteractionSurface />
       </Section>
 
       {/* === Failure-Mode Case Studies === */}
