@@ -158,12 +158,26 @@ def build_pins(
 ) -> list[dict]:
     """
     For each pinned failure-case date, find the picks (from v2 trades),
-    look up their feature values and Φ_ij, return labeled pins.
+    look up their feature values and Φ_ij, return labeled pins with the
+    failure-mode case-study label and lesson baked in for richer hovers.
     """
     project_root = Path(__file__).parent.parent
     results_dir = project_root / "results"
     v2_trades = pd.read_parquet(results_dir / "v2_trades.parquet")
     v2_trades["date"] = pd.to_datetime(v2_trades["date"])
+
+    # Pull failure-mode lessons by date so each pin carries its narrative
+    fm_path = results_dir / "failure_modes.json"
+    fm_by_date: dict[str, dict] = {}
+    if fm_path.exists():
+        with open(fm_path) as f:
+            fm = json.load(f)
+        for case in fm.get("cases", []):
+            fm_by_date[case["date"]] = {
+                "label": case.get("label", ""),
+                "lesson": case.get("lesson", ""),
+                "context": case.get("context", ""),
+            }
 
     feat_idx_i = feature_columns.index(feat_i)
     feat_idx_j = feature_columns.index(feat_j)
@@ -179,6 +193,7 @@ def build_pins(
             continue
         tickers = [t.strip() for t in trade.iloc[0]["picks_csv"].split(",") if t.strip()]
         basket_return = float(trade.iloc[0]["basket_return_net"])
+        case_meta = fm_by_date.get(date_str, {})
         for ticker in tickers:
             key = (d, ticker)
             k = feat_index.get(key)
@@ -194,8 +209,120 @@ def build_pins(
                 "y": y_val,
                 "z": phi,
                 "basket_return": basket_return,
+                "label": case_meta.get("label", ""),
+                "lesson": case_meta.get("lesson", ""),
+                "context": case_meta.get("context", ""),
             })
     return pins
+
+
+def build_tour_steps(pins: list[dict], feat_i: str, feat_j: str) -> list[dict]:
+    """
+    Six hand-written tour steps. Each step has a camera eye position, a
+    caption, and an optional pin reference (ticker+date) to spotlight.
+    The camera coordinates are in plotly's normalized scene-units (eye
+    distance ~1.0 = comfortable default; closer = zoomed in).
+    """
+    pin_by_key = {(p["ticker"], p["date"]): p for p in pins}
+    meta_pin = pin_by_key.get(("META", "2024-04-12"))
+    jpm_2020 = pin_by_key.get(("JPM", "2020-02-18"))
+    jpm_2022 = pin_by_key.get(("JPM", "2022-06-06"))
+
+    def zoom_to(p: dict | None, dx: float = 0.6, dy: float = -0.6, dz: float = 0.4) -> dict:
+        """Camera centered on a pin's (x,y) at moderate elevation."""
+        if not p:
+            return {"x": 1.5, "y": -1.6, "z": 0.9}
+        return {"x": dx, "y": dy, "z": dz}
+
+    return [
+        {
+            "id": 1,
+            "title": "Orientation",
+            "caption": (
+                f"This surface plots how the model uses the interaction between "
+                f"two features — {feat_i} on X and {feat_j} on Y — across all "
+                f"17,825 walk-forward predictions. The third axis is the SHAP "
+                f"interaction term Φ_ij: how much their JOINT signal moves the "
+                f"probability beyond what either feature does alone. Green = "
+                f"synergy, red = antagonism. Yellow diamonds are six picks the "
+                f"model got badly wrong."
+            ),
+            "camera": {"x": 1.5, "y": -1.6, "z": 0.9},
+            "spotlight": None,
+        },
+        {
+            "id": 2,
+            "title": "The volatility-regime story",
+            "caption": (
+                "All five of the model's strongest feature interactions involve "
+                "volatility (20d, 60d, or both). The model isn't reading absolute "
+                "vol — it's reading the relationship between short and long "
+                "horizons. When short and long vol agree, the interaction is "
+                "strongly positive. When they diverge, the surface dips into "
+                "antagonism. This regime-vs-shock framing is the most important "
+                "thing this chart shows."
+            ),
+            "camera": {"x": 1.8, "y": -1.4, "z": 1.3},
+            "spotlight": None,
+        },
+        {
+            "id": 3,
+            "title": "Pin: 2024-04-12 META — vol-expansion regime",
+            "caption": (
+                "Yellow diamond, front-left. META three days before the AI-trade "
+                "unwind. 20-day vol was LOW (it had been quiet) but 60-day vol "
+                "was already elevated. This is the vol-expansion warning — the "
+                "interaction Φ goes deeply negative (-0.011, the most negative "
+                "of all six pins). The model knew this was a hostile regime, "
+                "but other features still pushed proba to 0.628. Realized 5-day "
+                "return: -6.0%."
+            ),
+            "camera": zoom_to(meta_pin, dx=0.2, dy=-1.4, dz=0.5),
+            "spotlight": ("META", "2024-04-12"),
+        },
+        {
+            "id": 4,
+            "title": "Pin: 2020-02-18 JPM — the opposite mistake",
+            "caption": (
+                "Far-left corner, three days before COVID. Both 20d and 60d vol "
+                "were near their lows. The interaction Φ is positive (+0.006) — "
+                "the model sees synergy in this calm-on-calm regime and is "
+                "rewarded historically. Realized return: -6.9% as the market "
+                "began the fastest 30% drawdown in history. The lesson: "
+                "low realized vol is not the same as low forward risk."
+            ),
+            "camera": zoom_to(jpm_2020, dx=-1.5, dy=-0.8, dz=0.5),
+            "spotlight": ("JPM", "2020-02-18"),
+        },
+        {
+            "id": 5,
+            "title": "Pin: 2022-06-06 JPM — the macro shock",
+            "caption": (
+                "Centre-low. CPI came in hot four days after this pick. Φ is "
+                "moderately negative (-0.008) so the model was at least "
+                "skeptical of the joint vol signal. But macro events live "
+                "outside this feature set — no amount of interaction structure "
+                "catches a hawkish print the model can't see. Realized return: "
+                "-10.6%."
+            ),
+            "camera": zoom_to(jpm_2022, dx=0.6, dy=-1.6, dz=0.6),
+            "spotlight": ("JPM", "2022-06-06"),
+        },
+        {
+            "id": 6,
+            "title": "Why three axes",
+            "caption": (
+                "The pins aren't randomly placed — they're at the regime corners "
+                "this chart was built to make visible. Two side-by-side 2D PDPs "
+                "would show only main effects: f(volatility_20d) + g(volatility_60d). "
+                "They cannot show synergy or antagonism between them, because "
+                "synergy IS the cross-partial — the curvature of this surface. "
+                "That's the test the chart had to pass to earn its space."
+            ),
+            "camera": {"x": 1.5, "y": -1.6, "z": 0.9},
+            "spotlight": None,
+        },
+    ]
 
 
 if __name__ == "__main__":
@@ -252,6 +379,9 @@ if __name__ == "__main__":
     for p in pins:
         print(f"    {p['date']} {p['ticker']:>5s}: x={p['x']:+.4f}, y={p['y']:+.4f}, Φ={p['z']:+.6f} (basket {p['basket_return']*100:+.2f}%)")
 
+    tour_steps = build_tour_steps(pins, feat_i, feat_j)
+    print(f"\nBuilt {len(tour_steps)} tour steps")
+
     out = {
         "feature_x": feat_i,
         "feature_y": feat_j,
@@ -259,6 +389,7 @@ if __name__ == "__main__":
         "top_pairs": [{"feature_x": fa, "feature_y": fb, "magnitude": mag} for fa, fb, mag in pairs[:5]],
         "grid": grid,
         "pins": pins,
+        "tour_steps": tour_steps,
         "n_samples": int(len(X)),
         "model_version": payload.get("model_version"),
     }

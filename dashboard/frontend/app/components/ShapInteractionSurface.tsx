@@ -1,13 +1,12 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 const API_BASE = "http://localhost:8000";
 
 // Dynamic import: plotly.js touches `window` at import time and will crash
-// SSR. We also import the gl3d build (~1.2MB) rather than the full
-// plotly.js-dist (~3.5MB).
+// SSR. Use the gl3d build (~1.2MB) rather than the full plotly bundle.
 const Plot = dynamic(
   async () => {
     // @ts-expect-error — no upstream types for the gl3d build
@@ -25,6 +24,17 @@ type Pin = {
   y: number;
   z: number;
   basket_return: number;
+  label: string;
+  lesson: string;
+  context: string;
+};
+
+type TourStep = {
+  id: number;
+  title: string;
+  caption: string;
+  camera: { x: number; y: number; z: number };
+  spotlight: [string, string] | null;
 };
 
 type ShapSurface = {
@@ -41,6 +51,7 @@ type ShapSurface = {
     n_bins_y: number;
   };
   pins: Pin[];
+  tour_steps: TourStep[];
   n_samples: number;
   model_version: string;
 };
@@ -59,9 +70,12 @@ const FEATURE_LABELS: Record<string, string> = {
   excess_return_1d: "excess 1d",
 };
 
+const DEFAULT_CAMERA = { x: 1.5, y: -1.6, z: 0.9 };
+
 export default function ShapInteractionSurface() {
   const [data, setData] = useState<ShapSurface | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [tourStep, setTourStep] = useState(0); // 0 = inactive, 1..N = step
 
   useEffect(() => {
     let alive = true;
@@ -83,96 +97,158 @@ export default function ShapInteractionSurface() {
     };
   }, []);
 
+  // Recompute plotly traces only when data changes — not on every tour click.
+  const traces = useMemo(() => {
+    if (!data) return null;
+    const fx = FEATURE_LABELS[data.feature_x] ?? data.feature_x;
+    const fy = FEATURE_LABELS[data.feature_y] ?? data.feature_y;
+    let zMin = 0;
+    let zMax = 0;
+    for (const row of data.grid.z) {
+      for (const v of row) {
+        if (v == null) continue;
+        if (v < zMin) zMin = v;
+        if (v > zMax) zMax = v;
+      }
+    }
+    const zAbs = Math.max(Math.abs(zMin), Math.abs(zMax), 0.001);
+
+    const surfaceTrace = {
+      type: "surface" as const,
+      x: data.grid.x_centers,
+      y: data.grid.y_centers,
+      z: data.grid.z,
+      connectgaps: false,
+      showscale: true,
+      cmin: -zAbs,
+      cmax: zAbs,
+      colorscale: [
+        [0.0, "#F87171"],
+        [0.5, "#11151D"],
+        [1.0, "#4ADE80"],
+      ],
+      colorbar: {
+        title: { text: "Φ_ij", font: { color: "#A0A8B8", size: 11 } },
+        tickfont: { color: "#A0A8B8", size: 10 },
+        thickness: 14,
+        len: 0.55,
+        bgcolor: "#0A0D13",
+        bordercolor: "#1F2533",
+        borderwidth: 1,
+      },
+      hovertemplate: `<b>${fx}</b> %{x:.4f}<br><b>${fy}</b> %{y:.4f}<br><b>Φ_ij</b> %{z:.5f}<extra></extra>`,
+      contours: {
+        z: { show: true, usecolormap: true, project: { z: true }, width: 1.5 },
+      },
+      lighting: { ambient: 0.75, diffuse: 0.35, roughness: 0.85 },
+    };
+
+    return { fx, fy, surfaceTrace, zAbs };
+  }, [data]);
+
+  const pinTrace = useMemo(() => {
+    if (!data) return null;
+    return {
+      type: "scatter3d" as const,
+      mode: "markers+text" as const,
+      x: data.pins.map((p) => p.x),
+      y: data.pins.map((p) => p.y),
+      z: data.pins.map((p) => p.z),
+      text: data.pins.map((p) => `${p.ticker} · ${p.date.slice(5)}`),
+      textfont: { color: "#FBBF24", size: 11, family: "Inter, sans-serif" },
+      textposition: "top center" as const,
+      marker: {
+        size: 8,
+        color: "#FBBF24",
+        symbol: "diamond" as const,
+        line: { color: "#0A0D13", width: 1 },
+      },
+      hovertemplate: data.pins.map((p) =>
+        `<b>${p.ticker}</b> · ${p.date}<br>` +
+        `<i>${p.label}</i><br>` +
+        `basket return ${(p.basket_return * 100).toFixed(2)}%<br>` +
+        `Φ_ij ${p.z.toFixed(5)}<br><br>` +
+        `<i style="font-size:10px">${escapeHtml(p.lesson)}</i><extra></extra>`,
+      ),
+      name: "Failure cases",
+      showlegend: false,
+    };
+  }, [data]);
+
   if (err) {
     return <SurfacePlaceholder text={`Error: ${err}`} />;
   }
-  if (!data) {
+  if (!data || !traces || !pinTrace) {
     return <SurfacePlaceholder text="Loading SHAP interaction data…" />;
   }
 
-  const fx = FEATURE_LABELS[data.feature_x] ?? data.feature_x;
-  const fy = FEATURE_LABELS[data.feature_y] ?? data.feature_y;
-
-  // Divergent symmetric color range so positive and negative interactions
-  // read at equal saturation. Pick the larger of |min|/|max| as the range.
-  let zMin = 0;
-  let zMax = 0;
-  for (const row of data.grid.z) {
-    for (const v of row) {
-      if (v == null) continue;
-      if (v < zMin) zMin = v;
-      if (v > zMax) zMax = v;
-    }
-  }
-  const zAbs = Math.max(Math.abs(zMin), Math.abs(zMax), 0.001);
-
-  const surfaceTrace = {
-    type: "surface" as const,
-    x: data.grid.x_centers,
-    y: data.grid.y_centers,
-    z: data.grid.z,
-    connectgaps: false,
-    showscale: true,
-    cmin: -zAbs,
-    cmax: zAbs,
-    colorscale: [
-      [0.0, "#F87171"], // red — antagonism (Φ pushes proba down)
-      [0.5, "#11151D"], // dark — near zero
-      [1.0, "#4ADE80"], // green — synergy (Φ pushes proba up)
-    ],
-    colorbar: {
-      title: { text: "Φ_ij", font: { color: "#A0A8B8", size: 10 } },
-      tickfont: { color: "#A0A8B8", size: 9 },
-      thickness: 12,
-      len: 0.6,
-      bgcolor: "#0A0D13",
-    },
-    hovertemplate: `${fx}: %{x:.4f}<br>${fy}: %{y:.4f}<br>Φ_ij: %{z:.5f}<extra></extra>`,
-    contours: {
-      z: { show: true, usecolormap: true, project: { z: true }, width: 1 },
-    },
-    lighting: { ambient: 0.7, diffuse: 0.4, roughness: 0.9 },
-  };
-
-  // Failure-case pins. Group them visually with a thin yellow line up from the
-  // surface for legibility (a tiny stalk so labels don't get lost in the mesh).
-  const pinTrace = {
-    type: "scatter3d" as const,
-    mode: "markers+text" as const,
-    x: data.pins.map((p) => p.x),
-    y: data.pins.map((p) => p.y),
-    z: data.pins.map((p) => p.z),
-    text: data.pins.map((p) => `${p.ticker} · ${p.date.slice(5)}`),
-    textfont: { color: "#FBBF24", size: 10 },
-    textposition: "top center" as const,
-    marker: {
-      size: 6,
-      color: "#FBBF24",
-      symbol: "diamond" as const,
-      line: { color: "#FBBF24", width: 1 },
-    },
-    hovertemplate: data.pins
-      .map(
-        (p) =>
-          `<b>${p.ticker}</b> · ${p.date}<br>${fx}: ${p.x.toFixed(4)}<br>${fy}: ${p.y.toFixed(4)}<br>Φ_ij: ${p.z.toFixed(5)}<br>basket: ${(p.basket_return * 100).toFixed(2)}%`,
-      )
-      .map((s) => s + "<extra></extra>"),
-    name: "Failure cases",
-  };
+  const isTouring = tourStep > 0;
+  const activeStep: TourStep | null =
+    isTouring && data.tour_steps[tourStep - 1] ? data.tour_steps[tourStep - 1] : null;
+  const camera = activeStep ? activeStep.camera : DEFAULT_CAMERA;
+  const stepCount = data.tour_steps.length;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      <div style={{ fontSize: 11, color: "var(--text-muted)", lineHeight: 1.5 }}>
-        Mean SHAP interaction value <code>Φ_ij</code> across <strong>{data.n_samples.toLocaleString()}</strong> walk-forward
-        predictions, binned 20×20 over the dominant feature pair (
-        <span style={{ color: "var(--text-secondary)", fontWeight: 600 }}>{fx} × {fy}</span>
-        ). Green = synergy (the pair&apos;s joint signal pushes proba up beyond their individual contributions);
-        red = antagonism. The yellow diamonds are the picks from the three failure-mode case studies — they sit on
-        the surface at the exact <code>(x, y, Φ)</code> the model saw at the moment of the bad decision.
+    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      {/* Tour control bar */}
+      <div style={tourBarStyle}>
+        {!isTouring ? (
+          <>
+            <span style={{ fontSize: 11, color: "var(--text-muted)", lineHeight: 1.5, flex: 1 }}>
+              <strong style={{ color: "var(--text-secondary)" }}>{traces.fx} × {traces.fy}</strong> —
+              the dominant feature interaction in the model (top of 55 candidate pairs by mean
+              |Φ_ij|, magnitude {data.interaction_magnitude.toFixed(5)}). Six failure-case picks
+              are pinned. Hover any pin for the case lesson; orbit with click-and-drag.
+            </span>
+            <button onClick={() => setTourStep(1)} style={primaryButton}>
+              ▶ Take the tour ({stepCount} steps)
+            </button>
+          </>
+        ) : (
+          <>
+            <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+              <span style={stepIndicator}>
+                Step {tourStep} / {stepCount}
+              </span>
+              <strong style={{ fontSize: 12, color: "var(--text-primary)" }}>{activeStep?.title}</strong>
+            </div>
+            <div style={{ display: "flex", gap: 6, marginLeft: "auto" }}>
+              <button
+                disabled={tourStep === 1}
+                onClick={() => setTourStep((s) => Math.max(1, s - 1))}
+                style={tourStep === 1 ? disabledButton : secondaryButton}
+              >
+                ← Prev
+              </button>
+              <button
+                onClick={() => setTourStep(0)}
+                style={secondaryButton}
+              >
+                Exit
+              </button>
+              <button
+                onClick={() => {
+                  if (tourStep < stepCount) setTourStep((s) => s + 1);
+                  else setTourStep(0);
+                }}
+                style={primaryButton}
+              >
+                {tourStep < stepCount ? "Next →" : "Done"}
+              </button>
+            </div>
+          </>
+        )}
       </div>
-      <div style={{ height: 520, background: "var(--bg-elevated)", border: "1px solid var(--border)", borderRadius: 4, overflow: "hidden" }}>
+
+      {/* Tour caption */}
+      {activeStep && (
+        <div style={tourCaptionStyle}>{activeStep.caption}</div>
+      )}
+
+      {/* Plot */}
+      <div style={{ height: 720, background: "var(--bg-elevated)", border: "1px solid var(--border)", borderRadius: 4, overflow: "hidden" }}>
         <Plot
-          data={[surfaceTrace as unknown as Record<string, unknown>, pinTrace as unknown as Record<string, unknown>]}
+          data={[traces.surfaceTrace as unknown as Record<string, unknown>, pinTrace as unknown as Record<string, unknown>]}
           layout={{
             autosize: true,
             margin: { l: 0, r: 0, b: 0, t: 0 },
@@ -180,31 +256,37 @@ export default function ShapInteractionSurface() {
             scene: {
               bgcolor: "#11151D",
               xaxis: {
-                title: { text: fx, font: { color: "#A0A8B8", size: 11 } },
-                tickfont: { color: "#6A7488", size: 9 },
+                title: { text: traces.fx, font: { color: "#A0A8B8", size: 12 } },
+                tickfont: { color: "#6A7488", size: 10 },
                 gridcolor: "#1F2533",
                 zerolinecolor: "#2D3548",
                 color: "#A0A8B8",
               },
               yaxis: {
-                title: { text: fy, font: { color: "#A0A8B8", size: 11 } },
-                tickfont: { color: "#6A7488", size: 9 },
+                title: { text: traces.fy, font: { color: "#A0A8B8", size: 12 } },
+                tickfont: { color: "#6A7488", size: 10 },
                 gridcolor: "#1F2533",
                 zerolinecolor: "#2D3548",
                 color: "#A0A8B8",
               },
               zaxis: {
-                title: { text: "Φ_ij (SHAP interaction)", font: { color: "#A0A8B8", size: 10 } },
-                tickfont: { color: "#6A7488", size: 9 },
+                title: { text: "Φ_ij (SHAP interaction)", font: { color: "#A0A8B8", size: 11 } },
+                tickfont: { color: "#6A7488", size: 10 },
                 gridcolor: "#1F2533",
                 zerolinecolor: "#2D3548",
                 color: "#A0A8B8",
               },
-              camera: { eye: { x: 1.5, y: -1.6, z: 0.9 } },
+              camera: { eye: camera },
               dragmode: "orbit" as const,
             },
             showlegend: false,
-            hoverlabel: { bgcolor: "#11151D", bordercolor: "#2D3548", font: { color: "#F0F3F8", size: 11 } },
+            hoverlabel: {
+              bgcolor: "#0A0D13",
+              bordercolor: "#2D3548",
+              font: { color: "#F0F3F8", size: 11, family: "Inter, sans-serif" },
+              align: "left" as const,
+            },
+            transition: { duration: 600, easing: "cubic-in-out" } as unknown as Record<string, unknown>,
           }}
           config={{
             displayModeBar: false,
@@ -215,21 +297,32 @@ export default function ShapInteractionSurface() {
           useResizeHandler
         />
       </div>
-      <div style={{ fontSize: 10, color: "var(--text-faint)", lineHeight: 1.5, padding: "4px 0" }}>
-        Read: this is the cross-partial Φ_ij from <code>TreeExplainer.shap_interaction_values</code> — not a smoothed
-        partial-dependence surface. Empty cells (no observations binned there) appear as gaps; the model is a
-        Random Forest and its response is piecewise-constant by construction. The three axes are mathematically
-        load-bearing: collapsing to 2D shows only main effects (<code>f(x) + g(y)</code>), which cannot expose
-        synergy or antagonism between the features.
+
+      {/* Static footer */}
+      <div style={{ fontSize: 10, color: "var(--text-faint)", lineHeight: 1.6, padding: "4px 2px" }}>
+        Read: cross-partial Φ_ij from <code>TreeExplainer.shap_interaction_values</code> — not a
+        smoothed partial-dependence surface. Empty cells (no observations binned there) appear
+        as gaps; the model is a Random Forest and its response is piecewise-constant by
+        construction. The three axes are mathematically load-bearing: collapsing to 2D shows
+        only main effects (<code>f(x) + g(y)</code>), which cannot expose synergy or antagonism
+        between the features.
       </div>
     </div>
   );
 }
 
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
 function SurfacePlaceholder({ text }: { text: string }) {
   return (
     <div style={{
-      height: 520,
+      height: 720,
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
@@ -243,3 +336,68 @@ function SurfacePlaceholder({ text }: { text: string }) {
     </div>
   );
 }
+
+const tourBarStyle: React.CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: 12,
+  padding: "10px 14px",
+  background: "var(--bg-elevated)",
+  border: "1px solid var(--border)",
+  borderRadius: 4,
+};
+
+const tourCaptionStyle: React.CSSProperties = {
+  padding: "12px 16px",
+  background: "linear-gradient(90deg, rgba(34, 211, 238, 0.06), rgba(74, 222, 128, 0.04))",
+  border: "1px solid rgba(34, 211, 238, 0.25)",
+  borderRadius: 4,
+  fontSize: 12,
+  color: "var(--text-primary)",
+  lineHeight: 1.6,
+};
+
+const primaryButton: React.CSSProperties = {
+  background: "var(--green-bg)",
+  color: "var(--green)",
+  border: "1px solid rgba(74, 222, 128, 0.4)",
+  borderRadius: 3,
+  padding: "5px 12px",
+  fontSize: 11,
+  fontWeight: 700,
+  cursor: "pointer",
+  fontFamily: "inherit",
+  letterSpacing: "0.02em",
+  whiteSpace: "nowrap",
+};
+
+const secondaryButton: React.CSSProperties = {
+  background: "var(--bg-row)",
+  color: "var(--text-secondary)",
+  border: "1px solid var(--border-strong)",
+  borderRadius: 3,
+  padding: "5px 12px",
+  fontSize: 11,
+  fontWeight: 600,
+  cursor: "pointer",
+  fontFamily: "inherit",
+  letterSpacing: "0.02em",
+  whiteSpace: "nowrap",
+};
+
+const disabledButton: React.CSSProperties = {
+  ...secondaryButton,
+  opacity: 0.4,
+  cursor: "not-allowed",
+};
+
+const stepIndicator: React.CSSProperties = {
+  fontSize: 9,
+  color: "var(--cyan)",
+  background: "rgba(34, 211, 238, 0.1)",
+  padding: "3px 8px",
+  borderRadius: 3,
+  fontWeight: 700,
+  letterSpacing: "0.06em",
+  textTransform: "uppercase",
+};
