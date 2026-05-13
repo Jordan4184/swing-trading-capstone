@@ -197,6 +197,25 @@ def _load_v3_summary() -> dict | None:
         return json.load(f)
 
 
+def _load_shap_values() -> pd.DataFrame | None:
+    """Precomputed SHAP values per (date, ticker). None if not generated yet."""
+    path = RESULTS_DIR / "shap_values.parquet"
+    if not path.exists():
+        return None
+    df = pd.read_parquet(path)
+    df["date"] = pd.to_datetime(df["date"])
+    return df
+
+
+def _load_failure_modes() -> dict | None:
+    """Hand-picked failure-mode case studies. None if not generated yet."""
+    path = RESULTS_DIR / "failure_modes.json"
+    if not path.exists():
+        return None
+    with open(path) as f:
+        return json.load(f)
+
+
 # Calibration buckets — match src/evaluate.py so the ribbon agrees with the
 # existing calibration bar chart on the evaluation page.
 CALIBRATION_BINS = [0.0, 0.45, 0.50, 0.55, 0.60, 1.01]  # 1.01 so exactly-1.0 lands in last bucket
@@ -252,6 +271,12 @@ V2_TRADES = _load_v2_trades()
 ABLATION = _load_ablation()
 FEATURE_ABLATION = _load_feature_ablation()
 V3_SUMMARY = _load_v3_summary()
+SHAP_VALUES = _load_shap_values()
+FAILURE_MODES = _load_failure_modes()
+FEATURE_COLUMNS_FOR_SHAP = (
+    [c for c in SHAP_VALUES.columns if c not in ("date", "ticker", "base_value")]
+    if SHAP_VALUES is not None else []
+)
 CALIBRATION_BUCKETS = _compute_calibration_buckets(PREDICTIONS)
 UNIVERSE = sorted(PREDICTIONS["ticker"].unique().tolist())
 
@@ -300,6 +325,8 @@ def root():
             "/api/ablation",
             "/api/feature-ablation",
             "/api/exit-policy",
+            "/api/explain/{ticker}/{date}",
+            "/api/failure-modes",
             "/api/calibration/buckets",
             "/api/honesty-footer",
             "/api/risk/today",
@@ -423,6 +450,59 @@ def get_feature_ablation():
     if FEATURE_ABLATION is None:
         raise HTTPException(status_code=404, detail="Feature ablation not yet generated. Run `python -m src.feature_ablation`.")
     return FEATURE_ABLATION
+
+
+@app.get("/api/explain/{ticker}/{date}")
+def get_explain(ticker: str, date: str, top_n: int = 5):
+    """
+    Per-prediction SHAP attribution for the production Random Forest.
+    Returns the top-N signed feature contributions and the base value.
+
+    Historical (any date in shap_values.parquet) is a parquet lookup.
+    Live (today's prediction not in the precompute) returns 404 — the
+    DecisionCard handles that gracefully and just hides the ledger.
+    """
+    if SHAP_VALUES is None or SHAP_VALUES.empty:
+        raise HTTPException(status_code=404, detail="SHAP values not yet generated. Run `python -m src.explain`.")
+    ticker = ticker.upper()
+    try:
+        target_date = pd.to_datetime(date)
+    except Exception:
+        raise HTTPException(status_code=400, detail=f"Invalid date '{date}', expected YYYY-MM-DD.")
+
+    row = SHAP_VALUES[
+        (SHAP_VALUES["ticker"] == ticker) & (SHAP_VALUES["date"] == target_date)
+    ]
+    if row.empty:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No SHAP record for {ticker} on {target_date.date()} (likely a live prediction post-dating the precompute).",
+        )
+    rec = row.iloc[0]
+    contribs = []
+    for feat in FEATURE_COLUMNS_FOR_SHAP:
+        val = float(rec[feat])
+        contribs.append({"feature": feat, "shap_value": val})
+    contribs.sort(key=lambda x: abs(x["shap_value"]), reverse=True)
+    top = contribs[:top_n]
+    return {
+        "ticker": ticker,
+        "date": target_date.strftime("%Y-%m-%d"),
+        "base_value": float(rec["base_value"]),
+        "top_contributors": top,
+        "all_contributors": contribs,
+    }
+
+
+@app.get("/api/failure-modes")
+def get_failure_modes():
+    """
+    Three hand-picked v2 losing trades with structured commentary:
+    context, SHAP attribution per pick, and one-line "what I'd change."
+    """
+    if FAILURE_MODES is None:
+        raise HTTPException(status_code=404, detail="Failure-mode case studies not yet generated. Run `python -m src.failure_modes`.")
+    return FAILURE_MODES
 
 
 @app.get("/api/exit-policy")

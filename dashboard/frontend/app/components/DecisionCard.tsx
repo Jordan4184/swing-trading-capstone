@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import CalibrationRibbon from "./CalibrationRibbon";
+import ConvictionLedger from "./ConvictionLedger";
 
 const API_BASE = "http://localhost:8000";
 
@@ -224,6 +225,9 @@ export default function DecisionCard() {
           </div>
         </div>
       </div>
+
+      {/* Conviction ledger — top SHAP contributors to the top pick */}
+      <ConvictionLedger ticker={top.ticker} date={risk.asof} />
 
       {/* Secondary picks strip */}
       {risk.picks.length > 1 && (

@@ -1,0 +1,220 @@
+{
+  "generated_at": "2026-05-12T22:20:49.938360",
+  "n_cases": 3,
+  "feature_columns": [
+    "return_1d",
+    "return_5d",
+    "return_20d",
+    "return_60d",
+    "volatility_20d",
+    "volatility_60d",
+    "rsi_14",
+    "bb_pct",
+    "volume_ratio_20d",
+    "spy_return_1d",
+    "excess_return_1d"
+  ],
+  "cases": [
+    {
+      "date": "2020-02-18",
+      "label": "Pre-COVID risk-on lock-in",
+      "context": "SPY was within 2% of all-time highs. The 200dMA regime gate registered risk_on; VIX percentile was modest. Three trading days later the market began its fastest 30% drawdown in history.",
+      "lesson": "The regime gate is binary and 200dMA-lagged. A volatility expansion that hasn't yet been realized doesn't reduce sizing. An IV-based or breadth-based regime input would have caught this earlier.",
+      "basket_return_net": -0.06320543413217897,
+      "gross_weight": 0.8,
+      "regime": "risk_on",
+      "picks": [
+        {
+          "ticker": "JPM",
+          "y_proba": 0.5223215052110413,
+          "fwd_return_5d": -0.06915366171676596,
+          "base_value": 0.49972995591546504,
+          "top_contributors": [
+            {
+              "feature": "volatility_60d",
+              "shap_value": -0.02489294862062727
+            },
+            {
+              "feature": "excess_return_1d",
+              "shap_value": 0.015272220862823859
+            },
+            {
+              "feature": "return_20d",
+              "shap_value": -0.013481109309339632
+            },
+            {
+              "feature": "return_5d",
+              "shap_value": -0.006902870275080458
+            },
+            {
+              "feature": "return_60d",
+              "shap_value": -0.005303492006527562
+            }
+          ]
+        },
+        {
+          "ticker": "AMZN",
+          "y_proba": 0.5213289347908093,
+          "fwd_return_5d": -0.08485992361368144,
+          "base_value": 0.49972995591546504,
+          "top_contributors": [
+            {
+              "feature": "volatility_60d",
+              "shap_value": -0.0525901104402261
+            },
+            {
+              "feature": "rsi_14",
+              "shap_value": -0.018106842831438708
+            },
+            {
+              "feature": "volume_ratio_20d",
+              "shap_value": -0.007461622682626078
+            },
+            {
+              "feature": "bb_pct",
+              "shap_value": -0.00697673311301386
+            },
+            {
+              "feature": "return_5d",
+              "shap_value": -0.0053623542108702325
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "date": "2022-06-06",
+      "label": "Inflation-print whipsaw",
+      "context": "The week's CPI print came in hot on 6/10; SPY fell ~6% in five days. Both picks were cyclicals (AMZN, JPM) \u2014 exactly the names momentum features were still pointing at coming off Q1 bounces. The basket return was -8.99%.",
+      "lesson": "5-day forward returns are dominated by single macro events. An earnings/event-aware feature (no entry into the days before a known print) would not catch CPI directly, but the logic generalizes: do not trade through known catalysts the model cannot see.",
+      "basket_return_net": -0.08990582682712353,
+      "gross_weight": 0.6729486716736226,
+      "regime": "risk_on",
+      "picks": [
+        {
+          "ticker": "AMZN",
+          "y_proba": 0.5685957665618426,
+          "fwd_return_5d": -0.16924435124316206,
+          "base_value": 0.49972995591546504,
+          "top_contributors": [
+            {
+              "feature": "volatility_60d",
+              "shap_value": 0.04689413010312086
+            },
+            {
+              "feature": "volatility_20d",
+              "shap_value": 0.0262759479456807
+            },
+            {
+              "feature": "return_60d",
+              "shap_value": -0.02006323865427706
+            },
+            {
+              "feature": "excess_return_1d",
+              "shap_value": 0.009294271488142962
+            },
+            {
+              "feature": "volume_ratio_20d",
+              "shap_value": 0.006887892618448386
+            }
+          ]
+        },
+        {
+          "ticker": "JPM",
+          "y_proba": 0.5541549325115244,
+          "fwd_return_5d": -0.105912271559228,
+          "base_value": 0.49972995591546504,
+          "top_contributors": [
+            {
+              "feature": "volatility_20d",
+              "shap_value": 0.0339721965212302
+            },
+            {
+              "feature": "return_60d",
+              "shap_value": -0.014474867056828641
+            },
+            {
+              "feature": "return_20d",
+              "shap_value": -0.009613062959015909
+            },
+            {
+              "feature": "return_5d",
+              "shap_value": -0.009194898069137977
+            },
+            {
+              "feature": "rsi_14",
+              "shap_value": -0.008672415896850352
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "date": "2024-04-12",
+      "label": "Megacap-tech concentration pullback",
+      "context": "Iran-Israel headlines on 4/13 + a hotter-than-expected CPI on 4/10 unwound the AI trade. Both picks were META and NVDA \u2014 60-day correlation between them sat just under the 0.80 drop-the-second-pick threshold, so both stayed in the basket.",
+      "lesson": "Correlation thresholding is too coarse: 0.79 = full pair, 0.81 = drop. A continuous co-vol penalty (scale weight down as correlation rises) or a sector cap would handle this edge case more honestly.",
+      "basket_return_net": -0.08005752653911948,
+      "gross_weight": 0.8,
+      "regime": "risk_on",
+      "picks": [
+        {
+          "ticker": "META",
+          "y_proba": 0.6277117224441755,
+          "fwd_return_5d": -0.06022655316400771,
+          "base_value": 0.49972995591546504,
+          "top_contributors": [
+            {
+              "feature": "volatility_60d",
+              "shap_value": 0.033594006844459054
+            },
+            {
+              "feature": "return_60d",
+              "shap_value": 0.018657038044318446
+            },
+            {
+              "feature": "return_20d",
+              "shap_value": -0.010668786524742867
+            },
+            {
+              "feature": "return_5d",
+              "shap_value": -0.00815982532579764
+            },
+            {
+              "feature": "volatility_20d",
+              "shap_value": -0.00597137998687115
+            }
+          ]
+        },
+        {
+          "ticker": "NVDA",
+          "y_proba": 0.6224841454573457,
+          "fwd_return_5d": -0.13591726318379094,
+          "base_value": 0.49972995591546504,
+          "top_contributors": [
+            {
+              "feature": "volatility_60d",
+              "shap_value": 0.04018890665117017
+            },
+            {
+              "feature": "volatility_20d",
+              "shap_value": 0.032934199639934256
+            },
+            {
+              "feature": "return_60d",
+              "shap_value": 0.029458232117896038
+            },
+            {
+              "feature": "return_20d",
+              "shap_value": -0.011686045841028654
+            },
+            {
+              "feature": "excess_return_1d",
+              "shap_value": 0.0033547590216944896
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -114,11 +114,37 @@ type ExitPolicy = {
   acceptance: { maxdd_delta_pp: number; cagr_delta_pp: number; sharpe_delta: number; passed: boolean };
 };
 
+type ShapContrib = { feature: string; shap_value: number };
+type FailurePick = {
+  ticker: string;
+  y_proba: number | null;
+  fwd_return_5d: number | null;
+  base_value: number | null;
+  top_contributors: ShapContrib[];
+};
+type FailureCase = {
+  date: string;
+  label: string;
+  context: string;
+  lesson: string;
+  basket_return_net: number;
+  gross_weight: number;
+  regime: string;
+  picks: FailurePick[];
+};
+type FailureModes = {
+  generated_at: string;
+  n_cases: number;
+  feature_columns: string[];
+  cases: FailureCase[];
+};
+
 export default function EvaluationPanel() {
   const [report, setReport] = useState<Report | null>(null);
   const [ablation, setAblation] = useState<Ablation | null>(null);
   const [featureAblation, setFeatureAblation] = useState<FeatureAblation | null>(null);
   const [exitPolicy, setExitPolicy] = useState<ExitPolicy | null>(null);
+  const [failureModes, setFailureModes] = useState<FailureModes | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -126,11 +152,12 @@ export default function EvaluationPanel() {
     setLoading(true);
     setError(null);
     try {
-      const [reportRes, ablRes, featAblRes, exitRes] = await Promise.all([
+      const [reportRes, ablRes, featAblRes, exitRes, failRes] = await Promise.all([
         fetch(`${API_BASE}/api/evaluation/report`),
         fetch(`${API_BASE}/api/ablation`),
         fetch(`${API_BASE}/api/feature-ablation`),
         fetch(`${API_BASE}/api/exit-policy`),
+        fetch(`${API_BASE}/api/failure-modes`),
       ]);
       if (!reportRes.ok) {
         throw new Error(`HTTP ${reportRes.status}`);
@@ -149,6 +176,9 @@ export default function EvaluationPanel() {
       }
       if (exitRes.ok) {
         setExitPolicy(await exitRes.json());
+      }
+      if (failRes.ok) {
+        setFailureModes(await failRes.json());
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to fetch");
@@ -215,6 +245,17 @@ export default function EvaluationPanel() {
           </div>
         ) : (
           <FeatureAblationTable data={featureAblation} />
+        )}
+      </Section>
+
+      {/* === Failure-Mode Case Studies === */}
+      <Section title="Failure-Mode Case Studies — 3 worst trades dissected">
+        {!failureModes ? (
+          <div style={{ color: "var(--text-muted)", fontSize: 12, padding: "8px 0" }}>
+            No failure-mode artifact found. Run <code style={{ background: "var(--bg-row)", padding: "1px 4px", borderRadius: 2 }}>python -m src.failure_modes</code>.
+          </div>
+        ) : (
+          <FailureModesPanel data={failureModes} />
         )}
       </Section>
 
@@ -599,6 +640,114 @@ function FeatureAblationTable({ data }: { data: FeatureAblation }) {
           would cascade through predictions.parquet, v2 backtest, ablation,
           and every dashboard view — a deliberate, separate decision.
         </div>
+      </div>
+    </div>
+  );
+}
+
+const FEATURE_LABELS: Record<string, string> = {
+  return_1d: "1d return",
+  return_5d: "5d return",
+  return_20d: "20d return",
+  return_60d: "60d return",
+  volatility_20d: "20d vol",
+  volatility_60d: "60d vol",
+  rsi_14: "RSI-14",
+  bb_pct: "Bollinger %B",
+  volume_ratio_20d: "volume ratio",
+  spy_return_1d: "SPY 1d",
+  excess_return_1d: "excess 1d",
+};
+
+function FailureModesPanel({ data }: { data: FailureModes }) {
+  return (
+    <div>
+      <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 12, lineHeight: 1.5 }}>
+        Three of v2&apos;s worst basket returns, each from a structurally different
+        kind of regime shock. For each: market context at the time, the picks
+        and what the model actually saw (SHAP contributions to the positive
+        class), realized 5-day forward return, and one-line &quot;what I&apos;d
+        change&quot; written from market context.
+      </div>
+      <div style={{ display: "grid", gap: 14 }}>
+        {data.cases.map((c) => (
+          <FailureCaseCard key={c.date} c={c} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function FailureCaseCard({ c }: { c: FailureCase }) {
+  const badgeColor = "var(--red)";
+  return (
+    <div style={{ background: "var(--bg-elevated)", border: "1px solid var(--border)", borderRadius: 4, padding: 14 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12, marginBottom: 8 }}>
+        <div>
+          <div style={{ fontSize: 9, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 700 }}>
+            {c.date} · {c.label}
+          </div>
+          <div style={{ fontSize: 10, color: "var(--text-faint)", marginTop: 2 }}>
+            regime <span style={{ color: "var(--text-secondary)" }}>{c.regime}</span>
+            {" · "}gross <span style={{ color: "var(--text-secondary)" }}>{(c.gross_weight * 100).toFixed(0)}%</span>
+          </div>
+        </div>
+        <span style={{ fontSize: 16, fontWeight: 700, color: badgeColor, fontFeatureSettings: "'tnum'" }}>
+          {(c.basket_return_net * 100).toFixed(2)}%
+        </span>
+      </div>
+
+      <div style={{ fontSize: 11, color: "var(--text-secondary)", lineHeight: 1.5, marginBottom: 12 }}>
+        {c.context}
+      </div>
+
+      <div style={{ display: "grid", gap: 10, marginBottom: 12 }}>
+        {c.picks.map((p) => (
+          <div key={p.ticker} style={{ background: "var(--bg-panel)", border: "1px solid var(--border-soft)", borderRadius: 3, padding: "8px 10px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
+              <div style={{ display: "flex", gap: 10, alignItems: "baseline" }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)" }}>{p.ticker}</span>
+                <span style={{ fontSize: 10, color: "var(--text-muted)" }}>
+                  proba {p.y_proba != null ? p.y_proba.toFixed(3) : "—"}
+                </span>
+              </div>
+              <span style={{ fontSize: 11, fontWeight: 700, color: p.fwd_return_5d != null && p.fwd_return_5d < 0 ? "var(--red)" : "var(--text-primary)", fontFeatureSettings: "'tnum'" }}>
+                realized 5d: {p.fwd_return_5d != null ? `${(p.fwd_return_5d * 100).toFixed(2)}%` : "—"}
+              </span>
+            </div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+              {p.top_contributors.slice(0, 5).map((tc) => {
+                const isPos = tc.shap_value >= 0;
+                const color = isPos ? "var(--green)" : "var(--red)";
+                const bg = isPos ? "var(--green-bg)" : "var(--red-bg)";
+                return (
+                  <span
+                    key={tc.feature}
+                    title={`SHAP contribution to the positive class (top-quintile). Positive = pushed proba up.`}
+                    style={{ display: "flex", alignItems: "center", gap: 5 }}
+                  >
+                    <span style={{ fontSize: 10, color: "var(--text-secondary)" }}>{FEATURE_LABELS[tc.feature] ?? tc.feature}</span>
+                    <span style={{ position: "relative", width: 28, height: 5, background: bg, borderRadius: 1, overflow: "hidden" }}>
+                      <span style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: "100%", background: color, opacity: 0.85 }} />
+                    </span>
+                    <span style={{ fontSize: 10, fontWeight: 700, color, fontFeatureSettings: "'tnum'" }}>
+                      {isPos ? "+" : ""}{tc.shap_value.toFixed(3)}
+                    </span>
+                  </span>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ borderTop: "1px dashed var(--border-soft)", paddingTop: 10, display: "flex", gap: 10, alignItems: "flex-start" }}>
+        <span style={{ fontSize: 9, color: "var(--green)", textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 700, flexShrink: 0 }}>
+          what I&apos;d change
+        </span>
+        <span style={{ fontSize: 11, color: "var(--text-secondary)", lineHeight: 1.5 }}>
+          {c.lesson}
+        </span>
       </div>
     </div>
   );
