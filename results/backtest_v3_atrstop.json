@@ -1,58 +1,58 @@
 {
   "v3_strategy": {
-    "total_return": 1.7743466984814544,
-    "annualized_return": 0.1638014663101599,
-    "sharpe_ratio": 0.7825010324723354,
-    "max_drawdown": -0.3344951291344814,
-    "hit_rate": 0.5398230088495575,
-    "n_periods": 339.0,
-    "n_years": 6.73
+    "total_return": 2.888264351536044,
+    "annualized_return": 0.23476741910883336,
+    "sharpe_ratio": 1.049353952173436,
+    "max_drawdown": -0.33573314290534084,
+    "hit_rate": 0.5415384615384615,
+    "n_periods": 325.0,
+    "n_years": 6.44
   },
   "v3_strategy_ci": {
     "n_resamples": 1000,
     "alpha": 0.05,
     "ci_level": 0.95,
-    "n_trades": 339,
-    "n_years": 6.73,
+    "n_trades": 325,
+    "n_years": 6.44,
     "sharpe_ratio": {
-      "point": 0.7825010324723354,
-      "ci_low": 0.0765696363548085,
-      "ci_high": 1.5654394131202454,
+      "point": 1.049353952173436,
+      "ci_low": 0.30069029201828396,
+      "ci_high": 1.780161906125263,
       "ci_alpha": 0.05
     },
     "annualized_return": {
-      "point": 0.1638014663101599,
-      "ci_low": -0.008921863889618627,
-      "ci_high": 0.38858909770728434,
+      "point": 0.23476741910883336,
+      "ci_low": 0.04304869642228299,
+      "ci_high": 0.4674375048458464,
       "ci_alpha": 0.05
     },
     "max_drawdown": {
-      "point": -0.3344951291344814,
-      "ci_low": -0.5288427835829433,
-      "ci_high": -0.1807251184207349,
+      "point": -0.33573314290534084,
+      "ci_low": -0.47747202095672686,
+      "ci_high": -0.15969381812891825,
       "ci_alpha": 0.05
     },
     "hit_rate": {
-      "point": 0.5398230088495575,
-      "ci_low": 0.48672566371681414,
-      "ci_high": 0.5929203539823009,
+      "point": 0.5415384615384615,
+      "ci_low": 0.48615384615384616,
+      "ci_high": 0.5908461538461538,
       "ci_alpha": 0.05
     },
     "total_return": {
-      "point": 1.7743466984814544,
-      "ci_low": -0.05852694516806914,
-      "ci_high": 8.110062419788202,
+      "point": 2.888264351536044,
+      "ci_low": 0.31184665507156284,
+      "ci_high": 10.820765543834604,
       "ci_alpha": 0.05
     }
   },
   "v2_strategy": {
-    "total_return": 1.9398767713735556,
-    "annualized_return": 0.17387095095153837,
-    "sharpe_ratio": 0.819695076583931,
-    "max_drawdown": -0.3280271566125334,
-    "hit_rate": 0.5427728613569321,
-    "n_periods": 339.0,
-    "n_years": 6.73
+    "total_return": 3.136268453495892,
+    "annualized_return": 0.2466807227988479,
+    "sharpe_ratio": 1.0920661453789748,
+    "max_drawdown": -0.3427868896325233,
+    "hit_rate": 0.5446153846153846,
+    "n_periods": 325.0,
+    "n_years": 6.44
   },
   "config": {
     "top_n": 2,
@@ -63,15 +63,15 @@
     "initial_capital": 10000
   },
   "exit_reasons": {
-    "scheduled": 633,
-    "stop_intraday": 35,
-    "stop_gap": 10
+    "scheduled": 608,
+    "stop_intraday": 33,
+    "stop_gap": 9
   },
-  "n_per_trade": 678,
+  "n_per_trade": 650,
   "acceptance": {
-    "maxdd_delta_pp": -0.6468,
-    "cagr_delta_pp": -1.0069,
-    "sharpe_delta": -0.0372,
+    "maxdd_delta_pp": 0.7054,
+    "cagr_delta_pp": -1.1913,
+    "sharpe_delta": -0.0427,
     "passed": false
   }
 }

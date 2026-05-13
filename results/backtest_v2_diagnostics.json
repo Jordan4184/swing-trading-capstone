@@ -1,5 +1,83 @@
 [
   {
+    "date": "2019-07-15",
+    "regime": "risk_on",
+    "spy_close": 272.2438049316406,
+    "spy_ma200": 249.29064025878907,
+    "vix": 12.680000305175781,
+    "vix_pct_rank": 0.19480519480519481,
+    "regime_multiplier": 1.0,
+    "gross_weight": 0.8,
+    "picks": [
+      {
+        "ticker": "NVDA",
+        "realized_vol_20d": 0.339038736708836,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
+        "dropped_reason": null
+      },
+      {
+        "ticker": "PFE",
+        "realized_vol_20d": 0.1713296138964168,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
+        "dropped_reason": null
+      }
+    ]
+  },
+  {
+    "date": "2019-07-22",
+    "regime": "risk_on",
+    "spy_close": 269.6639099121094,
+    "spy_ma200": 249.55584915161134,
+    "vix": 13.529999732971191,
+    "vix_pct_rank": 0.34102564102564104,
+    "regime_multiplier": 1.0,
+    "gross_weight": 0.8,
+    "picks": [
+      {
+        "ticker": "META",
+        "realized_vol_20d": 0.18938033269425056,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
+        "dropped_reason": null
+      },
+      {
+        "ticker": "NVDA",
+        "realized_vol_20d": 0.2926639596789904,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
+        "dropped_reason": null
+      }
+    ]
+  },
+  {
+    "date": "2019-07-29",
+    "regime": "risk_on",
+    "spy_close": 272.886474609375,
+    "spy_ma200": 249.92852798461914,
+    "vix": 12.829999923706055,
+    "vix_pct_rank": 0.22278481012658227,
+    "regime_multiplier": 1.0,
+    "gross_weight": 0.6515614593605752,
+    "picks": [
+      {
+        "ticker": "TSLA",
+        "realized_vol_20d": 0.5962757585413663,
+        "raw_weight": 0.2515614593605751,
+        "final_weight": 0.2515614593605751,
+        "dropped_reason": null
+      },
+      {
+        "ticker": "META",
+        "realized_vol_20d": 0.19383655582441117,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
+        "dropped_reason": null
+      }
+    ]
+  },
+  {
     "date": "2019-08-05",
     "regime": "risk_on",
     "spy_close": 256.91845703125,
@@ -7,7 +85,7 @@
     "vix": 24.59000015258789,
     "vix_pct_rank": 0.9475,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.6437059644668088,
+    "gross_weight": 0.7919490989679928,
     "picks": [
       {
         "ticker": "NVDA",
@@ -17,10 +95,10 @@
         "dropped_reason": null
       },
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.5958129471575638,
-        "raw_weight": 0.25175686549881604,
-        "final_weight": 0.25175686549881604,
+        "ticker": "MCD",
+        "realized_vol_20d": 0.1283131262716897,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       }
     ]
@@ -33,18 +111,18 @@
     "vix": 21.09000015258789,
     "vix_pct_rank": 0.8765432098765432,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.8,
+    "gross_weight": 0.7967163328777486,
     "picks": [
       {
-        "ticker": "JPM",
-        "realized_vol_20d": 0.21493409893491974,
-        "raw_weight": 0.4,
-        "final_weight": 0.4,
+        "ticker": "NVDA",
+        "realized_vol_20d": 0.3781039185150558,
+        "raw_weight": 0.39671633287774855,
+        "final_weight": 0.39671633287774855,
         "dropped_reason": null
       },
       {
-        "ticker": "PFE",
-        "realized_vol_20d": 0.2870529606037494,
+        "ticker": "MCD",
+        "realized_vol_20d": 0.17093040986870156,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
@@ -62,15 +140,15 @@
     "gross_weight": 0.8,
     "picks": [
       {
-        "ticker": "PFE",
-        "realized_vol_20d": 0.30579992797440725,
+        "ticker": "META",
+        "realized_vol_20d": 0.3030958488936234,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
       },
       {
-        "ticker": "META",
-        "realized_vol_20d": 0.3030958488936234,
+        "ticker": "MCD",
+        "realized_vol_20d": 0.1783432300211903,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
@@ -85,20 +163,20 @@
     "vix": 19.31999969482422,
     "vix_pct_rank": 0.7879518072289157,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.7547325098423099,
+    "gross_weight": 0.8,
     "picks": [
       {
-        "ticker": "PFE",
-        "realized_vol_20d": 0.30065208423711165,
+        "ticker": "META",
+        "realized_vol_20d": 0.3056246821363449,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
       },
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.42285382883762157,
-        "raw_weight": 0.35473250984230986,
-        "final_weight": 0.35473250984230986,
+        "ticker": "MCD",
+        "realized_vol_20d": 0.19893024445607044,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       }
     ]
@@ -114,17 +192,17 @@
     "gross_weight": 0.7673641103091777,
     "picks": [
       {
-        "ticker": "META",
-        "realized_vol_20d": 0.2817728403166445,
-        "raw_weight": 0.4,
-        "final_weight": 0.4,
-        "dropped_reason": null
-      },
-      {
         "ticker": "TSLA",
         "realized_vol_20d": 0.4083142467938915,
         "raw_weight": 0.36736411030917776,
         "final_weight": 0.36736411030917776,
+        "dropped_reason": null
+      },
+      {
+        "ticker": "MCD",
+        "realized_vol_20d": 0.17853530922231559,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       }
     ]
@@ -147,8 +225,8 @@
         "dropped_reason": null
       },
       {
-        "ticker": "AAPL",
-        "realized_vol_20d": 0.31309840465225824,
+        "ticker": "MCD",
+        "realized_vol_20d": 0.19447309521134734,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
@@ -173,8 +251,8 @@
         "dropped_reason": null
       },
       {
-        "ticker": "META",
-        "realized_vol_20d": 0.22236300201001954,
+        "ticker": "TSLA",
+        "realized_vol_20d": 0.35224615145580457,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
@@ -192,15 +270,15 @@
     "gross_weight": 0.8,
     "picks": [
       {
-        "ticker": "PFE",
-        "realized_vol_20d": 0.16225675289938785,
+        "ticker": "NVDA",
+        "realized_vol_20d": 0.3453730770044975,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
       },
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.3453730770044975,
+        "ticker": "MCD",
+        "realized_vol_20d": 0.17650598747567198,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
@@ -241,20 +319,20 @@
     "vix": 20.280000686645508,
     "vix_pct_rank": 0.851685393258427,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.7242083791951646,
+    "gross_weight": 0.8,
     "picks": [
       {
-        "ticker": "UNH",
-        "realized_vol_20d": 0.20512946062033213,
+        "ticker": "NVDA",
+        "realized_vol_20d": 0.3209237123812959,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
       },
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.46266540171592585,
-        "raw_weight": 0.3242083791951645,
-        "final_weight": 0.3242083791951645,
+        "ticker": "MCD",
+        "realized_vol_20d": 0.16219805705740095,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       }
     ]
@@ -267,20 +345,20 @@
     "vix": 13.539999961853027,
     "vix_pct_rank": 0.3111111111111111,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.8,
+    "gross_weight": 0.7977440957991235,
     "picks": [
       {
-        "ticker": "UNH",
-        "realized_vol_20d": 0.3510435724127749,
+        "ticker": "MCD",
+        "realized_vol_20d": 0.15424641289741617,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
       },
       {
-        "ticker": "META",
-        "realized_vol_20d": 0.24755986405504565,
-        "raw_weight": 0.4,
-        "final_weight": 0.4,
+        "ticker": "NVDA",
+        "realized_vol_20d": 0.3771269054255325,
+        "raw_weight": 0.3977440957991235,
+        "final_weight": 0.3977440957991235,
         "dropped_reason": null
       }
     ]
@@ -322,15 +400,15 @@
     "gross_weight": 0.8,
     "picks": [
       {
-        "ticker": "MCD",
-        "realized_vol_20d": 0.22533281080507256,
+        "ticker": "NVDA",
+        "realized_vol_20d": 0.3595342188643352,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
       },
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.3595342188643352,
+        "ticker": "UNH",
+        "realized_vol_20d": 0.33441573869914976,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
@@ -345,20 +423,20 @@
     "vix": 13.100000381469727,
     "vix_pct_rank": 0.23655913978494625,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.6063773923253234,
+    "gross_weight": 0.8,
     "picks": [
       {
-        "ticker": "MCD",
-        "realized_vol_20d": 0.255549377958445,
+        "ticker": "NVDA",
+        "realized_vol_20d": 0.31012596806663534,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
       },
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.7268237974610475,
-        "raw_weight": 0.2063773923253234,
-        "final_weight": 0.2063773923253234,
+        "ticker": "JNJ",
+        "realized_vol_20d": 0.2987898978951092,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       }
     ]
@@ -374,15 +452,15 @@
     "gross_weight": 0.8,
     "picks": [
       {
-        "ticker": "UNH",
-        "realized_vol_20d": 0.194919917526791,
+        "ticker": "NVDA",
+        "realized_vol_20d": 0.2589985158074804,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
       },
       {
-        "ticker": "MCD",
-        "realized_vol_20d": 0.2575249452866081,
+        "ticker": "JPM",
+        "realized_vol_20d": 0.13242385123339356,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
@@ -397,18 +475,18 @@
     "vix": 12.859999656677246,
     "vix_pct_rank": 0.21894736842105264,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.6096514184381621,
+    "gross_weight": 0.8,
     "picks": [
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.7154733372063659,
-        "raw_weight": 0.209651418438162,
-        "final_weight": 0.209651418438162,
+        "ticker": "PFE",
+        "realized_vol_20d": 0.16852296821414312,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       },
       {
-        "ticker": "AAPL",
-        "realized_vol_20d": 0.17322757906790734,
+        "ticker": "NVDA",
+        "realized_vol_20d": 0.29317912303654453,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
@@ -426,15 +504,15 @@
     "gross_weight": 0.8,
     "picks": [
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.33370566575174276,
+        "ticker": "NVDA",
+        "realized_vol_20d": 0.3129089592944114,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
       },
       {
-        "ticker": "MCD",
-        "realized_vol_20d": 0.1770514887995801,
+        "ticker": "TSLA",
+        "realized_vol_20d": 0.33370566575174276,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
@@ -459,8 +537,8 @@
         "dropped_reason": null
       },
       {
-        "ticker": "META",
-        "realized_vol_20d": 0.15401569245932106,
+        "ticker": "NVDA",
+        "realized_vol_20d": 0.3121533965287449,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
@@ -478,15 +556,15 @@
     "gross_weight": 0.8,
     "picks": [
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.3196724361690172,
+        "ticker": "TSLA",
+        "realized_vol_20d": 0.31747365227619906,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
       },
       {
-        "ticker": "UNH",
-        "realized_vol_20d": 0.21763033593960135,
+        "ticker": "NVDA",
+        "realized_vol_20d": 0.3196724361690172,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
@@ -501,20 +579,20 @@
     "vix": 12.579999923706055,
     "vix_pct_rank": 0.16767676767676767,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.8,
+    "gross_weight": 0.7744567345283762,
     "picks": [
       {
-        "ticker": "JPM",
-        "realized_vol_20d": 0.15340270689259763,
+        "ticker": "AMZN",
+        "realized_vol_20d": 0.13608491632752392,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
       },
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.27554304193641077,
-        "raw_weight": 0.4,
-        "final_weight": 0.4,
+        "ticker": "TSLA",
+        "realized_vol_20d": 0.4005803238895495,
+        "raw_weight": 0.3744567345283762,
+        "final_weight": 0.3744567345283762,
         "dropped_reason": null
       }
     ]
@@ -537,8 +615,8 @@
         "dropped_reason": null
       },
       {
-        "ticker": "AMZN",
-        "realized_vol_20d": 0.19382381109461538,
+        "ticker": "UNH",
+        "realized_vol_20d": 0.1292315295191589,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
@@ -563,8 +641,8 @@
         "dropped_reason": null
       },
       {
-        "ticker": "MCD",
-        "realized_vol_20d": 0.09028486675086461,
+        "ticker": "PFE",
+        "realized_vol_20d": 0.11104048270751755,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
@@ -579,20 +657,20 @@
     "vix": 12.5600004196167,
     "vix_pct_rank": 0.15476190476190477,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.7867027496640374,
+    "gross_weight": 0.8,
     "picks": [
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.20100869679873196,
+        "ticker": "UNH",
+        "realized_vol_20d": 0.14484231821002255,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
       },
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.3878948368748817,
-        "raw_weight": 0.3867027496640374,
-        "final_weight": 0.3867027496640374,
+        "ticker": "JPM",
+        "realized_vol_20d": 0.15881427806886442,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       }
     ]
@@ -608,15 +686,15 @@
     "gross_weight": 0.8,
     "picks": [
       {
-        "ticker": "AAPL",
-        "realized_vol_20d": 0.1722014910223209,
+        "ticker": "JPM",
+        "realized_vol_20d": 0.13935217913693787,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
       },
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.22312103954554613,
+        "ticker": "AMZN",
+        "realized_vol_20d": 0.21987384557891668,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
@@ -634,15 +712,15 @@
     "gross_weight": 0.8,
     "picks": [
       {
-        "ticker": "META",
-        "realized_vol_20d": 0.1769903171206084,
+        "ticker": "MCD",
+        "realized_vol_20d": 0.12827138823422726,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
       },
       {
-        "ticker": "AMZN",
-        "realized_vol_20d": 0.17816472499724265,
+        "ticker": "META",
+        "realized_vol_20d": 0.1769903171206084,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
@@ -667,8 +745,8 @@
         "dropped_reason": null
       },
       {
-        "ticker": "PFE",
-        "realized_vol_20d": 0.24160834959472297,
+        "ticker": "META",
+        "realized_vol_20d": 0.3171288330473403,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
@@ -683,20 +761,20 @@
     "vix": 15.039999961853027,
     "vix_pct_rank": 0.498015873015873,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.5268908674698114,
+    "gross_weight": 0.8,
     "picks": [
       {
-        "ticker": "AAPL",
-        "realized_vol_20d": 0.29409264153614767,
+        "ticker": "META",
+        "realized_vol_20d": 0.32061067530186144,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
       },
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 1.1821181696601335,
-        "raw_weight": 0.12689086746981137,
-        "final_weight": 0.12689086746981137,
+        "ticker": "AAPL",
+        "realized_vol_20d": 0.29409264153614767,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       }
     ]
@@ -712,15 +790,15 @@
     "gross_weight": 0.8,
     "picks": [
       {
-        "ticker": "PFE",
-        "realized_vol_20d": 0.2340680782514754,
+        "ticker": "JPM",
+        "realized_vol_20d": 0.18933114666071546,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
       },
       {
-        "ticker": "META",
-        "realized_vol_20d": 0.3391335823206003,
+        "ticker": "AMZN",
+        "realized_vol_20d": 0.30408458064334154,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
@@ -735,20 +813,20 @@
     "vix": 27.850000381469727,
     "vix_pct_rank": 0.9880952380952381,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.7249672161852734,
+    "gross_weight": 0.44789999701879635,
     "picks": [
-      {
-        "ticker": "PFE",
-        "realized_vol_20d": 0.2327722766026479,
-        "raw_weight": 0.4,
-        "final_weight": 0.4,
-        "dropped_reason": null
-      },
       {
         "ticker": "UNH",
         "realized_vol_20d": 0.4615850231319351,
         "raw_weight": 0.3249672161852734,
         "final_weight": 0.3249672161852734,
+        "dropped_reason": null
+      },
+      {
+        "ticker": "TSLA",
+        "realized_vol_20d": 1.2201790196475897,
+        "raw_weight": 0.12293278083352292,
+        "final_weight": 0.12293278083352292,
         "dropped_reason": null
       }
     ]
@@ -761,18 +839,18 @@
     "vix": 36.81999969482422,
     "vix_pct_rank": 0.996031746031746,
     "regime_multiplier": 0.5,
-    "gross_weight": 0.4,
+    "gross_weight": 0.2651387978247116,
     "picks": [
       {
-        "ticker": "JPM",
-        "realized_vol_20d": 0.3672835153151864,
-        "raw_weight": 0.4,
-        "final_weight": 0.2,
+        "ticker": "TSLA",
+        "realized_vol_20d": 1.151387537145295,
+        "raw_weight": 0.1302775956494232,
+        "final_weight": 0.0651387978247116,
         "dropped_reason": null
       },
       {
-        "ticker": "AMZN",
-        "realized_vol_20d": 0.33976178951660163,
+        "ticker": "MCD",
+        "realized_vol_20d": 0.26195694915796713,
         "raw_weight": 0.4,
         "final_weight": 0.2,
         "dropped_reason": null
@@ -787,7 +865,7 @@
     "vix": 47.29999923706055,
     "vix_pct_rank": 0.998015873015873,
     "regime_multiplier": 0.5,
-    "gross_weight": 0.20341030728120807,
+    "gross_weight": 0.184146976527779,
     "picks": [
       {
         "ticker": "JPM",
@@ -797,10 +875,10 @@
         "dropped_reason": null
       },
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.7874736001879569,
-        "raw_weight": 0.19048257613232683,
-        "final_weight": 0.09524128806616342,
+        "ticker": "TSLA",
+        "realized_vol_20d": 0.9871284074049403,
+        "raw_weight": 0.1519559146254687,
+        "final_weight": 0.07597795731273435,
         "dropped_reason": null
       }
     ]
@@ -813,21 +891,21 @@
     "vix": 75.91000366210938,
     "vix_pct_rank": 0.998015873015873,
     "regime_multiplier": 0.5,
-    "gross_weight": 0.06418179398427104,
+    "gross_weight": 0.0917668093653709,
     "picks": [
       {
-        "ticker": "JPM",
-        "realized_vol_20d": 1.1685556813569307,
-        "raw_weight": 0.12836358796854208,
-        "final_weight": 0.06418179398427104,
+        "ticker": "MCD",
+        "realized_vol_20d": 0.8172889579432406,
+        "raw_weight": 0.1835336187307418,
+        "final_weight": 0.0917668093653709,
         "dropped_reason": null
       },
       {
-        "ticker": "AAPL",
-        "realized_vol_20d": 0.9985809529139409,
-        "raw_weight": 0.15021315954634196,
+        "ticker": "META",
+        "realized_vol_20d": 0.8405758352083147,
+        "raw_weight": 0.1784490984835728,
         "final_weight": 0.0,
-        "dropped_reason": "corr 0.90 with JPM (>0.80)"
+        "dropped_reason": "corr 0.82 with MCD (>0.80)"
       }
     ]
   },
@@ -839,21 +917,21 @@
     "vix": 61.66999816894531,
     "vix_pct_rank": 0.9880952380952381,
     "regime_multiplier": 0.5,
-    "gross_weight": 0.05722492479232428,
+    "gross_weight": 0.15140788331093882,
     "picks": [
+      {
+        "ticker": "JNJ",
+        "realized_vol_20d": 0.7963224046012191,
+        "raw_weight": 0.18836591703722907,
+        "final_weight": 0.09418295851861454,
+        "dropped_reason": null
+      },
       {
         "ticker": "JPM",
         "realized_vol_20d": 1.3106177119879752,
         "raw_weight": 0.11444984958464856,
         "final_weight": 0.05722492479232428,
         "dropped_reason": null
-      },
-      {
-        "ticker": "MCD",
-        "realized_vol_20d": 1.1828928306980548,
-        "raw_weight": 0.12680776830093832,
-        "final_weight": 0.0,
-        "dropped_reason": "corr 0.80 with JPM (>0.80)"
       }
     ]
   },
@@ -865,21 +943,21 @@
     "vix": 53.540000915527344,
     "vix_pct_rank": 0.9702380952380952,
     "regime_multiplier": 0.5,
-    "gross_weight": 0.059156121713068485,
+    "gross_weight": 0.05543151947427583,
     "picks": [
-      {
-        "ticker": "UNH",
-        "realized_vol_20d": 1.2678315925405124,
-        "raw_weight": 0.11831224342613697,
-        "final_weight": 0.059156121713068485,
-        "dropped_reason": null
-      },
       {
         "ticker": "JPM",
         "realized_vol_20d": 1.3530208212099495,
         "raw_weight": 0.11086303894855166,
+        "final_weight": 0.05543151947427583,
+        "dropped_reason": null
+      },
+      {
+        "ticker": "UNH",
+        "realized_vol_20d": 1.2678315925405124,
+        "raw_weight": 0.11831224342613697,
         "final_weight": 0.0,
-        "dropped_reason": "corr 0.82 with UNH (>0.80)"
+        "dropped_reason": "corr 0.82 with JPM (>0.80)"
       }
     ]
   },
@@ -891,21 +969,21 @@
     "vix": 46.70000076293945,
     "vix_pct_rank": 0.9603174603174603,
     "regime_multiplier": 0.5,
-    "gross_weight": 0.10994030428638782,
+    "gross_weight": 0.05938232319315943,
     "picks": [
-      {
-        "ticker": "TSLA",
-        "realized_vol_20d": 1.4834453112694668,
-        "raw_weight": 0.10111596218645677,
-        "final_weight": 0.050557981093228385,
-        "dropped_reason": null
-      },
       {
         "ticker": "JPM",
         "realized_vol_20d": 1.2630021185941014,
         "raw_weight": 0.11876464638631885,
         "final_weight": 0.05938232319315943,
         "dropped_reason": null
+      },
+      {
+        "ticker": "UNH",
+        "realized_vol_20d": 1.2534738604479767,
+        "raw_weight": 0.11966743362832614,
+        "final_weight": 0.0,
+        "dropped_reason": "corr 0.83 with JPM (>0.80)"
       }
     ]
   },
@@ -917,7 +995,7 @@
     "vix": 40.84000015258789,
     "vix_pct_rank": 0.9484126984126984,
     "regime_multiplier": 0.5,
-    "gross_weight": 0.1590519579947483,
+    "gross_weight": 0.20583625024231036,
     "picks": [
       {
         "ticker": "JPM",
@@ -927,10 +1005,10 @@
         "dropped_reason": null
       },
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.9394568732116241,
-        "raw_weight": 0.1596667226322061,
-        "final_weight": 0.07983336131610305,
+        "ticker": "META",
+        "realized_vol_20d": 0.5923344643429912,
+        "raw_weight": 0.2532353071273302,
+        "final_weight": 0.1266176535636651,
         "dropped_reason": null
       }
     ]
@@ -943,7 +1021,7 @@
     "vix": 41.97999954223633,
     "vix_pct_rank": 0.9503968253968254,
     "regime_multiplier": 0.5,
-    "gross_weight": 0.17405089472073837,
+    "gross_weight": 0.22585431683994356,
     "picks": [
       {
         "ticker": "JPM",
@@ -953,10 +1031,10 @@
         "dropped_reason": null
       },
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.9113462778000031,
-        "raw_weight": 0.16459166362329491,
-        "final_weight": 0.08229583181164746,
+        "ticker": "META",
+        "realized_vol_20d": 0.5592872279414265,
+        "raw_weight": 0.26819850786170524,
+        "final_weight": 0.13409925393085262,
         "dropped_reason": null
       }
     ]
@@ -969,7 +1047,7 @@
     "vix": 31.229999542236328,
     "vix_pct_rank": 0.9126984126984127,
     "regime_multiplier": 0.5,
-    "gross_weight": 0.2295440377581842,
+    "gross_weight": 0.30386072425800004,
     "picks": [
       {
         "ticker": "JPM",
@@ -979,10 +1057,10 @@
         "dropped_reason": null
       },
       {
-        "ticker": "UNH",
-        "realized_vol_20d": 0.5967379273453839,
-        "raw_weight": 0.2513666270003683,
-        "final_weight": 0.12568331350018416,
+        "ticker": "PFE",
+        "realized_vol_20d": 0.34301900871087915,
+        "raw_weight": 0.4,
+        "final_weight": 0.2,
         "dropped_reason": null
       }
     ]
@@ -995,7 +1073,7 @@
     "vix": 34.119998931884766,
     "vix_pct_rank": 0.9146825396825397,
     "regime_multiplier": 0.5,
-    "gross_weight": 0.27410932075490324,
+    "gross_weight": 0.11687833481005055,
     "picks": [
       {
         "ticker": "JPM",
@@ -1005,11 +1083,11 @@
         "dropped_reason": null
       },
       {
-        "ticker": "UNH",
-        "realized_vol_20d": 0.4770052133763604,
-        "raw_weight": 0.3144619718897054,
-        "final_weight": 0.1572309859448527,
-        "dropped_reason": null
+        "ticker": "SPY",
+        "realized_vol_20d": 0.3048727678263873,
+        "raw_weight": 0.4,
+        "final_weight": 0.0,
+        "dropped_reason": "corr 0.90 with JPM (>0.80)"
       }
     ]
   },
@@ -1021,7 +1099,7 @@
     "vix": 35.279998779296875,
     "vix_pct_rank": 0.9166666666666666,
     "regime_multiplier": 0.5,
-    "gross_weight": 0.24118757607661676,
+    "gross_weight": 0.3019638055033804,
     "picks": [
       {
         "ticker": "JPM",
@@ -1031,10 +1109,10 @@
         "dropped_reason": null
       },
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.8009087787072325,
-        "raw_weight": 0.18728724667260965,
-        "final_weight": 0.09364362333630483,
+        "ticker": "NVDA",
+        "realized_vol_20d": 0.4856888454302244,
+        "raw_weight": 0.30883970552613704,
+        "final_weight": 0.15441985276306852,
         "dropped_reason": null
       }
     ]
@@ -1047,20 +1125,20 @@
     "vix": 27.989999771118164,
     "vix_pct_rank": 0.876984126984127,
     "regime_multiplier": 0.5,
-    "gross_weight": 0.27981040849056193,
+    "gross_weight": 0.37333376843029265,
     "picks": [
-      {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.7043798523088959,
-        "raw_weight": 0.2129532801205387,
-        "final_weight": 0.10647664006026936,
-        "dropped_reason": null
-      },
       {
         "ticker": "JPM",
         "realized_vol_20d": 0.43269122156172224,
         "raw_weight": 0.3466675368605852,
         "final_weight": 0.1733337684302926,
+        "dropped_reason": null
+      },
+      {
+        "ticker": "UNH",
+        "realized_vol_20d": 0.3084906823996659,
+        "raw_weight": 0.4,
+        "final_weight": 0.2,
         "dropped_reason": null
       }
     ]
@@ -1099,7 +1177,7 @@
     "vix": 25.809999465942383,
     "vix_pct_rank": 0.8511904761904762,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.649330444903503,
+    "gross_weight": 0.7440344404322701,
     "picks": [
       {
         "ticker": "NVDA",
@@ -1109,10 +1187,10 @@
         "dropped_reason": null
       },
       {
-        "ticker": "JPM",
-        "realized_vol_20d": 0.5294387921504774,
-        "raw_weight": 0.28331886938380385,
-        "final_weight": 0.28331886938380385,
+        "ticker": "TSLA",
+        "realized_vol_20d": 0.39680139463175595,
+        "raw_weight": 0.37802286491257087,
+        "final_weight": 0.37802286491257087,
         "dropped_reason": null
       }
     ]
@@ -1125,20 +1203,20 @@
     "vix": 40.790000915527344,
     "vix_pct_rank": 0.9384920634920635,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.7242782720877964,
+    "gross_weight": 0.6690061898404006,
     "picks": [
       {
-        "ticker": "META",
-        "realized_vol_20d": 0.3711627497184143,
-        "raw_weight": 0.4,
-        "final_weight": 0.4,
+        "ticker": "TSLA",
+        "realized_vol_20d": 0.5576079869723217,
+        "raw_weight": 0.2690061898404006,
+        "final_weight": 0.2690061898404006,
         "dropped_reason": null
       },
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.46256568173457024,
-        "raw_weight": 0.32427827208779636,
-        "final_weight": 0.32427827208779636,
+        "ticker": "AAPL",
+        "realized_vol_20d": 0.27916126622915627,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       }
     ]
@@ -1151,20 +1229,20 @@
     "vix": 32.939998626708984,
     "vix_pct_rank": 0.8908730158730159,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.6382306774057485,
+    "gross_weight": 0.7648694817104842,
     "picks": [
       {
-        "ticker": "JPM",
-        "realized_vol_20d": 0.5866210672217821,
-        "raw_weight": 0.2557016929350918,
-        "final_weight": 0.2557016929350918,
+        "ticker": "NVDA",
+        "realized_vol_20d": 0.41110590915088285,
+        "raw_weight": 0.3648694817104841,
+        "final_weight": 0.3648694817104841,
         "dropped_reason": null
       },
       {
-        "ticker": "PFE",
-        "realized_vol_20d": 0.39212714876382476,
-        "raw_weight": 0.38252898447065664,
-        "final_weight": 0.38252898447065664,
+        "ticker": "META",
+        "realized_vol_20d": 0.3069380933668251,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       }
     ]
@@ -1177,18 +1255,18 @@
     "vix": 32.220001220703125,
     "vix_pct_rank": 0.8829365079365079,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.7929659575925446,
+    "gross_weight": 0.8,
     "picks": [
       {
-        "ticker": "PFE",
-        "realized_vol_20d": 0.3817124539717275,
-        "raw_weight": 0.3929659575925446,
-        "final_weight": 0.3929659575925446,
+        "ticker": "META",
+        "realized_vol_20d": 0.3196855527524126,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       },
       {
-        "ticker": "UNH",
-        "realized_vol_20d": 0.3716117718578395,
+        "ticker": "MCD",
+        "realized_vol_20d": 0.262528853697271,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
@@ -1203,13 +1281,13 @@
     "vix": 27.68000030517578,
     "vix_pct_rank": 0.8313492063492064,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.6820266923091922,
+    "gross_weight": 0.780145052489275,
     "picks": [
       {
-        "ticker": "JPM",
-        "realized_vol_20d": 0.4968834808552125,
-        "raw_weight": 0.3018816398199172,
-        "final_weight": 0.3018816398199172,
+        "ticker": "PFE",
+        "realized_vol_20d": 0.3385428027910757,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       },
       {
@@ -1229,13 +1307,13 @@
     "vix": 27.290000915527344,
     "vix_pct_rank": 0.8095238095238095,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.7203321239492927,
+    "gross_weight": 0.766376720773598,
     "picks": [
       {
-        "ticker": "META",
-        "realized_vol_20d": 0.4237822015265118,
-        "raw_weight": 0.35395540317569474,
-        "final_weight": 0.35395540317569474,
+        "ticker": "UNH",
+        "realized_vol_20d": 0.25847172281134606,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       },
       {
@@ -1255,18 +1333,18 @@
     "vix": 25.68000030517578,
     "vix_pct_rank": 0.7936507936507936,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.6000925847743218,
+    "gross_weight": 0.8,
     "picks": [
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.749652967745808,
-        "raw_weight": 0.20009258477432176,
-        "final_weight": 0.20009258477432176,
+        "ticker": "AAPL",
+        "realized_vol_20d": 0.24586133390310122,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       },
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.35818011878148287,
+        "ticker": "UNH",
+        "realized_vol_20d": 0.2900284407744022,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
@@ -1281,18 +1359,18 @@
     "vix": 25.84000015258789,
     "vix_pct_rank": 0.7956349206349206,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.7053164485665265,
+    "gross_weight": 0.8,
     "picks": [
       {
-        "ticker": "AMZN",
-        "realized_vol_20d": 0.4912935438108764,
-        "raw_weight": 0.3053164485665265,
-        "final_weight": 0.3053164485665265,
+        "ticker": "JPM",
+        "realized_vol_20d": 0.35888688111265654,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       },
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.36441219005234565,
+        "ticker": "UNH",
+        "realized_vol_20d": 0.26105915269701924,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
@@ -1307,18 +1385,18 @@
     "vix": 24.459999084472656,
     "vix_pct_rank": 0.7559523809523809,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.5684388039484523,
+    "gross_weight": 0.8,
     "picks": [
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.8905311394036309,
-        "raw_weight": 0.16843880394845226,
-        "final_weight": 0.16843880394845226,
+        "ticker": "NVDA",
+        "realized_vol_20d": 0.3464450164462419,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       },
       {
-        "ticker": "META",
-        "realized_vol_20d": 0.36425800315134566,
+        "ticker": "JPM",
+        "realized_vol_20d": 0.32400494875975777,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
@@ -1333,7 +1411,7 @@
     "vix": 22.209999084472656,
     "vix_pct_rank": 0.7242063492063492,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.6266956795234373,
+    "gross_weight": 0.8,
     "picks": [
       {
         "ticker": "PFE",
@@ -1343,10 +1421,10 @@
         "dropped_reason": null
       },
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.6616800122319579,
-        "raw_weight": 0.22669567952343728,
-        "final_weight": 0.22669567952343728,
+        "ticker": "NVDA",
+        "realized_vol_20d": 0.3395327339942644,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       }
     ]
@@ -1359,20 +1437,20 @@
     "vix": 22.049999237060547,
     "vix_pct_rank": 0.7123015873015873,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.5283237620779807,
+    "gross_weight": 0.7699403583779801,
     "picks": [
       {
-        "ticker": "META",
-        "realized_vol_20d": 0.4337507234502847,
-        "raw_weight": 0.34582074885505654,
-        "final_weight": 0.34582074885505654,
+        "ticker": "PFE",
+        "realized_vol_20d": 0.2595321345427082,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       },
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.8219042379140209,
-        "raw_weight": 0.1825030132229242,
-        "final_weight": 0.1825030132229242,
+        "ticker": "AMZN",
+        "realized_vol_20d": 0.4054707646867231,
+        "raw_weight": 0.3699403583779801,
+        "final_weight": 0.3699403583779801,
         "dropped_reason": null
       }
     ]
@@ -1411,20 +1489,20 @@
     "vix": 22.959999084472656,
     "vix_pct_rank": 0.7261904761904762,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.7784382496729574,
+    "gross_weight": 0.8,
     "picks": [
       {
-        "ticker": "PFE",
-        "realized_vol_20d": 0.11458329431726649,
+        "ticker": "AMZN",
+        "realized_vol_20d": 0.2679901614756715,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
       },
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.3963658539527347,
-        "raw_weight": 0.3784382496729574,
-        "final_weight": 0.3784382496729574,
+        "ticker": "JPM",
+        "realized_vol_20d": 0.2588848895519371,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       }
     ]
@@ -1437,13 +1515,13 @@
     "vix": 30.75,
     "vix_pct_rank": 0.8611111111111112,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.49010091715707116,
+    "gross_weight": 0.5584704205168329,
     "picks": [
       {
-        "ticker": "AAPL",
-        "realized_vol_20d": 0.45231063342984434,
-        "raw_weight": 0.3316304966402382,
-        "final_weight": 0.3316304966402382,
+        "ticker": "JPM",
+        "realized_vol_20d": 0.2736972869232287,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       },
       {
@@ -1463,7 +1541,7 @@
     "vix": 25.850000381469727,
     "vix_pct_rank": 0.7777777777777778,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.39806225940036305,
+    "gross_weight": 0.5177451612176811,
     "picks": [
       {
         "ticker": "TSLA",
@@ -1473,10 +1551,10 @@
         "dropped_reason": null
       },
       {
-        "ticker": "AAPL",
-        "realized_vol_20d": 0.535108279061327,
-        "raw_weight": 0.280317098182682,
-        "final_weight": 0.280317098182682,
+        "ticker": "JPM",
+        "realized_vol_20d": 0.287523487551145,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       }
     ]
@@ -1489,20 +1567,20 @@
     "vix": 27.780000686645508,
     "vix_pct_rank": 0.8075396825396826,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.685505607505806,
+    "gross_weight": 0.43210477589243534,
     "picks": [
       {
-        "ticker": "JPM",
-        "realized_vol_20d": 0.31026761847191975,
-        "raw_weight": 0.4,
-        "final_weight": 0.4,
+        "ticker": "TSLA",
+        "realized_vol_20d": 1.2458325209430479,
+        "raw_weight": 0.12040141630470177,
+        "final_weight": 0.12040141630470177,
         "dropped_reason": null
       },
       {
-        "ticker": "AAPL",
-        "realized_vol_20d": 0.5253837264718159,
-        "raw_weight": 0.285505607505806,
-        "final_weight": 0.285505607505806,
+        "ticker": "META",
+        "realized_vol_20d": 0.4812267670082018,
+        "raw_weight": 0.31170335958773354,
+        "final_weight": 0.31170335958773354,
         "dropped_reason": null
       }
     ]
@@ -1515,20 +1593,20 @@
     "vix": 26.190000534057617,
     "vix_pct_rank": 0.7698412698412699,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.6618812920374213,
+    "gross_weight": 0.8,
     "picks": [
       {
-        "ticker": "UNH",
-        "realized_vol_20d": 0.2562405774142233,
+        "ticker": "MCD",
+        "realized_vol_20d": 0.15430891924983528,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
       },
       {
-        "ticker": "AAPL",
-        "realized_vol_20d": 0.5727786006896817,
-        "raw_weight": 0.2618812920374212,
-        "final_weight": 0.2618812920374212,
+        "ticker": "META",
+        "realized_vol_20d": 0.3471837442694409,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       }
     ]
@@ -1541,13 +1619,13 @@
     "vix": 27.959999084472656,
     "vix_pct_rank": 0.8075396825396826,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.46641881146568714,
+    "gross_weight": 0.5252947228557384,
     "picks": [
       {
-        "ticker": "AMZN",
-        "realized_vol_20d": 0.43972268452584823,
-        "raw_weight": 0.34112408860994875,
-        "final_weight": 0.34112408860994875,
+        "ticker": "META",
+        "realized_vol_20d": 0.33598356792822165,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       },
       {
@@ -1567,20 +1645,20 @@
     "vix": 25.06999969482422,
     "vix_pct_rank": 0.7182539682539683,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.5855315544791099,
+    "gross_weight": 0.6113540985358795,
     "picks": [
+      {
+        "ticker": "META",
+        "realized_vol_20d": 0.3498396141465946,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
+        "dropped_reason": null
+      },
       {
         "ticker": "TSLA",
         "realized_vol_20d": 0.7097094451401706,
         "raw_weight": 0.2113540985358795,
         "final_weight": 0.2113540985358795,
-        "dropped_reason": null
-      },
-      {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.4008793090483724,
-        "raw_weight": 0.3741774559432304,
-        "final_weight": 0.3741774559432304,
         "dropped_reason": null
       }
     ]
@@ -1593,13 +1671,13 @@
     "vix": 29.18000030517578,
     "vix_pct_rank": 0.8333333333333334,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.6320447120841443,
+    "gross_weight": 0.7429549059796516,
     "picks": [
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.6464271417898413,
-        "raw_weight": 0.23204471208414423,
-        "final_weight": 0.23204471208414423,
+        "ticker": "AMZN",
+        "realized_vol_20d": 0.43737528574354284,
+        "raw_weight": 0.3429549059796516,
+        "final_weight": 0.3429549059796516,
         "dropped_reason": null
       },
       {
@@ -1629,8 +1707,8 @@
         "dropped_reason": null
       },
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.33639786345947437,
+        "ticker": "META",
+        "realized_vol_20d": 0.33900076705338383,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
@@ -1645,7 +1723,7 @@
     "vix": 37.130001068115234,
     "vix_pct_rank": 0.9166666666666666,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.7803763097730765,
+    "gross_weight": 0.6934343954975972,
     "picks": [
       {
         "ticker": "TSLA",
@@ -1655,10 +1733,10 @@
         "dropped_reason": null
       },
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.36322606633511606,
-        "raw_weight": 0.4,
-        "final_weight": 0.4,
+        "ticker": "META",
+        "realized_vol_20d": 0.47914430848463807,
+        "raw_weight": 0.31305808572452065,
+        "final_weight": 0.31305808572452065,
         "dropped_reason": null
       }
     ]
@@ -1674,17 +1752,17 @@
     "gross_weight": 0.5933685922540631,
     "picks": [
       {
-        "ticker": "META",
-        "realized_vol_20d": 0.5731027818259166,
-        "raw_weight": 0.26173315634954186,
-        "final_weight": 0.26173315634954186,
-        "dropped_reason": null
-      },
-      {
         "ticker": "TSLA",
         "realized_vol_20d": 0.4523038968706149,
         "raw_weight": 0.33163543590452127,
         "final_weight": 0.33163543590452127,
+        "dropped_reason": null
+      },
+      {
+        "ticker": "META",
+        "realized_vol_20d": 0.5731027818259166,
+        "raw_weight": 0.26173315634954186,
+        "final_weight": 0.26173315634954186,
         "dropped_reason": null
       }
     ]
@@ -1697,20 +1775,20 @@
     "vix": 22.450000762939453,
     "vix_pct_rank": 0.6170634920634921,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.5230584682707906,
+    "gross_weight": 0.7316605514431437,
     "picks": [
       {
-        "ticker": "META",
-        "realized_vol_20d": 0.5695393848992223,
-        "raw_weight": 0.2633707237411543,
-        "final_weight": 0.2633707237411543,
+        "ticker": "TSLA",
+        "realized_vol_20d": 0.4285252496459277,
+        "raw_weight": 0.35003771685318114,
+        "final_weight": 0.35003771685318114,
         "dropped_reason": null
       },
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.5776167846183496,
-        "raw_weight": 0.2596877445296364,
-        "final_weight": 0.2596877445296364,
+        "ticker": "AAPL",
+        "realized_vol_20d": 0.39305824076582996,
+        "raw_weight": 0.38162283458996255,
+        "final_weight": 0.38162283458996255,
         "dropped_reason": null
       }
     ]
@@ -1723,20 +1801,20 @@
     "vix": 22.65999984741211,
     "vix_pct_rank": 0.6190476190476191,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.6627504251930819,
+    "gross_weight": 0.6279074665558697,
     "picks": [
       {
-        "ticker": "UNH",
-        "realized_vol_20d": 0.45505258849329466,
-        "raw_weight": 0.32963223107170675,
-        "final_weight": 0.32963223107170675,
+        "ticker": "AAPL",
+        "realized_vol_20d": 0.4093011848698538,
+        "raw_weight": 0.36647829408970745,
+        "final_weight": 0.36647829408970745,
         "dropped_reason": null
       },
       {
-        "ticker": "AMZN",
-        "realized_vol_20d": 0.4502906255109737,
-        "raw_weight": 0.33311819412137517,
-        "final_weight": 0.33311819412137517,
+        "ticker": "JPM",
+        "realized_vol_20d": 0.5737691726787493,
+        "raw_weight": 0.26142917246616226,
+        "final_weight": 0.26142917246616226,
         "dropped_reason": null
       }
     ]
@@ -1749,7 +1827,7 @@
     "vix": 20.770000457763672,
     "vix_pct_rank": 0.5634920634920635,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.6108605654298547,
+    "gross_weight": 0.7548255581895347,
     "picks": [
       {
         "ticker": "META",
@@ -1759,10 +1837,10 @@
         "dropped_reason": null
       },
       {
-        "ticker": "JPM",
-        "realized_vol_20d": 0.5858573857410315,
-        "raw_weight": 0.2560350072403201,
-        "final_weight": 0.2560350072403201,
+        "ticker": "AMZN",
+        "realized_vol_20d": 0.37439424289774664,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       }
     ]
@@ -1785,8 +1863,8 @@
         "dropped_reason": null
       },
       {
-        "ticker": "JPM",
-        "realized_vol_20d": 0.28192826618076217,
+        "ticker": "NVDA",
+        "realized_vol_20d": 0.3502506312823332,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
@@ -1801,18 +1879,18 @@
     "vix": 22.889999389648438,
     "vix_pct_rank": 0.621031746031746,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.614569123013057,
+    "gross_weight": 0.8,
     "picks": [
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.699075420981574,
-        "raw_weight": 0.21456912301305703,
-        "final_weight": 0.21456912301305703,
+        "ticker": "PFE",
+        "realized_vol_20d": 0.32849214732288967,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       },
       {
-        "ticker": "META",
-        "realized_vol_20d": 0.23948871200691146,
+        "ticker": "JPM",
+        "realized_vol_20d": 0.2670521965175596,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
@@ -1931,7 +2009,7 @@
     "vix": 21.90999984741211,
     "vix_pct_rank": 0.5734126984126984,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.6739771206502312,
+    "gross_weight": 0.6425247623813014,
     "picks": [
       {
         "ticker": "TSLA",
@@ -1941,10 +2019,10 @@
         "dropped_reason": null
       },
       {
-        "ticker": "JPM",
-        "realized_vol_20d": 0.26000081775307493,
-        "raw_weight": 0.4,
-        "final_weight": 0.4,
+        "ticker": "NVDA",
+        "realized_vol_20d": 0.4070030113215464,
+        "raw_weight": 0.3685476417310702,
+        "final_weight": 0.3685476417310702,
         "dropped_reason": null
       }
     ]
@@ -1957,7 +2035,7 @@
     "vix": 33.09000015258789,
     "vix_pct_rank": 0.873015873015873,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.642127668553468,
+    "gross_weight": 0.5936587987075672,
     "picks": [
       {
         "ticker": "TSLA",
@@ -1967,10 +2045,10 @@
         "dropped_reason": null
       },
       {
-        "ticker": "JPM",
-        "realized_vol_20d": 0.28506401870587667,
-        "raw_weight": 0.4,
-        "final_weight": 0.4,
+        "ticker": "NVDA",
+        "realized_vol_20d": 0.42670474143853243,
+        "raw_weight": 0.3515311301540992,
+        "final_weight": 0.3515311301540992,
         "dropped_reason": null
       }
     ]
@@ -1993,8 +2071,8 @@
         "dropped_reason": null
       },
       {
-        "ticker": "AAPL",
-        "realized_vol_20d": 0.3335045106130354,
+        "ticker": "NVDA",
+        "realized_vol_20d": 0.3132890831779948,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
@@ -2035,20 +2113,20 @@
     "vix": 23.450000762939453,
     "vix_pct_rank": 0.6349206349206349,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.6820486966941255,
+    "gross_weight": 0.6511723447306679,
     "picks": [
+      {
+        "ticker": "NVDA",
+        "realized_vol_20d": 0.40636789541359963,
+        "raw_weight": 0.36912364803654235,
+        "final_weight": 0.36912364803654235,
+        "dropped_reason": null
+      },
       {
         "ticker": "TSLA",
         "realized_vol_20d": 0.5318230566499341,
         "raw_weight": 0.2820486966941255,
         "final_weight": 0.2820486966941255,
-        "dropped_reason": null
-      },
-      {
-        "ticker": "AAPL",
-        "realized_vol_20d": 0.2740611265942559,
-        "raw_weight": 0.4,
-        "final_weight": 0.4,
         "dropped_reason": null
       }
     ]
@@ -2061,20 +2139,20 @@
     "vix": 23.350000381469727,
     "vix_pct_rank": 0.626984126984127,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.5305699068300629,
+    "gross_weight": 0.632276989768636,
     "picks": [
+      {
+        "ticker": "AAPL",
+        "realized_vol_20d": 0.29918109763453554,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
+        "dropped_reason": null
+      },
       {
         "ticker": "TSLA",
         "realized_vol_20d": 0.6457807127146361,
         "raw_weight": 0.232276989768636,
         "final_weight": 0.232276989768636,
-        "dropped_reason": null
-      },
-      {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.5028614205047006,
-        "raw_weight": 0.2982929170614269,
-        "final_weight": 0.2982929170614269,
         "dropped_reason": null
       }
     ]
@@ -2113,20 +2191,20 @@
     "vix": 20.030000686645508,
     "vix_pct_rank": 0.45634920634920634,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.5499769371036665,
+    "gross_weight": 0.790375407732737,
     "picks": [
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 1.0001537762857342,
-        "raw_weight": 0.1499769371036664,
-        "final_weight": 0.1499769371036664,
+        "ticker": "META",
+        "realized_vol_20d": 0.36787623171057626,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       },
       {
-        "ticker": "MCD",
-        "realized_vol_20d": 0.21311185980804354,
-        "raw_weight": 0.4,
-        "final_weight": 0.4,
+        "ticker": "AAPL",
+        "realized_vol_20d": 0.3842455160564177,
+        "raw_weight": 0.390375407732737,
+        "final_weight": 0.390375407732737,
         "dropped_reason": null
       }
     ]
@@ -2139,20 +2217,20 @@
     "vix": 18.8799991607666,
     "vix_pct_rank": 0.4246031746031746,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.52343437745023,
+    "gross_weight": 0.6141973511485597,
     "picks": [
-      {
-        "ticker": "TSLA",
-        "realized_vol_20d": 1.0067487676546116,
-        "raw_weight": 0.14899447093384569,
-        "final_weight": 0.14899447093384569,
-        "dropped_reason": null
-      },
       {
         "ticker": "AAPL",
         "realized_vol_20d": 0.40059832669955137,
         "raw_weight": 0.3744399065163843,
         "final_weight": 0.3744399065163843,
+        "dropped_reason": null
+      },
+      {
+        "ticker": "NVDA",
+        "realized_vol_20d": 0.6256322936296012,
+        "raw_weight": 0.23975744463217538,
+        "final_weight": 0.23975744463217538,
         "dropped_reason": null
       }
     ]
@@ -2165,13 +2243,13 @@
     "vix": 20.739999771118164,
     "vix_pct_rank": 0.4662698412698413,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.5599962797553356,
+    "gross_weight": 0.7980448025679856,
     "picks": [
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.9262033456260225,
-        "raw_weight": 0.16195147718734998,
-        "final_weight": 0.16195147718734998,
+        "ticker": "AAPL",
+        "realized_vol_20d": 0.33299373802355264,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       },
       {
@@ -2191,18 +2269,18 @@
     "vix": 18.1200008392334,
     "vix_pct_rank": 0.3948412698412698,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.5717960053215094,
+    "gross_weight": 0.8,
     "picks": [
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.8731285673335707,
-        "raw_weight": 0.1717960053215094,
-        "final_weight": 0.1717960053215094,
+        "ticker": "AAPL",
+        "realized_vol_20d": 0.28423539390707486,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       },
       {
-        "ticker": "JPM",
-        "realized_vol_20d": 0.21783635048810573,
+        "ticker": "META",
+        "realized_vol_20d": 0.3439052798861224,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
@@ -2246,17 +2324,17 @@
     "gross_weight": 0.6241104604022092,
     "picks": [
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.550159023279748,
-        "raw_weight": 0.27264844100126145,
-        "final_weight": 0.27264844100126145,
-        "dropped_reason": null
-      },
-      {
         "ticker": "NVDA",
         "realized_vol_20d": 0.4267886477624771,
         "raw_weight": 0.3514620194009478,
         "final_weight": 0.3514620194009478,
+        "dropped_reason": null
+      },
+      {
+        "ticker": "TSLA",
+        "realized_vol_20d": 0.550159023279748,
+        "raw_weight": 0.27264844100126145,
+        "final_weight": 0.27264844100126145,
         "dropped_reason": null
       }
     ]
@@ -2269,7 +2347,7 @@
     "vix": 17.559999465942383,
     "vix_pct_rank": 0.36706349206349204,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.6268719793379351,
+    "gross_weight": 0.673680289738291,
     "picks": [
       {
         "ticker": "TSLA",
@@ -2279,10 +2357,10 @@
         "dropped_reason": null
       },
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.42469855440265464,
-        "raw_weight": 0.3531916895996442,
-        "final_weight": 0.3531916895996442,
+        "ticker": "META",
+        "realized_vol_20d": 0.23140161779481505,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       }
     ]
@@ -2295,13 +2373,13 @@
     "vix": 19.479999542236328,
     "vix_pct_rank": 0.4305555555555556,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.6249907555621376,
+    "gross_weight": 0.6763399357320283,
     "picks": [
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.43022987891751424,
-        "raw_weight": 0.3486508198301093,
-        "final_weight": 0.3486508198301093,
+        "ticker": "META",
+        "realized_vol_20d": 0.32293010772528896,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       },
       {
@@ -2321,7 +2399,7 @@
     "vix": 21.84000015258789,
     "vix_pct_rank": 0.5238095238095238,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.7374909854301881,
+    "gross_weight": 0.7337720407541255,
     "picks": [
       {
         "ticker": "TSLA",
@@ -2331,10 +2409,10 @@
         "dropped_reason": null
       },
       {
-        "ticker": "META",
-        "realized_vol_20d": 0.35443921894040303,
-        "raw_weight": 0.4,
-        "final_weight": 0.4,
+        "ticker": "NVDA",
+        "realized_vol_20d": 0.37851923018975375,
+        "raw_weight": 0.39628105532393737,
+        "final_weight": 0.39628105532393737,
         "dropped_reason": null
       }
     ]
@@ -2350,17 +2428,17 @@
     "gross_weight": 0.7224684680427136,
     "picks": [
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.4651617595681674,
-        "raw_weight": 0.32246846804271356,
-        "final_weight": 0.32246846804271356,
-        "dropped_reason": null
-      },
-      {
         "ticker": "META",
         "realized_vol_20d": 0.36854142108560983,
         "raw_weight": 0.4,
         "final_weight": 0.4,
+        "dropped_reason": null
+      },
+      {
+        "ticker": "TSLA",
+        "realized_vol_20d": 0.4651617595681674,
+        "raw_weight": 0.32246846804271356,
+        "final_weight": 0.32246846804271356,
         "dropped_reason": null
       }
     ]
@@ -2373,20 +2451,20 @@
     "vix": 18.84000015258789,
     "vix_pct_rank": 0.39285714285714285,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.7143913315094301,
+    "gross_weight": 0.713972854960041,
     "picks": [
+      {
+        "ticker": "META",
+        "realized_vol_20d": 0.3753927326385509,
+        "raw_weight": 0.3995815234506108,
+        "final_weight": 0.3995815234506108,
+        "dropped_reason": null
+      },
       {
         "ticker": "TSLA",
         "realized_vol_20d": 0.47711239136216693,
         "raw_weight": 0.31439133150943016,
         "final_weight": 0.31439133150943016,
-        "dropped_reason": null
-      },
-      {
-        "ticker": "PFE",
-        "realized_vol_20d": 0.1573034557248741,
-        "raw_weight": 0.4,
-        "final_weight": 0.4,
         "dropped_reason": null
       }
     ]
@@ -2402,17 +2480,17 @@
     "gross_weight": 0.7361154015631424,
     "picks": [
       {
+        "ticker": "JNJ",
+        "realized_vol_20d": 0.1131283434505985,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
+        "dropped_reason": null
+      },
+      {
         "ticker": "TSLA",
         "realized_vol_20d": 0.4462752950397637,
         "raw_weight": 0.33611540156314235,
         "final_weight": 0.33611540156314235,
-        "dropped_reason": null
-      },
-      {
-        "ticker": "META",
-        "realized_vol_20d": 0.26798373907532486,
-        "raw_weight": 0.4,
-        "final_weight": 0.4,
         "dropped_reason": null
       }
     ]
@@ -2428,17 +2506,17 @@
     "gross_weight": 0.7279281154941564,
     "picks": [
       {
-        "ticker": "META",
-        "realized_vol_20d": 0.22812306943263316,
-        "raw_weight": 0.4,
-        "final_weight": 0.4,
-        "dropped_reason": null
-      },
-      {
         "ticker": "TSLA",
         "realized_vol_20d": 0.457417320786796,
         "raw_weight": 0.32792811549415635,
         "final_weight": 0.32792811549415635,
+        "dropped_reason": null
+      },
+      {
+        "ticker": "JNJ",
+        "realized_vol_20d": 0.11699720026912842,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       }
     ]
@@ -2461,8 +2539,8 @@
         "dropped_reason": null
       },
       {
-        "ticker": "META",
-        "realized_vol_20d": 0.1936926411730364,
+        "ticker": "JNJ",
+        "realized_vol_20d": 0.12325404839047553,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
@@ -2480,17 +2558,17 @@
     "gross_weight": 0.7851355948780796,
     "picks": [
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.38947321928913053,
-        "raw_weight": 0.3851355948780795,
-        "final_weight": 0.3851355948780795,
-        "dropped_reason": null
-      },
-      {
         "ticker": "NVDA",
         "realized_vol_20d": 0.3046641573216657,
         "raw_weight": 0.4,
         "final_weight": 0.4,
+        "dropped_reason": null
+      },
+      {
+        "ticker": "TSLA",
+        "realized_vol_20d": 0.38947321928913053,
+        "raw_weight": 0.3851355948780795,
+        "final_weight": 0.3851355948780795,
         "dropped_reason": null
       }
     ]
@@ -2506,17 +2584,17 @@
     "gross_weight": 0.7871871489736726,
     "picks": [
       {
+        "ticker": "NVDA",
+        "realized_vol_20d": 0.2935634731145052,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
+        "dropped_reason": null
+      },
+      {
         "ticker": "TSLA",
         "realized_vol_20d": 0.3874095521961642,
         "raw_weight": 0.38718714897367257,
         "final_weight": 0.38718714897367257,
-        "dropped_reason": null
-      },
-      {
-        "ticker": "META",
-        "realized_vol_20d": 0.24482119057069665,
-        "raw_weight": 0.4,
-        "final_weight": 0.4,
         "dropped_reason": null
       }
     ]
@@ -2558,15 +2636,15 @@
     "gross_weight": 0.8,
     "picks": [
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.3607074991631011,
+        "ticker": "TSLA",
+        "realized_vol_20d": 0.3598935990655748,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
       },
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.3598935990655748,
+        "ticker": "NVDA",
+        "realized_vol_20d": 0.3607074991631011,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
@@ -2584,17 +2662,17 @@
     "gross_weight": 0.7782045029537079,
     "picks": [
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.3153797620658575,
-        "raw_weight": 0.4,
-        "final_weight": 0.4,
-        "dropped_reason": null
-      },
-      {
         "ticker": "NVDA",
         "realized_vol_20d": 0.3966108251713754,
         "raw_weight": 0.37820450295370794,
         "final_weight": 0.37820450295370794,
+        "dropped_reason": null
+      },
+      {
+        "ticker": "TSLA",
+        "realized_vol_20d": 0.3153797620658575,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       }
     ]
@@ -2617,8 +2695,8 @@
         "dropped_reason": null
       },
       {
-        "ticker": "AMZN",
-        "realized_vol_20d": 0.237516234810997,
+        "ticker": "NVDA",
+        "realized_vol_20d": 0.35970153173354685,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
@@ -2636,15 +2714,15 @@
     "gross_weight": 0.8,
     "picks": [
       {
-        "ticker": "META",
-        "realized_vol_20d": 0.3007947317802644,
+        "ticker": "NVDA",
+        "realized_vol_20d": 0.3568317711280986,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
       },
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.3568317711280986,
+        "ticker": "TSLA",
+        "realized_vol_20d": 0.32342142889151587,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
@@ -2662,15 +2740,15 @@
     "gross_weight": 0.8,
     "picks": [
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.2822047471305702,
+        "ticker": "NVDA",
+        "realized_vol_20d": 0.3089098134723844,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
       },
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.3089098134723844,
+        "ticker": "AMZN",
+        "realized_vol_20d": 0.3021772719596254,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
@@ -2695,8 +2773,8 @@
         "dropped_reason": null
       },
       {
-        "ticker": "AMZN",
-        "realized_vol_20d": 0.291089199441752,
+        "ticker": "NVDA",
+        "realized_vol_20d": 0.26627005587906594,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
@@ -2721,8 +2799,8 @@
         "dropped_reason": null
       },
       {
-        "ticker": "JPM",
-        "realized_vol_20d": 0.18453650650201708,
+        "ticker": "NVDA",
+        "realized_vol_20d": 0.3685452166789548,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
@@ -2740,15 +2818,15 @@
     "gross_weight": 0.8,
     "picks": [
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.37031793725485945,
+        "ticker": "TSLA",
+        "realized_vol_20d": 0.33874259072837637,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
       },
       {
-        "ticker": "PFE",
-        "realized_vol_20d": 0.3564144959669948,
+        "ticker": "NVDA",
+        "realized_vol_20d": 0.37031793725485945,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
@@ -2922,15 +3000,15 @@
     "gross_weight": 0.8,
     "picks": [
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.355839356513057,
+        "ticker": "META",
+        "realized_vol_20d": 0.3354704970444735,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
       },
       {
-        "ticker": "META",
-        "realized_vol_20d": 0.3354704970444735,
+        "ticker": "MCD",
+        "realized_vol_20d": 0.13422632513845328,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
@@ -2945,7 +3023,7 @@
     "vix": 16.260000228881836,
     "vix_pct_rank": 0.19444444444444445,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.7194222772194021,
+    "gross_weight": 0.7227146521169481,
     "picks": [
       {
         "ticker": "TSLA",
@@ -2955,10 +3033,10 @@
         "dropped_reason": null
       },
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.37811221793697786,
-        "raw_weight": 0.396707625102454,
-        "final_weight": 0.396707625102454,
+        "ticker": "META",
+        "realized_vol_20d": 0.35836093063087593,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       }
     ]
@@ -2974,17 +3052,17 @@
     "gross_weight": 0.5915303830938176,
     "picks": [
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.4774715524818563,
-        "raw_weight": 0.3141548417289215,
-        "final_weight": 0.3141548417289215,
-        "dropped_reason": null
-      },
-      {
         "ticker": "TSLA",
         "realized_vol_20d": 0.5407830815287004,
         "raw_weight": 0.27737554136489606,
         "final_weight": 0.27737554136489606,
+        "dropped_reason": null
+      },
+      {
+        "ticker": "NVDA",
+        "realized_vol_20d": 0.4774715524818563,
+        "raw_weight": 0.3141548417289215,
+        "final_weight": 0.3141548417289215,
         "dropped_reason": null
       }
     ]
@@ -2997,20 +3075,20 @@
     "vix": 16.290000915527344,
     "vix_pct_rank": 0.18452380952380953,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.5881674654519046,
+    "gross_weight": 0.47806680828448644,
     "picks": [
+      {
+        "ticker": "NVDA",
+        "realized_vol_20d": 0.5174209728603132,
+        "raw_weight": 0.2898993428325819,
+        "final_weight": 0.2898993428325819,
+        "dropped_reason": null
+      },
       {
         "ticker": "TSLA",
         "realized_vol_20d": 0.7971622492749146,
         "raw_weight": 0.18816746545190452,
         "final_weight": 0.18816746545190452,
-        "dropped_reason": null
-      },
-      {
-        "ticker": "JPM",
-        "realized_vol_20d": 0.1445561812074049,
-        "raw_weight": 0.4,
-        "final_weight": 0.4,
         "dropped_reason": null
       }
     ]
@@ -3023,20 +3101,20 @@
     "vix": 17.90999984741211,
     "vix_pct_rank": 0.3134920634920635,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.43550857819301647,
+    "gross_weight": 0.650369954563049,
     "picks": [
-      {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.8102037114621838,
-        "raw_weight": 0.18513862362996744,
-        "final_weight": 0.18513862362996744,
-        "dropped_reason": null
-      },
       {
         "ticker": "NVDA",
         "realized_vol_20d": 0.5991134210244324,
         "raw_weight": 0.250369954563049,
         "final_weight": 0.250369954563049,
+        "dropped_reason": null
+      },
+      {
+        "ticker": "META",
+        "realized_vol_20d": 0.29437633522435536,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       }
     ]
@@ -3052,17 +3130,17 @@
     "gross_weight": 0.4412287591241695,
     "picks": [
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.7197083832434219,
-        "raw_weight": 0.20841774737153027,
-        "final_weight": 0.20841774737153027,
-        "dropped_reason": null
-      },
-      {
         "ticker": "NVDA",
         "realized_vol_20d": 0.6442994206793551,
         "raw_weight": 0.23281101175263924,
         "final_weight": 0.23281101175263924,
+        "dropped_reason": null
+      },
+      {
+        "ticker": "TSLA",
+        "realized_vol_20d": 0.7197083832434219,
+        "raw_weight": 0.20841774737153027,
+        "final_weight": 0.20841774737153027,
         "dropped_reason": null
       }
     ]
@@ -3075,20 +3153,20 @@
     "vix": 27.18000030517578,
     "vix_pct_rank": 0.7321428571428571,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.48353019826479804,
+    "gross_weight": 0.7627798971871105,
     "picks": [
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.673535451372837,
-        "raw_weight": 0.2227054265581147,
-        "final_weight": 0.2227054265581147,
+        "ticker": "PFE",
+        "realized_vol_20d": 0.413473847815318,
+        "raw_weight": 0.3627798971871104,
+        "final_weight": 0.3627798971871104,
         "dropped_reason": null
       },
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.5750987493192787,
-        "raw_weight": 0.26082477170668333,
-        "final_weight": 0.26082477170668333,
+        "ticker": "META",
+        "realized_vol_20d": 0.347594753268045,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       }
     ]
@@ -3101,20 +3179,20 @@
     "vix": 20.309999465942383,
     "vix_pct_rank": 0.40476190476190477,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.4859872994157076,
+    "gross_weight": 0.6628309022935078,
     "picks": [
+      {
+        "ticker": "META",
+        "realized_vol_20d": 0.3269169179937622,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
+        "dropped_reason": null
+      },
       {
         "ticker": "TSLA",
         "realized_vol_20d": 0.5707091467977096,
         "raw_weight": 0.2628309022935078,
         "final_weight": 0.2628309022935078,
-        "dropped_reason": null
-      },
-      {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.6721743222886881,
-        "raw_weight": 0.22315639712219978,
-        "final_weight": 0.22315639712219978,
         "dropped_reason": null
       }
     ]
@@ -3127,20 +3205,20 @@
     "vix": 22.8700008392334,
     "vix_pct_rank": 0.5555555555555556,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.5013362584433865,
+    "gross_weight": 0.6781642700836825,
     "picks": [
+      {
+        "ticker": "META",
+        "realized_vol_20d": 0.33569787238874554,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
+        "dropped_reason": null
+      },
       {
         "ticker": "TSLA",
         "realized_vol_20d": 0.5392497028999239,
         "raw_weight": 0.27816427008368255,
         "final_weight": 0.27816427008368255,
-        "dropped_reason": null
-      },
-      {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.6721273628580715,
-        "raw_weight": 0.22317198835970387,
-        "final_weight": 0.22317198835970387,
         "dropped_reason": null
       }
     ]
@@ -3153,13 +3231,13 @@
     "vix": 17.540000915527344,
     "vix_pct_rank": 0.23015873015873015,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.5667355192087692,
+    "gross_weight": 0.7297163826923936,
     "picks": [
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.6328602922306084,
-        "raw_weight": 0.2370191365163757,
-        "final_weight": 0.2370191365163757,
+        "ticker": "META",
+        "realized_vol_20d": 0.3562098764943907,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       },
       {
@@ -3179,7 +3257,7 @@
     "vix": 16.90999984741211,
     "vix_pct_rank": 0.17857142857142858,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.4340961992273523,
+    "gross_weight": 0.5411471201704712,
     "picks": [
       {
         "ticker": "TSLA",
@@ -3189,10 +3267,10 @@
         "dropped_reason": null
       },
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.6349127109709534,
-        "raw_weight": 0.2362529484889496,
-        "final_weight": 0.2362529484889496,
+        "ticker": "PFE",
+        "realized_vol_20d": 0.43693070004758966,
+        "raw_weight": 0.3433038694320685,
+        "final_weight": 0.3433038694320685,
         "dropped_reason": null
       }
     ]
@@ -3205,13 +3283,13 @@
     "vix": 18.40999984741211,
     "vix_pct_rank": 0.2916666666666667,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.5641825211937672,
+    "gross_weight": 0.7605740197546019,
     "picks": [
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.7367079416613522,
-        "raw_weight": 0.20360850143916537,
-        "final_weight": 0.20360850143916537,
+        "ticker": "META",
+        "realized_vol_20d": 0.3035065537079979,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       },
       {
@@ -3231,13 +3309,13 @@
     "vix": 23.850000381469727,
     "vix_pct_rank": 0.6091269841269841,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.51448549103758,
+    "gross_weight": 0.719316204573418,
     "picks": [
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.7685635517632733,
-        "raw_weight": 0.19516928646416187,
-        "final_weight": 0.19516928646416187,
+        "ticker": "META",
+        "realized_vol_20d": 0.3211860410852541,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       },
       {
@@ -3257,20 +3335,20 @@
     "vix": 31.959999084472656,
     "vix_pct_rank": 0.8571428571428571,
     "regime_multiplier": 0.5,
-    "gross_weight": 0.3077088364236133,
+    "gross_weight": 0.38019877379317546,
     "picks": [
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.6963216992246474,
-        "raw_weight": 0.21541767284722657,
-        "final_weight": 0.10770883642361329,
+        "ticker": "AMZN",
+        "realized_vol_20d": 0.30331295269107655,
+        "raw_weight": 0.4,
+        "final_weight": 0.2,
         "dropped_reason": null
       },
       {
-        "ticker": "PFE",
-        "realized_vol_20d": 0.2951771747819612,
-        "raw_weight": 0.4,
-        "final_weight": 0.2,
+        "ticker": "NVDA",
+        "realized_vol_20d": 0.4162070496999154,
+        "raw_weight": 0.36039754758635095,
+        "final_weight": 0.18019877379317548,
         "dropped_reason": null
       }
     ]
@@ -3283,20 +3361,20 @@
     "vix": 22.09000015258789,
     "vix_pct_rank": 0.4861111111111111,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.47525710771094476,
+    "gross_weight": 0.6043946467310902,
     "picks": [
+      {
+        "ticker": "AMZN",
+        "realized_vol_20d": 0.36611242373710595,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
+        "dropped_reason": null
+      },
       {
         "ticker": "TSLA",
         "realized_vol_20d": 0.7338744061988376,
         "raw_weight": 0.2043946467310902,
         "final_weight": 0.2043946467310902,
-        "dropped_reason": null
-      },
-      {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.5537865950762231,
-        "raw_weight": 0.27086246097985456,
-        "final_weight": 0.27086246097985456,
         "dropped_reason": null
       }
     ]
@@ -3309,7 +3387,7 @@
     "vix": 19.959999084472656,
     "vix_pct_rank": 0.3492063492063492,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.35511713039593107,
+    "gross_weight": 0.4003488521621678,
     "picks": [
       {
         "ticker": "META",
@@ -3319,10 +3397,10 @@
         "dropped_reason": null
       },
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.7194169337226659,
-        "raw_weight": 0.2085021813759874,
-        "final_weight": 0.2085021813759874,
+        "ticker": "NVDA",
+        "realized_vol_20d": 0.5911705063549244,
+        "raw_weight": 0.25373390314222416,
+        "final_weight": 0.25373390314222416,
         "dropped_reason": null
       }
     ]
@@ -3335,7 +3413,7 @@
     "vix": 24.290000915527344,
     "vix_pct_rank": 0.5992063492063492,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.3584271134039418,
+    "gross_weight": 0.5473884470437641,
     "picks": [
       {
         "ticker": "META",
@@ -3345,10 +3423,10 @@
         "dropped_reason": null
       },
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.7107702232348095,
-        "raw_weight": 0.2110386663601777,
-        "final_weight": 0.2110386663601777,
+        "ticker": "AAPL",
+        "realized_vol_20d": 0.32896551979895294,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       }
     ]
@@ -3361,7 +3439,7 @@
     "vix": 30.31999969482422,
     "vix_pct_rank": 0.8253968253968254,
     "regime_multiplier": 0.5,
-    "gross_weight": 0.16877799998070125,
+    "gross_weight": 0.1948370030575512,
     "picks": [
       {
         "ticker": "TSLA",
@@ -3371,10 +3449,10 @@
         "dropped_reason": null
       },
       {
-        "ticker": "META",
-        "realized_vol_20d": 1.033941082741163,
-        "raw_weight": 0.14507596467907352,
-        "final_weight": 0.07253798233953676,
+        "ticker": "NVDA",
+        "realized_vol_20d": 0.7606723439186923,
+        "raw_weight": 0.1971939708327734,
+        "final_weight": 0.0985969854163867,
         "dropped_reason": null
       }
     ]
@@ -3387,7 +3465,7 @@
     "vix": 30.479999542236328,
     "vix_pct_rank": 0.8333333333333334,
     "regime_multiplier": 0.5,
-    "gross_weight": 0.22692676959326025,
+    "gross_weight": 0.3214701297655542,
     "picks": [
       {
         "ticker": "TSLA",
@@ -3397,10 +3475,10 @@
         "dropped_reason": null
       },
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.7111927719538023,
-        "raw_weight": 0.21091327965541207,
-        "final_weight": 0.10545663982770603,
+        "ticker": "JPM",
+        "realized_vol_20d": 0.3109494911025969,
+        "raw_weight": 0.4,
+        "final_weight": 0.2,
         "dropped_reason": null
       }
     ]
@@ -3413,20 +3491,20 @@
     "vix": 30.229999542236328,
     "vix_pct_rank": 0.8273809523809523,
     "regime_multiplier": 0.5,
-    "gross_weight": 0.219237906725257,
+    "gross_weight": 0.3744161651115281,
     "picks": [
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.7353887265041182,
-        "raw_weight": 0.203973755095578,
-        "final_weight": 0.101986877547789,
+        "ticker": "AMZN",
+        "realized_vol_20d": 0.43000601436250047,
+        "raw_weight": 0.34883233022305615,
+        "final_weight": 0.17441616511152808,
         "dropped_reason": null
       },
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.6396532339727441,
-        "raw_weight": 0.23450205835493604,
-        "final_weight": 0.11725102917746802,
+        "ticker": "JPM",
+        "realized_vol_20d": 0.3483862824875342,
+        "raw_weight": 0.4,
+        "final_weight": 0.2,
         "dropped_reason": null
       }
     ]
@@ -3439,20 +3517,20 @@
     "vix": 25.670000076293945,
     "vix_pct_rank": 0.6527777777777778,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.43039163008483505,
+    "gross_weight": 0.6066037812993885,
     "picks": [
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.67630524389071,
-        "raw_weight": 0.22179334162347525,
-        "final_weight": 0.22179334162347525,
+        "ticker": "META",
+        "realized_vol_20d": 0.5162882535096203,
+        "raw_weight": 0.2905353724016209,
+        "final_weight": 0.2905353724016209,
         "dropped_reason": null
       },
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.719085478152356,
-        "raw_weight": 0.2085982884613598,
-        "final_weight": 0.2085982884613598,
+        "ticker": "AMZN",
+        "realized_vol_20d": 0.4745808052221933,
+        "raw_weight": 0.3160684088977676,
+        "final_weight": 0.3160684088977676,
         "dropped_reason": null
       }
     ]
@@ -3465,20 +3543,20 @@
     "vix": 21.670000076293945,
     "vix_pct_rank": 0.44047619047619047,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.45271038588799595,
+    "gross_weight": 0.6967303421689284,
     "picks": [
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.7306589855127087,
-        "raw_weight": 0.2052941289632453,
-        "final_weight": 0.2052941289632453,
+        "ticker": "META",
+        "realized_vol_20d": 0.5055094767309137,
+        "raw_weight": 0.2967303421689284,
+        "final_weight": 0.2967303421689284,
         "dropped_reason": null
       },
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.6062657396260793,
-        "raw_weight": 0.2474162569247506,
-        "final_weight": 0.2474162569247506,
+        "ticker": "AAPL",
+        "realized_vol_20d": 0.3266933297328846,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       }
     ]
@@ -3491,7 +3569,7 @@
     "vix": 20.559999465942383,
     "vix_pct_rank": 0.35714285714285715,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.5135932897922438,
+    "gross_weight": 0.7070851635974462,
     "picks": [
       {
         "ticker": "META",
@@ -3501,10 +3579,10 @@
         "dropped_reason": null
       },
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.7263636679290096,
-        "raw_weight": 0.2065081261947976,
-        "final_weight": 0.2065081261947976,
+        "ticker": "JPM",
+        "realized_vol_20d": 0.3475993044665779,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       }
     ]
@@ -3517,7 +3595,7 @@
     "vix": 21.549999237060547,
     "vix_pct_rank": 0.4365079365079365,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.560314248601751,
+    "gross_weight": 0.746142356517404,
     "picks": [
       {
         "ticker": "META",
@@ -3527,10 +3605,10 @@
         "dropped_reason": null
       },
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.7003720167953956,
-        "raw_weight": 0.2141718920843471,
-        "final_weight": 0.2141718920843471,
+        "ticker": "PFE",
+        "realized_vol_20d": 0.29249934435638897,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       }
     ]
@@ -3553,8 +3631,8 @@
         "dropped_reason": null
       },
       {
-        "ticker": "META",
-        "realized_vol_20d": 0.3643654394159354,
+        "ticker": "AAPL",
+        "realized_vol_20d": 0.272536707979724,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
@@ -3569,7 +3647,7 @@
     "vix": 28.209999084472656,
     "vix_pct_rank": 0.8273809523809523,
     "regime_multiplier": 0.5,
-    "gross_weight": 0.29446365786306317,
+    "gross_weight": 0.3166330244572227,
     "picks": [
       {
         "ticker": "META",
@@ -3579,10 +3657,10 @@
         "dropped_reason": null
       },
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.5701081653024092,
-        "raw_weight": 0.2631079663986811,
-        "final_weight": 0.13155398319934056,
+        "ticker": "NVDA",
+        "realized_vol_20d": 0.4878894462080687,
+        "raw_weight": 0.3074466995870002,
+        "final_weight": 0.1537233497935001,
         "dropped_reason": null
       }
     ]
@@ -3595,13 +3673,13 @@
     "vix": 33.400001525878906,
     "vix_pct_rank": 0.9543650793650794,
     "regime_multiplier": 0.5,
-    "gross_weight": 0.20991188447981335,
+    "gross_weight": 0.23590274130672442,
     "picks": [
       {
-        "ticker": "META",
-        "realized_vol_20d": 0.809771957640148,
-        "raw_weight": 0.1852373357520711,
-        "final_weight": 0.09261866787603555,
+        "ticker": "AMZN",
+        "realized_vol_20d": 0.6323269584616821,
+        "raw_weight": 0.23721904940589328,
+        "final_weight": 0.11860952470294664,
         "dropped_reason": null
       },
       {
@@ -3621,13 +3699,13 @@
     "vix": 30.190000534057617,
     "vix_pct_rank": 0.8888888888888888,
     "regime_multiplier": 0.5,
-    "gross_weight": 0.22473898213137167,
+    "gross_weight": 0.3144054954367734,
     "picks": [
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.6797573633071078,
-        "raw_weight": 0.22066697338919658,
-        "final_weight": 0.11033348669459829,
+        "ticker": "JPM",
+        "realized_vol_20d": 0.3199862067324384,
+        "raw_weight": 0.4,
+        "final_weight": 0.2,
         "dropped_reason": null
       },
       {
@@ -3647,20 +3725,20 @@
     "vix": 28.8700008392334,
     "vix_pct_rank": 0.8531746031746031,
     "regime_multiplier": 0.5,
-    "gross_weight": 0.1866000912710523,
+    "gross_weight": 0.295632083049175,
     "picks": [
-      {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.8244656716795398,
-        "raw_weight": 0.18193601644375468,
-        "final_weight": 0.09096800822187734,
-        "dropped_reason": null
-      },
       {
         "ticker": "TSLA",
         "realized_vol_20d": 0.784255634810697,
         "raw_weight": 0.1912641660983499,
         "final_weight": 0.09563208304917495,
+        "dropped_reason": null
+      },
+      {
+        "ticker": "JPM",
+        "realized_vol_20d": 0.30614365022956525,
+        "raw_weight": 0.4,
+        "final_weight": 0.2,
         "dropped_reason": null
       }
     ]
@@ -3673,20 +3751,20 @@
     "vix": 29.43000030517578,
     "vix_pct_rank": 0.871031746031746,
     "regime_multiplier": 0.5,
-    "gross_weight": 0.17932279138625135,
+    "gross_weight": 0.29045142751209624,
     "picks": [
-      {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.8439163835293735,
-        "raw_weight": 0.17774272774831024,
-        "final_weight": 0.08887136387415512,
-        "dropped_reason": null
-      },
       {
         "ticker": "TSLA",
         "realized_vol_20d": 0.8291743100457991,
         "raw_weight": 0.18090285502419245,
         "final_weight": 0.09045142751209623,
+        "dropped_reason": null
+      },
+      {
+        "ticker": "PFE",
+        "realized_vol_20d": 0.2759801039786109,
+        "raw_weight": 0.4,
+        "final_weight": 0.2,
         "dropped_reason": null
       }
     ]
@@ -3699,20 +3777,20 @@
     "vix": 25.719999313354492,
     "vix_pct_rank": 0.7103174603174603,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.34720851373022765,
+    "gross_weight": 0.6603835162158973,
     "picks": [
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.8252039697101565,
-        "raw_weight": 0.18177324092695019,
-        "final_weight": 0.18177324092695019,
+        "ticker": "JPM",
+        "realized_vol_20d": 0.34566796259737476,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       },
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.906699021667333,
-        "raw_weight": 0.16543527280327744,
-        "final_weight": 0.16543527280327744,
+        "ticker": "AMZN",
+        "realized_vol_20d": 0.5760733328281322,
+        "raw_weight": 0.26038351621589734,
+        "final_weight": 0.26038351621589734,
         "dropped_reason": null
       }
     ]
@@ -3725,20 +3803,20 @@
     "vix": 25.06999969482422,
     "vix_pct_rank": 0.6845238095238095,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.35154649424109613,
+    "gross_weight": 0.6729486716736226,
     "picks": [
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.9073210786060716,
-        "raw_weight": 0.1653218508165233,
-        "final_weight": 0.1653218508165233,
+        "ticker": "AMZN",
+        "realized_vol_20d": 0.5495538742879906,
+        "raw_weight": 0.2729486716736225,
+        "final_weight": 0.2729486716736225,
         "dropped_reason": null
       },
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.805478787563124,
-        "raw_weight": 0.18622464342457282,
-        "final_weight": 0.18622464342457282,
+        "ticker": "JPM",
+        "realized_vol_20d": 0.324407155583994,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       }
     ]
@@ -3751,13 +3829,13 @@
     "vix": 34.02000045776367,
     "vix_pct_rank": 0.9761904761904762,
     "regime_multiplier": 0.5,
-    "gross_weight": 0.19976383299239986,
+    "gross_weight": 0.23553185353712447,
     "picks": [
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.813220908344407,
-        "raw_weight": 0.18445172579905378,
-        "final_weight": 0.09222586289952689,
+        "ticker": "META",
+        "realized_vol_20d": 0.5859655007082171,
+        "raw_weight": 0.255987766888503,
+        "final_weight": 0.1279938834442515,
         "dropped_reason": null
       },
       {
@@ -3777,21 +3855,21 @@
     "vix": 30.190000534057617,
     "vix_pct_rank": 0.8948412698412699,
     "regime_multiplier": 0.5,
-    "gross_weight": 0.08737273939779718,
+    "gross_weight": 0.26000520767486857,
     "picks": [
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.858391307368015,
-        "raw_weight": 0.17474547879559435,
-        "final_weight": 0.08737273939779718,
+        "ticker": "META",
+        "realized_vol_20d": 0.6120207505817445,
+        "raw_weight": 0.24508972915937963,
+        "final_weight": 0.12254486457968981,
         "dropped_reason": null
       },
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.6888177160654168,
-        "raw_weight": 0.21776443390105046,
-        "final_weight": 0.0,
-        "dropped_reason": "corr 0.81 with TSLA (>0.80)"
+        "ticker": "AMZN",
+        "realized_vol_20d": 0.5456119074871605,
+        "raw_weight": 0.2749206861903575,
+        "final_weight": 0.13746034309517874,
+        "dropped_reason": null
       }
     ]
   },
@@ -3803,21 +3881,21 @@
     "vix": 28.360000610351562,
     "vix_pct_rank": 0.8373015873015873,
     "regime_multiplier": 0.5,
-    "gross_weight": 0.11739420092532725,
+    "gross_weight": 0.31583606688262733,
     "picks": [
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.6388731249826081,
-        "raw_weight": 0.2347884018506545,
-        "final_weight": 0.11739420092532725,
+        "ticker": "META",
+        "realized_vol_20d": 0.6144832891672858,
+        "raw_weight": 0.24410753334443286,
+        "final_weight": 0.12205376667221643,
         "dropped_reason": null
       },
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.7470433468907404,
-        "raw_weight": 0.20079156132547474,
-        "final_weight": 0.0,
-        "dropped_reason": "corr 0.82 with NVDA (>0.80)"
+        "ticker": "AAPL",
+        "realized_vol_20d": 0.3870322517513942,
+        "raw_weight": 0.38756460042082175,
+        "final_weight": 0.19378230021041087,
+        "dropped_reason": null
       }
     ]
   },
@@ -3829,21 +3907,21 @@
     "vix": 26.729999542236328,
     "vix_pct_rank": 0.7678571428571429,
     "regime_multiplier": 0.5,
-    "gross_weight": 0.12587947521472084,
+    "gross_weight": 0.33448745892016923,
     "picks": [
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.5958080129589641,
-        "raw_weight": 0.2517589504294417,
-        "final_weight": 0.12587947521472084,
+        "ticker": "AAPL",
+        "realized_vol_20d": 0.38151126007204506,
+        "raw_weight": 0.39317319224516156,
+        "final_weight": 0.19658659612258078,
         "dropped_reason": null
       },
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.6538630285835827,
-        "raw_weight": 0.22940584410305995,
-        "final_weight": 0.0,
-        "dropped_reason": "corr 0.81 with NVDA (>0.80)"
+        "ticker": "AMZN",
+        "realized_vol_20d": 0.5438689684638548,
+        "raw_weight": 0.2758017255951769,
+        "final_weight": 0.13790086279758845,
+        "dropped_reason": null
       }
     ]
   },
@@ -3855,21 +3933,21 @@
     "vix": 26.81999969482422,
     "vix_pct_rank": 0.7757936507936508,
     "regime_multiplier": 0.5,
-    "gross_weight": 0.11222539047930083,
+    "gross_weight": 0.3386378554620513,
     "picks": [
-      {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.6682979642992039,
-        "raw_weight": 0.22445078095860166,
-        "final_weight": 0.11222539047930083,
-        "dropped_reason": null
-      },
       {
         "ticker": "NVDA",
         "realized_vol_20d": 0.5409777852523796,
         "raw_weight": 0.27727571092410247,
-        "final_weight": 0.0,
-        "dropped_reason": "corr 0.81 with TSLA (>0.80)"
+        "final_weight": 0.13863785546205123,
+        "dropped_reason": null
+      },
+      {
+        "ticker": "UNH",
+        "realized_vol_20d": 0.31635600178322454,
+        "raw_weight": 0.4,
+        "final_weight": 0.2,
+        "dropped_reason": null
       }
     ]
   },
@@ -3907,13 +3985,13 @@
     "vix": 23.239999771118164,
     "vix_pct_rank": 0.5952380952380952,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.2681047367223354,
+    "gross_weight": 0.2582336510226023,
     "picks": [
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.5594828417945803,
-        "raw_weight": 0.2681047367223354,
-        "final_weight": 0.2681047367223354,
+        "ticker": "META",
+        "realized_vol_20d": 0.5808692995897387,
+        "raw_weight": 0.2582336510226023,
+        "final_weight": 0.2582336510226023,
         "dropped_reason": null
       },
       {
@@ -3921,7 +3999,7 @@
         "realized_vol_20d": 0.5534396523840349,
         "raw_weight": 0.27103226043498985,
         "final_weight": 0.0,
-        "dropped_reason": "corr 0.86 with TSLA (>0.80)"
+        "dropped_reason": "corr 0.81 with META (>0.80)"
       }
     ]
   },
@@ -3933,20 +4011,20 @@
     "vix": 21.950000762939453,
     "vix_pct_rank": 0.4861111111111111,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.5131217481695629,
+    "gross_weight": 0.646220188149725,
     "picks": [
-      {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.5620049578910329,
-        "raw_weight": 0.2669015600198379,
-        "final_weight": 0.2669015600198379,
-        "dropped_reason": null
-      },
       {
         "ticker": "META",
         "realized_vol_20d": 0.6092108089397849,
         "raw_weight": 0.246220188149725,
         "final_weight": 0.246220188149725,
+        "dropped_reason": null
+      },
+      {
+        "ticker": "AAPL",
+        "realized_vol_20d": 0.27809760233220476,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       }
     ]
@@ -3959,20 +4037,20 @@
     "vix": 19.739999771118164,
     "vix_pct_rank": 0.3373015873015873,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.507065393342971,
+    "gross_weight": 0.6403263560474173,
     "picks": [
-      {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.5623473846229569,
-        "raw_weight": 0.26673903729555376,
-        "final_weight": 0.26673903729555376,
-        "dropped_reason": null
-      },
       {
         "ticker": "META",
         "realized_vol_20d": 0.6241512685791502,
         "raw_weight": 0.24032635604741726,
         "final_weight": 0.24032635604741726,
+        "dropped_reason": null
+      },
+      {
+        "ticker": "JPM",
+        "realized_vol_20d": 0.30220500976111625,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       }
     ]
@@ -4011,20 +4089,20 @@
     "vix": 22.81999969482422,
     "vix_pct_rank": 0.5595238095238095,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.6265395475708141,
+    "gross_weight": 0.8,
     "picks": [
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.46257529335069736,
-        "raw_weight": 0.3242715340749486,
-        "final_weight": 0.3242715340749486,
+        "ticker": "AAPL",
+        "realized_vol_20d": 0.24426111534270112,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       },
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.49624834022357356,
-        "raw_weight": 0.3022680134958655,
-        "final_weight": 0.3022680134958655,
+        "ticker": "PFE",
+        "realized_vol_20d": 0.23201174541994704,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       }
     ]
@@ -4066,17 +4144,17 @@
     "gross_weight": 0.663149451007752,
     "picks": [
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.35345537001284644,
-        "raw_weight": 0.4,
-        "final_weight": 0.4,
-        "dropped_reason": null
-      },
-      {
         "ticker": "NVDA",
         "realized_vol_20d": 0.5700182897040559,
         "raw_weight": 0.26314945100775194,
         "final_weight": 0.26314945100775194,
+        "dropped_reason": null
+      },
+      {
+        "ticker": "TSLA",
+        "realized_vol_20d": 0.35345537001284644,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       }
     ]
@@ -4089,20 +4167,20 @@
     "vix": 26.270000457763672,
     "vix_pct_rank": 0.7658730158730159,
     "regime_multiplier": 0.5,
-    "gross_weight": 0.271627173041688,
+    "gross_weight": 0.3210343925788889,
     "picks": [
-      {
-        "ticker": "META",
-        "realized_vol_20d": 0.4980318430240235,
-        "raw_weight": 0.30118556092559823,
-        "final_weight": 0.15059278046279911,
-        "dropped_reason": null
-      },
       {
         "ticker": "NVDA",
         "realized_vol_20d": 0.6196585813500558,
         "raw_weight": 0.24206878515777774,
         "final_weight": 0.12103439257888887,
+        "dropped_reason": null
+      },
+      {
+        "ticker": "TSLA",
+        "realized_vol_20d": 0.36277586103380305,
+        "raw_weight": 0.4,
+        "final_weight": 0.2,
         "dropped_reason": null
       }
     ]
@@ -4115,7 +4193,7 @@
     "vix": 27.350000381469727,
     "vix_pct_rank": 0.8115079365079365,
     "regime_multiplier": 0.5,
-    "gross_weight": 0.2758703204457854,
+    "gross_weight": 0.3174351116901287,
     "picks": [
       {
         "ticker": "NVDA",
@@ -4125,10 +4203,10 @@
         "dropped_reason": null
       },
       {
-        "ticker": "META",
-        "realized_vol_20d": 0.4872328877917399,
-        "raw_weight": 0.3078609916498805,
-        "final_weight": 0.15393049582494026,
+        "ticker": "TSLA",
+        "realized_vol_20d": 0.38364096201163134,
+        "raw_weight": 0.39099057413856725,
+        "final_weight": 0.19549528706928362,
         "dropped_reason": null
       }
     ]
@@ -4144,17 +4222,17 @@
     "gross_weight": 0.29114836002406097,
     "picks": [
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.5418312993478109,
-        "raw_weight": 0.2768389352563267,
-        "final_weight": 0.13841946762816335,
-        "dropped_reason": null
-      },
-      {
         "ticker": "META",
         "realized_vol_20d": 0.4910662208273472,
         "raw_weight": 0.3054577847917952,
         "final_weight": 0.1527288923958976,
+        "dropped_reason": null
+      },
+      {
+        "ticker": "NVDA",
+        "realized_vol_20d": 0.5418312993478109,
+        "raw_weight": 0.2768389352563267,
+        "final_weight": 0.13841946762816335,
         "dropped_reason": null
       }
     ]
@@ -4167,20 +4245,20 @@
     "vix": 30.520000457763672,
     "vix_pct_rank": 0.9206349206349206,
     "regime_multiplier": 0.5,
-    "gross_weight": 0.2800075187472776,
+    "gross_weight": 0.33918900554635184,
     "picks": [
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.5508736726783243,
-        "raw_weight": 0.2722947336922209,
-        "final_weight": 0.13614736684611045,
+        "ticker": "META",
+        "realized_vol_20d": 0.48542022557593245,
+        "raw_weight": 0.3090106099761928,
+        "final_weight": 0.1545053049880964,
         "dropped_reason": null
       },
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.5213396413728624,
-        "raw_weight": 0.2877203038023343,
-        "final_weight": 0.14386015190116716,
+        "ticker": "AAPL",
+        "realized_vol_20d": 0.4060997249529472,
+        "raw_weight": 0.3693674011165109,
+        "final_weight": 0.18468370055825545,
         "dropped_reason": null
       }
     ]
@@ -4193,20 +4271,20 @@
     "vix": 31.940000534057617,
     "vix_pct_rank": 0.9424603174603174,
     "regime_multiplier": 0.5,
-    "gross_weight": 0.2899240386382447,
+    "gross_weight": 0.3919519896290098,
     "picks": [
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.5099635363914206,
-        "raw_weight": 0.2941386771717499,
-        "final_weight": 0.14706933858587495,
+        "ticker": "JPM",
+        "realized_vol_20d": 0.39072270178055624,
+        "raw_weight": 0.3839039792580195,
+        "final_weight": 0.19195198962900975,
         "dropped_reason": null
       },
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.5250089774610526,
-        "raw_weight": 0.28570940010473944,
-        "final_weight": 0.14285470005236972,
+        "ticker": "AMZN",
+        "realized_vol_20d": 0.35800599192963994,
+        "raw_weight": 0.4,
+        "final_weight": 0.2,
         "dropped_reason": null
       }
     ]
@@ -4219,20 +4297,20 @@
     "vix": 29.979999542236328,
     "vix_pct_rank": 0.876984126984127,
     "regime_multiplier": 0.5,
-    "gross_weight": 0.24759529175731837,
+    "gross_weight": 0.28751564382267214,
     "picks": [
-      {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.5593146033628174,
-        "raw_weight": 0.2681853809969229,
-        "final_weight": 0.13409269049846145,
-        "dropped_reason": null
-      },
       {
         "ticker": "TSLA",
         "realized_vol_20d": 0.6607778074526512,
         "raw_weight": 0.2270052025177138,
         "final_weight": 0.1135026012588569,
+        "dropped_reason": null
+      },
+      {
+        "ticker": "META",
+        "realized_vol_20d": 0.4310021760150277,
+        "raw_weight": 0.34802608512763045,
+        "final_weight": 0.17401304256381522,
         "dropped_reason": null
       }
     ]
@@ -4245,7 +4323,7 @@
     "vix": 27.389999389648438,
     "vix_pct_rank": 0.7956349206349206,
     "regime_multiplier": 0.5,
-    "gross_weight": 0.20782465198900213,
+    "gross_weight": 0.23300653709423186,
     "picks": [
       {
         "ticker": "META",
@@ -4255,10 +4333,10 @@
         "dropped_reason": null
       },
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.5726743486428111,
-        "raw_weight": 0.2619289660091937,
-        "final_weight": 0.13096448300459684,
+        "ticker": "AMZN",
+        "realized_vol_20d": 0.4803185684552601,
+        "raw_weight": 0.3122927362196532,
+        "final_weight": 0.1561463681098266,
         "dropped_reason": null
       }
     ]
@@ -4271,20 +4349,20 @@
     "vix": 25.299999237060547,
     "vix_pct_rank": 0.7043650793650794,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.4106819281351799,
+    "gross_weight": 0.6008733605871632,
     "picks": [
       {
-        "ticker": "META",
-        "realized_vol_20d": 0.992449292175364,
-        "raw_weight": 0.1511412232167679,
-        "final_weight": 0.1511412232167679,
+        "ticker": "AMZN",
+        "realized_vol_20d": 0.5332969523146057,
+        "raw_weight": 0.281269186611648,
+        "final_weight": 0.281269186611648,
         "dropped_reason": null
       },
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.5779440263412758,
-        "raw_weight": 0.25954070491841197,
-        "final_weight": 0.25954070491841197,
+        "ticker": "AAPL",
+        "realized_vol_20d": 0.4693305413823895,
+        "raw_weight": 0.31960417397551527,
+        "final_weight": 0.31960417397551527,
         "dropped_reason": null
       }
     ]
@@ -4297,13 +4375,13 @@
     "vix": 23.530000686645508,
     "vix_pct_rank": 0.625,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.42223571273010674,
+    "gross_weight": 0.48462596103264766,
     "picks": [
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.7179489591241146,
-        "raw_weight": 0.20892850124470885,
-        "final_weight": 0.20892850124470885,
+        "ticker": "AAPL",
+        "realized_vol_20d": 0.5528552680207517,
+        "raw_weight": 0.2713187495472498,
+        "final_weight": 0.2713187495472498,
         "dropped_reason": null
       },
       {
@@ -4323,7 +4401,7 @@
     "vix": 23.93000030517578,
     "vix_pct_rank": 0.6448412698412699,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.3896538265889531,
+    "gross_weight": 0.5341673460521768,
     "picks": [
       {
         "ticker": "TSLA",
@@ -4333,10 +4411,10 @@
         "dropped_reason": null
       },
       {
-        "ticker": "META",
-        "realized_vol_20d": 1.1147828042250538,
-        "raw_weight": 0.13455535861469728,
-        "final_weight": 0.13455535861469728,
+        "ticker": "AAPL",
+        "realized_vol_20d": 0.5375017129574632,
+        "raw_weight": 0.279068878077921,
+        "final_weight": 0.279068878077921,
         "dropped_reason": null
       }
     ]
@@ -4349,20 +4427,20 @@
     "vix": 20.5,
     "vix_pct_rank": 0.37896825396825395,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.4471603879646353,
+    "gross_weight": 0.6512817541796071,
     "picks": [
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.6944250675444948,
-        "raw_weight": 0.21600602715913456,
-        "final_weight": 0.21600602715913456,
+        "ticker": "JPM",
+        "realized_vol_20d": 0.21237024098698604,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       },
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.6489170244389802,
-        "raw_weight": 0.23115436080550075,
-        "final_weight": 0.23115436080550075,
+        "ticker": "META",
+        "realized_vol_20d": 0.5969394812994876,
+        "raw_weight": 0.2512817541796071,
+        "final_weight": 0.2512817541796071,
         "dropped_reason": null
       }
     ]
@@ -4375,20 +4453,20 @@
     "vix": 19.059999465942383,
     "vix_pct_rank": 0.2916666666666667,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.4785822743013368,
+    "gross_weight": 0.542256225301917,
     "picks": [
+      {
+        "ticker": "AMZN",
+        "realized_vol_20d": 0.5564615261351464,
+        "raw_weight": 0.2695604151500132,
+        "final_weight": 0.2695604151500132,
+        "dropped_reason": null
+      },
       {
         "ticker": "META",
         "realized_vol_20d": 0.5500634568475522,
         "raw_weight": 0.27269581015190375,
         "final_weight": 0.27269581015190375,
-        "dropped_reason": null
-      },
-      {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.7285568802188448,
-        "raw_weight": 0.20588646414943307,
-        "final_weight": 0.20588646414943307,
         "dropped_reason": null
       }
     ]
@@ -4401,7 +4479,7 @@
     "vix": 22.829999923706055,
     "vix_pct_rank": 0.5634920634920635,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.5808124618087249,
+    "gross_weight": 0.6502438812332691,
     "picks": [
       {
         "ticker": "TSLA",
@@ -4411,10 +4489,10 @@
         "dropped_reason": null
       },
       {
-        "ticker": "META",
-        "realized_vol_20d": 0.4537636327653376,
-        "raw_weight": 0.3305685805754557,
-        "final_weight": 0.3305685805754557,
+        "ticker": "AMZN",
+        "realized_vol_20d": 0.3428969180156714,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       }
     ]
@@ -4453,7 +4531,7 @@
     "vix": 20.8700008392334,
     "vix_pct_rank": 0.4126984126984127,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.527652220038129,
+    "gross_weight": 0.644023230625427,
     "picks": [
       {
         "ticker": "TSLA",
@@ -4463,10 +4541,10 @@
         "dropped_reason": null
       },
       {
-        "ticker": "META",
-        "realized_vol_20d": 0.5288599036036422,
-        "raw_weight": 0.2836289894127019,
-        "final_weight": 0.2836289894127019,
+        "ticker": "AMZN",
+        "realized_vol_20d": 0.36244717514707464,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       }
     ]
@@ -4505,20 +4583,20 @@
     "vix": 20.579999923706055,
     "vix_pct_rank": 0.39285714285714285,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.43169937866125685,
+    "gross_weight": 0.7680421849415915,
     "picks": [
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.5703387890270744,
-        "raw_weight": 0.26300157535467816,
-        "final_weight": 0.26300157535467816,
+        "ticker": "AMZN",
+        "realized_vol_20d": 0.36634199757084684,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       },
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.8891639195052309,
-        "raw_weight": 0.1686978033065787,
-        "final_weight": 0.1686978033065787,
+        "ticker": "META",
+        "realized_vol_20d": 0.4075619756028921,
+        "raw_weight": 0.36804218494159147,
+        "final_weight": 0.36804218494159147,
         "dropped_reason": null
       }
     ]
@@ -4531,20 +4609,20 @@
     "vix": 20.34000015258789,
     "vix_pct_rank": 0.3888888888888889,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.8,
+    "gross_weight": 0.6344561460328922,
     "picks": [
       {
-        "ticker": "PFE",
-        "realized_vol_20d": 0.2691416365846399,
-        "raw_weight": 0.4,
-        "final_weight": 0.4,
+        "ticker": "NVDA",
+        "realized_vol_20d": 0.5654311695668763,
+        "raw_weight": 0.26528427874766947,
+        "final_weight": 0.26528427874766947,
         "dropped_reason": null
       },
       {
-        "ticker": "AAPL",
-        "realized_vol_20d": 0.3045778765254558,
-        "raw_weight": 0.4,
-        "final_weight": 0.4,
+        "ticker": "AMZN",
+        "realized_vol_20d": 0.40631481781928347,
+        "raw_weight": 0.3691718672852228,
+        "final_weight": 0.3691718672852228,
         "dropped_reason": null
       }
     ]
@@ -4557,7 +4635,7 @@
     "vix": 19.079999923706055,
     "vix_pct_rank": 0.2976190476190476,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.4270291989285213,
+    "gross_weight": 0.6553907823655561,
     "picks": [
       {
         "ticker": "NVDA",
@@ -4567,10 +4645,10 @@
         "dropped_reason": null
       },
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.8739302249678632,
-        "raw_weight": 0.1716384165629652,
-        "final_weight": 0.1716384165629652,
+        "ticker": "META",
+        "realized_vol_20d": 0.29457596082057924,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       }
     ]
@@ -4583,7 +4661,7 @@
     "vix": 17.8700008392334,
     "vix_pct_rank": 0.2003968253968254,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.46630705849549653,
+    "gross_weight": 0.6622029340898427,
     "picks": [
       {
         "ticker": "NVDA",
@@ -4593,10 +4671,10 @@
         "dropped_reason": null
       },
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.7349190048794763,
-        "raw_weight": 0.2041041244056539,
-        "final_weight": 0.2041041244056539,
+        "ticker": "META",
+        "realized_vol_20d": 0.3129670996174457,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       }
     ]
@@ -4609,20 +4687,20 @@
     "vix": 19.6299991607666,
     "vix_pct_rank": 0.3611111111111111,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.3886840443909668,
+    "gross_weight": 0.433105827300866,
     "picks": [
-      {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.6858372887207989,
-        "raw_weight": 0.2187107677970894,
-        "final_weight": 0.2187107677970894,
-        "dropped_reason": null
-      },
       {
         "ticker": "META",
         "realized_vol_20d": 0.8824916657834383,
         "raw_weight": 0.16997327659387743,
         "final_weight": 0.16997327659387743,
+        "dropped_reason": null
+      },
+      {
+        "ticker": "NVDA",
+        "realized_vol_20d": 0.5700549004559782,
+        "raw_weight": 0.26313255070698854,
+        "final_weight": 0.26313255070698854,
         "dropped_reason": null
       }
     ]
@@ -4635,20 +4713,20 @@
     "vix": 18.229999542236328,
     "vix_pct_rank": 0.23412698412698413,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.454266476240669,
+    "gross_weight": 0.4117335829488572,
     "picks": [
-      {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.7168393301886932,
-        "raw_weight": 0.2092519113878916,
-        "final_weight": 0.2092519113878916,
-        "dropped_reason": null
-      },
       {
         "ticker": "NVDA",
         "realized_vol_20d": 0.6122085031562549,
         "raw_weight": 0.24501456485277742,
         "final_weight": 0.24501456485277742,
+        "dropped_reason": null
+      },
+      {
+        "ticker": "META",
+        "realized_vol_20d": 0.8997173910510636,
+        "raw_weight": 0.1667190180960798,
+        "final_weight": 0.1667190180960798,
         "dropped_reason": null
       }
     ]
@@ -4661,7 +4739,7 @@
     "vix": 21.139999389648438,
     "vix_pct_rank": 0.48214285714285715,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.395894133261751,
+    "gross_weight": 0.6022544303056302,
     "picks": [
       {
         "ticker": "NVDA",
@@ -4671,10 +4749,10 @@
         "dropped_reason": null
       },
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.7746345285088067,
-        "raw_weight": 0.1936397029561208,
-        "final_weight": 0.1936397029561208,
+        "ticker": "AAPL",
+        "realized_vol_20d": 0.26473679023553737,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       }
     ]
@@ -4687,7 +4765,7 @@
     "vix": 19.59000015258789,
     "vix_pct_rank": 0.35714285714285715,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.47257068975209804,
+    "gross_weight": 0.5734785514910143,
     "picks": [
       {
         "ticker": "TSLA",
@@ -4697,10 +4775,10 @@
         "dropped_reason": null
       },
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.6759720311050025,
-        "raw_weight": 0.22190267214872336,
-        "final_weight": 0.22190267214872336,
+        "ticker": "AMZN",
+        "realized_vol_20d": 0.46466885139569314,
+        "raw_weight": 0.32281053388763964,
+        "final_weight": 0.32281053388763964,
         "dropped_reason": null
       }
     ]
@@ -4713,7 +4791,7 @@
     "vix": 22.610000610351562,
     "vix_pct_rank": 0.6071428571428571,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.4641916158276079,
+    "gross_weight": 0.6393482243277596,
     "picks": [
       {
         "ticker": "TSLA",
@@ -4723,10 +4801,10 @@
         "dropped_reason": null
       },
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.6671310150563229,
-        "raw_weight": 0.2248433914998483,
-        "final_weight": 0.2248433914998483,
+        "ticker": "META",
+        "realized_vol_20d": 0.33740250429428853,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       }
     ]
@@ -4739,20 +4817,20 @@
     "vix": 22.989999771118164,
     "vix_pct_rank": 0.6329365079365079,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.4993209473304544,
+    "gross_weight": 0.6017516118430992,
     "picks": [
+      {
+        "ticker": "META",
+        "realized_vol_20d": 0.4013130046401318,
+        "raw_weight": 0.3737730855109194,
+        "final_weight": 0.3737730855109194,
+        "dropped_reason": null
+      },
       {
         "ticker": "NVDA",
         "realized_vol_20d": 0.6579567050163315,
         "raw_weight": 0.2279785263321798,
         "final_weight": 0.2279785263321798,
-        "dropped_reason": null
-      },
-      {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.5528070378680443,
-        "raw_weight": 0.2713424209982746,
-        "final_weight": 0.2713424209982746,
         "dropped_reason": null
       }
     ]
@@ -4765,20 +4843,20 @@
     "vix": 22.610000610351562,
     "vix_pct_rank": 0.5932539682539683,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.6081643761002977,
+    "gross_weight": 0.7423568480326326,
     "picks": [
+      {
+        "ticker": "NVDA",
+        "realized_vol_20d": 0.3780518408628901,
+        "raw_weight": 0.39677098161360685,
+        "final_weight": 0.39677098161360685,
+        "dropped_reason": null
+      },
       {
         "ticker": "META",
         "realized_vol_20d": 0.4340455284074718,
         "raw_weight": 0.3455858664190258,
         "final_weight": 0.3455858664190258,
-        "dropped_reason": null
-      },
-      {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.5712577170998338,
-        "raw_weight": 0.26257850968127194,
-        "final_weight": 0.26257850968127194,
         "dropped_reason": null
       }
     ]
@@ -4791,20 +4869,20 @@
     "vix": 19.020000457763672,
     "vix_pct_rank": 0.3115079365079365,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.6526747751885846,
+    "gross_weight": 0.7479058358570503,
     "picks": [
-      {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.49217613950097033,
-        "raw_weight": 0.3047689393315343,
-        "final_weight": 0.3047689393315343,
-        "dropped_reason": null
-      },
       {
         "ticker": "META",
         "realized_vol_20d": 0.4311511464890544,
         "raw_weight": 0.34790583585705026,
         "final_weight": 0.34790583585705026,
+        "dropped_reason": null
+      },
+      {
+        "ticker": "NVDA",
+        "realized_vol_20d": 0.35951609785036975,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       }
     ]
@@ -4817,20 +4895,20 @@
     "vix": 18.399999618530273,
     "vix_pct_rank": 0.24206349206349206,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.6743601086925997,
+    "gross_weight": 0.7901593112067336,
     "picks": [
-      {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.5277958447933623,
-        "raw_weight": 0.28420079748586613,
-        "final_weight": 0.28420079748586613,
-        "dropped_reason": null
-      },
       {
         "ticker": "META",
         "realized_vol_20d": 0.3844583371240358,
         "raw_weight": 0.3901593112067336,
         "final_weight": 0.3901593112067336,
+        "dropped_reason": null
+      },
+      {
+        "ticker": "NVDA",
+        "realized_vol_20d": 0.3206338262259883,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       }
     ]
@@ -4843,7 +4921,7 @@
     "vix": 17.06999969482422,
     "vix_pct_rank": 0.12896825396825398,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.6893880814374063,
+    "gross_weight": 0.8,
     "picks": [
       {
         "ticker": "META",
@@ -4853,10 +4931,10 @@
         "dropped_reason": null
       },
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.5183350995484743,
-        "raw_weight": 0.2893880814374063,
-        "final_weight": 0.2893880814374063,
+        "ticker": "JPM",
+        "realized_vol_20d": 0.36107918183648463,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       }
     ]
@@ -4869,13 +4947,13 @@
     "vix": 16.770000457763672,
     "vix_pct_rank": 0.10912698412698413,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.6795505450757474,
+    "gross_weight": 0.8,
     "picks": [
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.5365755947975555,
-        "raw_weight": 0.2795505450757474,
-        "final_weight": 0.2795505450757474,
+        "ticker": "AMZN",
+        "realized_vol_20d": 0.29964684926983204,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       },
       {
@@ -4895,7 +4973,7 @@
     "vix": 15.779999732971191,
     "vix_pct_rank": 0.02976190476190476,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.6810429689425122,
+    "gross_weight": 0.6708359066662323,
     "picks": [
       {
         "ticker": "META",
@@ -4905,10 +4983,10 @@
         "dropped_reason": null
       },
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.28586581085256707,
-        "raw_weight": 0.4,
-        "final_weight": 0.4,
+        "ticker": "AMZN",
+        "realized_vol_20d": 0.3848196965187653,
+        "raw_weight": 0.3897929377237202,
+        "final_weight": 0.3897929377237202,
         "dropped_reason": null
       }
     ]
@@ -4924,17 +5002,17 @@
     "gross_weight": 0.6890056987398288,
     "picks": [
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.3489776791456297,
-        "raw_weight": 0.4,
-        "final_weight": 0.4,
-        "dropped_reason": null
-      },
-      {
         "ticker": "TSLA",
         "realized_vol_20d": 0.5190209073871387,
         "raw_weight": 0.2890056987398288,
         "final_weight": 0.2890056987398288,
+        "dropped_reason": null
+      },
+      {
+        "ticker": "NVDA",
+        "realized_vol_20d": 0.3489776791456297,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       }
     ]
@@ -4950,8 +5028,8 @@
     "gross_weight": 0.6958112772045981,
     "picks": [
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.34159561797973303,
+        "ticker": "AMZN",
+        "realized_vol_20d": 0.36187403662902556,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
@@ -4973,7 +5051,7 @@
     "vix": 16.809999465942383,
     "vix_pct_rank": 0.11904761904761904,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.6670678518603186,
+    "gross_weight": 0.6846456442889133,
     "picks": [
       {
         "ticker": "META",
@@ -4983,10 +5061,10 @@
         "dropped_reason": null
       },
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.3922366353998733,
-        "raw_weight": 0.3824222075714054,
-        "final_weight": 0.3824222075714054,
+        "ticker": "NVDA",
+        "realized_vol_20d": 0.37350732427805095,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       }
     ]
@@ -4999,7 +5077,7 @@
     "vix": 17.950000762939453,
     "vix_pct_rank": 0.22420634920634921,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.5543516433303508,
+    "gross_weight": 0.5641047846518622,
     "picks": [
       {
         "ticker": "NVDA",
@@ -5009,10 +5087,10 @@
         "dropped_reason": null
       },
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.3843720882416635,
-        "raw_weight": 0.3902468586784886,
-        "final_weight": 0.3902468586784886,
+        "ticker": "META",
+        "realized_vol_20d": 0.21278370755628204,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       }
     ]
@@ -5028,17 +5106,17 @@
     "gross_weight": 0.5596875864787911,
     "picks": [
       {
+        "ticker": "META",
+        "realized_vol_20d": 0.1947367602706127,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
+        "dropped_reason": null
+      },
+      {
         "ticker": "NVDA",
         "realized_vol_20d": 0.9393341292682272,
         "raw_weight": 0.1596875864787911,
         "final_weight": 0.1596875864787911,
-        "dropped_reason": null
-      },
-      {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.3543525210555203,
-        "raw_weight": 0.4,
-        "final_weight": 0.4,
         "dropped_reason": null
       }
     ]
@@ -5103,13 +5181,13 @@
     "vix": 13.739999771118164,
     "vix_pct_rank": 0.011904761904761904,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.6247080448075535,
+    "gross_weight": 0.7218578993319328,
     "picks": [
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.49529446242935643,
-        "raw_weight": 0.3028501454756208,
-        "final_weight": 0.3028501454756208,
+        "ticker": "META",
+        "realized_vol_20d": 0.27349228024795014,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       },
       {
@@ -5155,7 +5233,7 @@
     "vix": 13.539999961853027,
     "vix_pct_rank": 0.013888888888888888,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.6907533895866422,
+    "gross_weight": 0.8,
     "picks": [
       {
         "ticker": "NVDA",
@@ -5165,10 +5243,10 @@
         "dropped_reason": null
       },
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.5159011222990443,
-        "raw_weight": 0.29075338958664226,
-        "final_weight": 0.29075338958664226,
+        "ticker": "META",
+        "realized_vol_20d": 0.2851691233434159,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       }
     ]
@@ -5236,15 +5314,15 @@
     "gross_weight": 0.8,
     "picks": [
       {
-        "ticker": "JNJ",
-        "realized_vol_20d": 0.2806103802415343,
+        "ticker": "NVDA",
+        "realized_vol_20d": 0.3632692441705358,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
       },
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.3632692441705358,
+        "ticker": "META",
+        "realized_vol_20d": 0.3692778791506697,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
@@ -5259,18 +5337,18 @@
     "vix": 15.960000038146973,
     "vix_pct_rank": 0.10912698412698413,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.7854517604070264,
+    "gross_weight": 0.7689712135803968,
     "picks": [
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.3891537551718643,
-        "raw_weight": 0.3854517604070263,
-        "final_weight": 0.3854517604070263,
+        "ticker": "AMZN",
+        "realized_vol_20d": 0.4065357797006456,
+        "raw_weight": 0.3689712135803967,
+        "final_weight": 0.3689712135803967,
         "dropped_reason": null
       },
       {
-        "ticker": "AAPL",
-        "realized_vol_20d": 0.21974209925616,
+        "ticker": "META",
+        "realized_vol_20d": 0.3615604507938964,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
@@ -5285,7 +5363,7 @@
     "vix": 16.780000686645508,
     "vix_pct_rank": 0.16468253968253968,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.6677682925164937,
+    "gross_weight": 0.7448277307521478,
     "picks": [
       {
         "ticker": "NVDA",
@@ -5295,10 +5373,10 @@
         "dropped_reason": null
       },
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.46448175844029477,
-        "raw_weight": 0.3229405617643459,
-        "final_weight": 0.3229405617643459,
+        "ticker": "META",
+        "realized_vol_20d": 0.36944392706119916,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       }
     ]
@@ -5311,7 +5389,7 @@
     "vix": 15.979999542236328,
     "vix_pct_rank": 0.11507936507936507,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.6266031377347443,
+    "gross_weight": 0.6846759418272819,
     "picks": [
       {
         "ticker": "NVDA",
@@ -5321,10 +5399,10 @@
         "dropped_reason": null
       },
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.43868987841667684,
-        "raw_weight": 0.34192719590746257,
-        "final_weight": 0.34192719590746257,
+        "ticker": "META",
+        "realized_vol_20d": 0.35924908516385573,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       }
     ]
@@ -5340,17 +5418,17 @@
     "gross_weight": 0.5876827538282641,
     "picks": [
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.5022252416679446,
-        "raw_weight": 0.2986707707120289,
-        "final_weight": 0.2986707707120289,
-        "dropped_reason": null
-      },
-      {
         "ticker": "NVDA",
         "realized_vol_20d": 0.5190096216172214,
         "raw_weight": 0.28901198311623516,
         "final_weight": 0.28901198311623516,
+        "dropped_reason": null
+      },
+      {
+        "ticker": "TSLA",
+        "realized_vol_20d": 0.5022252416679446,
+        "raw_weight": 0.2986707707120289,
+        "final_weight": 0.2986707707120289,
         "dropped_reason": null
       }
     ]
@@ -5392,17 +5470,17 @@
     "gross_weight": 0.6419432513769292,
     "picks": [
       {
+        "ticker": "AMZN",
+        "realized_vol_20d": 0.23651011058834673,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
+        "dropped_reason": null
+      },
+      {
         "ticker": "TSLA",
         "realized_vol_20d": 0.6199800951104498,
         "raw_weight": 0.24194325137692912,
         "final_weight": 0.24194325137692912,
-        "dropped_reason": null
-      },
-      {
-        "ticker": "META",
-        "realized_vol_20d": 0.28087638112749547,
-        "raw_weight": 0.4,
-        "final_weight": 0.4,
         "dropped_reason": null
       }
     ]
@@ -5425,8 +5503,8 @@
         "dropped_reason": null
       },
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.3059039089296015,
+        "ticker": "META",
+        "realized_vol_20d": 0.2800547793745178,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
@@ -5441,13 +5519,13 @@
     "vix": 17.34000015258789,
     "vix_pct_rank": 0.25,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.6824368979676048,
+    "gross_weight": 0.8,
     "picks": [
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.5310920813795543,
-        "raw_weight": 0.2824368979676047,
-        "final_weight": 0.2824368979676047,
+        "ticker": "META",
+        "realized_vol_20d": 0.25156514537420216,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       },
       {
@@ -5470,17 +5548,17 @@
     "gross_weight": 0.6888020524807796,
     "picks": [
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.5193868904722648,
-        "raw_weight": 0.28880205248077967,
-        "final_weight": 0.28880205248077967,
-        "dropped_reason": null
-      },
-      {
         "ticker": "NVDA",
         "realized_vol_20d": 0.2966139997914514,
         "raw_weight": 0.4,
         "final_weight": 0.4,
+        "dropped_reason": null
+      },
+      {
+        "ticker": "TSLA",
+        "realized_vol_20d": 0.5193868904722648,
+        "raw_weight": 0.28880205248077967,
+        "final_weight": 0.28880205248077967,
         "dropped_reason": null
       }
     ]
@@ -5496,15 +5574,15 @@
     "gross_weight": 0.8,
     "picks": [
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.35346107757890277,
+        "ticker": "NVDA",
+        "realized_vol_20d": 0.31375434651213124,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
       },
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.31375434651213124,
+        "ticker": "AMZN",
+        "realized_vol_20d": 0.3218358875939991,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
@@ -5555,8 +5633,8 @@
         "dropped_reason": null
       },
       {
-        "ticker": "AMZN",
-        "realized_vol_20d": 0.3380914797383364,
+        "ticker": "META",
+        "realized_vol_20d": 0.33874185917540334,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
@@ -5571,20 +5649,20 @@
     "vix": 15.65999984741211,
     "vix_pct_rank": 0.12698412698412698,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.6302986924468899,
+    "gross_weight": 0.7585091004786645,
     "picks": [
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.42987098647828975,
-        "raw_weight": 0.34894190284594984,
-        "final_weight": 0.34894190284594984,
+        "ticker": "META",
+        "realized_vol_20d": 0.3641321686332781,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       },
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.5331309054697106,
-        "raw_weight": 0.28135678960093996,
-        "final_weight": 0.28135678960093996,
+        "ticker": "AMZN",
+        "realized_vol_20d": 0.4183994208228663,
+        "raw_weight": 0.35850910047866447,
+        "final_weight": 0.35850910047866447,
         "dropped_reason": null
       }
     ]
@@ -5597,13 +5675,13 @@
     "vix": 15.289999961853027,
     "vix_pct_rank": 0.12698412698412698,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.6121874009387002,
+    "gross_weight": 0.668457965598281,
     "picks": [
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.43638974314621776,
-        "raw_weight": 0.34372943534041916,
-        "final_weight": 0.34372943534041916,
+        "ticker": "META",
+        "realized_vol_20d": 0.33369872045055937,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       },
       {
@@ -5626,17 +5704,17 @@
     "gross_weight": 0.6825174534877387,
     "picks": [
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.530940648615573,
-        "raw_weight": 0.28251745348773877,
-        "final_weight": 0.28251745348773877,
-        "dropped_reason": null
-      },
-      {
         "ticker": "NVDA",
         "realized_vol_20d": 0.35960929995867175,
         "raw_weight": 0.4,
         "final_weight": 0.4,
+        "dropped_reason": null
+      },
+      {
+        "ticker": "TSLA",
+        "realized_vol_20d": 0.530940648615573,
+        "raw_weight": 0.28251745348773877,
+        "final_weight": 0.28251745348773877,
         "dropped_reason": null
       }
     ]
@@ -5649,20 +5727,20 @@
     "vix": 12.460000038146973,
     "vix_pct_rank": 0.001984126984126984,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.7005028497511285,
+    "gross_weight": 0.8,
     "picks": [
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.28536039538657704,
+        "ticker": "AMZN",
+        "realized_vol_20d": 0.3222114967971488,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
       },
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.4991633194967287,
-        "raw_weight": 0.30050284975112845,
-        "final_weight": 0.30050284975112845,
+        "ticker": "NVDA",
+        "realized_vol_20d": 0.28536039538657704,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       }
     ]
@@ -5685,8 +5763,8 @@
         "dropped_reason": null
       },
       {
-        "ticker": "META",
-        "realized_vol_20d": 0.19780188842672874,
+        "ticker": "NVDA",
+        "realized_vol_20d": 0.2773344805415032,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
@@ -5737,8 +5815,8 @@
         "dropped_reason": null
       },
       {
-        "ticker": "AMZN",
-        "realized_vol_20d": 0.18561282688829722,
+        "ticker": "PFE",
+        "realized_vol_20d": 0.337865823586739,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
@@ -5782,15 +5860,15 @@
     "gross_weight": 0.8,
     "picks": [
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.3335379749612005,
+        "ticker": "PFE",
+        "realized_vol_20d": 0.35789633344997296,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
       },
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.29424976768555006,
+        "ticker": "TSLA",
+        "realized_vol_20d": 0.3335379749612005,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
@@ -5808,15 +5886,15 @@
     "gross_weight": 0.8,
     "picks": [
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.3668308334307221,
+        "ticker": "NVDA",
+        "realized_vol_20d": 0.33262491185342286,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
       },
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.33262491185342286,
+        "ticker": "AMZN",
+        "realized_vol_20d": 0.22073151405993777,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
@@ -5834,8 +5912,8 @@
     "gross_weight": 0.8,
     "picks": [
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.3367210169008342,
+        "ticker": "AMZN",
+        "realized_vol_20d": 0.21627842416690463,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
@@ -5860,15 +5938,15 @@
     "gross_weight": 0.8,
     "picks": [
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.27299736283395615,
+        "ticker": "NVDA",
+        "realized_vol_20d": 0.31751237825292994,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
       },
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.31751237825292994,
+        "ticker": "AAPL",
+        "realized_vol_20d": 0.22670110850438846,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
@@ -5909,7 +5987,7 @@
     "vix": 12.829999923706055,
     "vix_pct_rank": 0.04365079365079365,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.48915043658588947,
+    "gross_weight": 0.5979299517771979,
     "picks": [
       {
         "ticker": "META",
@@ -5919,10 +5997,10 @@
         "dropped_reason": null
       },
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.5150736566438241,
-        "raw_weight": 0.29122048480869156,
-        "final_weight": 0.29122048480869156,
+        "ticker": "NVDA",
+        "realized_vol_20d": 0.32081562411611547,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       }
     ]
@@ -5935,20 +6013,20 @@
     "vix": 14.380000114440918,
     "vix_pct_rank": 0.20833333333333334,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.47944908493264965,
+    "gross_weight": 0.5980095594637524,
     "picks": [
+      {
+        "ticker": "NVDA",
+        "realized_vol_20d": 0.32851301562711016,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
+        "dropped_reason": null
+      },
       {
         "ticker": "META",
         "realized_vol_20d": 0.757539183493103,
         "raw_weight": 0.19800955946375237,
         "final_weight": 0.19800955946375237,
-        "dropped_reason": null
-      },
-      {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.5329741789114015,
-        "raw_weight": 0.2814395254688973,
-        "final_weight": 0.2814395254688973,
         "dropped_reason": null
       }
     ]
@@ -5964,17 +6042,17 @@
     "gross_weight": 0.4109319386729905,
     "picks": [
       {
-        "ticker": "META",
-        "realized_vol_20d": 0.7766474676935361,
-        "raw_weight": 0.1931378215208316,
-        "final_weight": 0.1931378215208316,
-        "dropped_reason": null
-      },
-      {
         "ticker": "NVDA",
         "realized_vol_20d": 0.6887238368114622,
         "raw_weight": 0.21779411715215893,
         "final_weight": 0.21779411715215893,
+        "dropped_reason": null
+      },
+      {
+        "ticker": "META",
+        "realized_vol_20d": 0.7766474676935361,
+        "raw_weight": 0.1931378215208316,
+        "final_weight": 0.1931378215208316,
         "dropped_reason": null
       }
     ]
@@ -6039,20 +6117,20 @@
     "vix": 14.399999618530273,
     "vix_pct_rank": 0.23412698412698413,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.595679959373062,
+    "gross_weight": 0.501649944368818,
     "picks": [
+      {
+        "ticker": "TSLA",
+        "realized_vol_20d": 0.49024416562324097,
+        "raw_weight": 0.30596998499575606,
+        "final_weight": 0.30596998499575606,
+        "dropped_reason": null
+      },
       {
         "ticker": "NVDA",
         "realized_vol_20d": 0.766557804287083,
         "raw_weight": 0.19567995937306198,
         "final_weight": 0.19567995937306198,
-        "dropped_reason": null
-      },
-      {
-        "ticker": "META",
-        "realized_vol_20d": 0.33189191294136783,
-        "raw_weight": 0.4,
-        "final_weight": 0.4,
         "dropped_reason": null
       }
     ]
@@ -6091,13 +6169,13 @@
     "vix": 13.010000228881836,
     "vix_pct_rank": 0.06746031746031746,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.7114563652482463,
+    "gross_weight": 0.6216017609908773,
     "picks": [
       {
-        "ticker": "META",
-        "realized_vol_20d": 0.31504593249830964,
-        "raw_weight": 0.4,
-        "final_weight": 0.4,
+        "ticker": "TSLA",
+        "realized_vol_20d": 0.483644129685791,
+        "raw_weight": 0.310145395742631,
+        "final_weight": 0.310145395742631,
         "dropped_reason": null
       },
       {
@@ -6117,7 +6195,7 @@
     "vix": 16.030000686645508,
     "vix_pct_rank": 0.34523809523809523,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.7440945897511602,
+    "gross_weight": 0.7369034661990501,
     "picks": [
       {
         "ticker": "META",
@@ -6127,10 +6205,10 @@
         "dropped_reason": null
       },
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.43592664478821347,
-        "raw_weight": 0.3440945897511601,
-        "final_weight": 0.3440945897511601,
+        "ticker": "TSLA",
+        "realized_vol_20d": 0.44523139429909175,
+        "raw_weight": 0.3369034661990501,
+        "final_weight": 0.3369034661990501,
         "dropped_reason": null
       }
     ]
@@ -6169,20 +6247,20 @@
     "vix": 18.709999084472656,
     "vix_pct_rank": 0.49603174603174605,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.7395513566754324,
+    "gross_weight": 0.6422767424538389,
     "picks": [
-      {
-        "ticker": "META",
-        "realized_vol_20d": 0.2743995979799724,
-        "raw_weight": 0.4,
-        "final_weight": 0.4,
-        "dropped_reason": null
-      },
       {
         "ticker": "TSLA",
         "realized_vol_20d": 0.441759389415077,
         "raw_weight": 0.3395513566754323,
         "final_weight": 0.3395513566754323,
+        "dropped_reason": null
+      },
+      {
+        "ticker": "NVDA",
+        "realized_vol_20d": 0.4954985840196407,
+        "raw_weight": 0.3027253857784067,
+        "final_weight": 0.3027253857784067,
         "dropped_reason": null
       }
     ]
@@ -6195,7 +6273,7 @@
     "vix": 15.029999732971191,
     "vix_pct_rank": 0.3115079365079365,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.4774175456856957,
+    "gross_weight": 0.6497832216713134,
     "picks": [
       {
         "ticker": "NVDA",
@@ -6205,10 +6283,10 @@
         "dropped_reason": null
       },
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.658951591107687,
-        "raw_weight": 0.22763432401438233,
-        "final_weight": 0.22763432401438233,
+        "ticker": "AMZN",
+        "realized_vol_20d": 0.2523023219021628,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       }
     ]
@@ -6221,7 +6299,7 @@
     "vix": 13.489999771118164,
     "vix_pct_rank": 0.1349206349206349,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.41640900514357737,
+    "gross_weight": 0.5656613426011536,
     "picks": [
       {
         "ticker": "NVDA",
@@ -6231,10 +6309,10 @@
         "dropped_reason": null
       },
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.852716336101866,
-        "raw_weight": 0.17590843947673696,
-        "final_weight": 0.17590843947673696,
+        "ticker": "META",
+        "realized_vol_20d": 0.461310252159663,
+        "raw_weight": 0.3251607769343133,
+        "final_weight": 0.3251607769343133,
         "dropped_reason": null
       }
     ]
@@ -6247,20 +6325,20 @@
     "vix": 12.550000190734863,
     "vix_pct_rank": 0.025793650793650792,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.4226593519449521,
+    "gross_weight": 0.6452123699898709,
     "picks": [
-      {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.8453229147507894,
-        "raw_weight": 0.17744698195508124,
-        "final_weight": 0.17744698195508124,
-        "dropped_reason": null
-      },
       {
         "ticker": "NVDA",
         "realized_vol_20d": 0.6117146537354382,
         "raw_weight": 0.24521236998987084,
         "final_weight": 0.24521236998987084,
+        "dropped_reason": null
+      },
+      {
+        "ticker": "JPM",
+        "realized_vol_20d": 0.15366194463364538,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       }
     ]
@@ -6276,17 +6354,17 @@
     "gross_weight": 0.51727238566111,
     "picks": [
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.799429631284756,
-        "raw_weight": 0.18763377554436703,
-        "final_weight": 0.18763377554436703,
-        "dropped_reason": null
-      },
-      {
         "ticker": "NVDA",
         "realized_vol_20d": 0.45504378248311644,
         "raw_weight": 0.32963861011674295,
         "final_weight": 0.32963861011674295,
+        "dropped_reason": null
+      },
+      {
+        "ticker": "TSLA",
+        "realized_vol_20d": 0.799429631284756,
+        "raw_weight": 0.18763377554436703,
+        "final_weight": 0.18763377554436703,
         "dropped_reason": null
       }
     ]
@@ -6299,20 +6377,20 @@
     "vix": 11.930000305175781,
     "vix_pct_rank": 0.003968253968253968,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.5316087370825343,
+    "gross_weight": 0.7245052642106139,
     "picks": [
-      {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.7242756382591656,
-        "raw_weight": 0.20710347287192046,
-        "final_weight": 0.20710347287192046,
-        "dropped_reason": null
-      },
       {
         "ticker": "NVDA",
         "realized_vol_20d": 0.46224211605592136,
         "raw_weight": 0.3245052642106139,
         "final_weight": 0.3245052642106139,
+        "dropped_reason": null
+      },
+      {
+        "ticker": "META",
+        "realized_vol_20d": 0.2412195108074984,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       }
     ]
@@ -6406,17 +6484,17 @@
     "gross_weight": 0.6573452006654226,
     "picks": [
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.5828746742202382,
-        "raw_weight": 0.25734520066542255,
-        "final_weight": 0.25734520066542255,
-        "dropped_reason": null
-      },
-      {
         "ticker": "TSLA",
         "realized_vol_20d": 0.3370507495850756,
         "raw_weight": 0.4,
         "final_weight": 0.4,
+        "dropped_reason": null
+      },
+      {
+        "ticker": "NVDA",
+        "realized_vol_20d": 0.5828746742202382,
+        "raw_weight": 0.25734520066542255,
+        "final_weight": 0.25734520066542255,
         "dropped_reason": null
       }
     ]
@@ -6429,7 +6507,7 @@
     "vix": 12.029999732971191,
     "vix_pct_rank": 0.00992063492063492,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.5878058611448156,
+    "gross_weight": 0.687307660145688,
     "picks": [
       {
         "ticker": "TSLA",
@@ -6439,10 +6517,10 @@
         "dropped_reason": null
       },
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.49917104162775167,
-        "raw_weight": 0.30049820099912755,
-        "final_weight": 0.30049820099912755,
+        "ticker": "AAPL",
+        "realized_vol_20d": 0.34280589047783455,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       }
     ]
@@ -6507,20 +6585,20 @@
     "vix": 18.040000915527344,
     "vix_pct_rank": 0.5873015873015873,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.46956388696588036,
+    "gross_weight": 0.5830952123687924,
     "picks": [
+      {
+        "ticker": "AAPL",
+        "realized_vol_20d": 0.2700302804480859,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
+        "dropped_reason": null
+      },
       {
         "ticker": "TSLA",
         "realized_vol_20d": 0.8192458888431685,
         "raw_weight": 0.18309521236879236,
         "final_weight": 0.18309521236879236,
-        "dropped_reason": null
-      },
-      {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.5236174608304791,
-        "raw_weight": 0.286468674597088,
-        "final_weight": 0.286468674597088,
         "dropped_reason": null
       }
     ]
@@ -6533,20 +6611,20 @@
     "vix": 16.360000610351562,
     "vix_pct_rank": 0.4880952380952381,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.3998314181961381,
+    "gross_weight": 0.5279314803833608,
     "picks": [
+      {
+        "ticker": "META",
+        "realized_vol_20d": 0.45770552813181214,
+        "raw_weight": 0.3277216261998092,
+        "final_weight": 0.3277216261998092,
+        "dropped_reason": null
+      },
       {
         "ticker": "NVDA",
         "realized_vol_20d": 0.7492138716732726,
         "raw_weight": 0.20020985418355153,
         "final_weight": 0.20020985418355153,
-        "dropped_reason": null
-      },
-      {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.7514218253021111,
-        "raw_weight": 0.19962156401258654,
-        "final_weight": 0.19962156401258654,
         "dropped_reason": null
       }
     ]
@@ -6585,13 +6663,13 @@
     "vix": 16.190000534057617,
     "vix_pct_rank": 0.4861111111111111,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.38405318716554654,
+    "gross_weight": 0.5677882589987101,
     "picks": [
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.8384787545836898,
-        "raw_weight": 0.17889540931120668,
-        "final_weight": 0.17889540931120668,
+        "ticker": "META",
+        "realized_vol_20d": 0.4136442130475019,
+        "raw_weight": 0.36263048114437024,
+        "final_weight": 0.36263048114437024,
         "dropped_reason": null
       },
       {
@@ -6611,13 +6689,13 @@
     "vix": 16.270000457763672,
     "vix_pct_rank": 0.49603174603174605,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.43753374381650884,
+    "gross_weight": 0.6495228522782883,
     "picks": [
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.797826119395358,
-        "raw_weight": 0.18801089153822048,
-        "final_weight": 0.18801089153822048,
+        "ticker": "META",
+        "realized_vol_20d": 0.3484330895953936,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       },
       {
@@ -6637,13 +6715,13 @@
     "vix": 17.110000610351562,
     "vix_pct_rank": 0.5575396825396826,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.4845262411185771,
+    "gross_weight": 0.6327085896671183,
     "picks": [
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.5956691246042951,
-        "raw_weight": 0.25181765145145885,
-        "final_weight": 0.25181765145145885,
+        "ticker": "META",
+        "realized_vol_20d": 0.33670092034435867,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       },
       {
@@ -6666,17 +6744,17 @@
     "gross_weight": 0.5114882395471618,
     "picks": [
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.5326277458895066,
-        "raw_weight": 0.28162258004320606,
-        "final_weight": 0.28162258004320606,
-        "dropped_reason": null
-      },
-      {
         "ticker": "NVDA",
         "realized_vol_20d": 0.6525550633517689,
         "raw_weight": 0.22986565950395577,
         "final_weight": 0.22986565950395577,
+        "dropped_reason": null
+      },
+      {
+        "ticker": "TSLA",
+        "realized_vol_20d": 0.5326277458895066,
+        "raw_weight": 0.28162258004320606,
+        "final_weight": 0.28162258004320606,
         "dropped_reason": null
       }
     ]
@@ -6692,17 +6770,17 @@
     "gross_weight": 0.478296998060173,
     "picks": [
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.5983551251915422,
-        "raw_weight": 0.2506872485666147,
-        "final_weight": 0.2506872485666147,
-        "dropped_reason": null
-      },
-      {
         "ticker": "NVDA",
         "realized_vol_20d": 0.6590227366523471,
         "raw_weight": 0.22760974949355833,
         "final_weight": 0.22760974949355833,
+        "dropped_reason": null
+      },
+      {
+        "ticker": "TSLA",
+        "realized_vol_20d": 0.5983551251915422,
+        "raw_weight": 0.2506872485666147,
+        "final_weight": 0.2506872485666147,
         "dropped_reason": null
       }
     ]
@@ -6770,17 +6848,17 @@
     "gross_weight": 0.5917645685059567,
     "picks": [
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.47536756861809176,
-        "raw_weight": 0.31554529568782874,
-        "final_weight": 0.31554529568782874,
-        "dropped_reason": null
-      },
-      {
         "ticker": "TSLA",
         "realized_vol_20d": 0.543046828230429,
         "raw_weight": 0.276219272818128,
         "final_weight": 0.276219272818128,
+        "dropped_reason": null
+      },
+      {
+        "ticker": "NVDA",
+        "realized_vol_20d": 0.47536756861809176,
+        "raw_weight": 0.31554529568782874,
+        "final_weight": 0.31554529568782874,
         "dropped_reason": null
       }
     ]
@@ -6796,17 +6874,17 @@
     "gross_weight": 0.7291733600143452,
     "picks": [
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.3603139502441424,
-        "raw_weight": 0.4,
-        "final_weight": 0.4,
-        "dropped_reason": null
-      },
-      {
         "ticker": "TSLA",
         "realized_vol_20d": 0.4556869364928653,
         "raw_weight": 0.32917336001434516,
         "final_weight": 0.32917336001434516,
+        "dropped_reason": null
+      },
+      {
+        "ticker": "NVDA",
+        "realized_vol_20d": 0.3603139502441424,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       }
     ]
@@ -6848,17 +6926,17 @@
     "gross_weight": 0.5490875170388576,
     "picks": [
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.3899024048230202,
-        "raw_weight": 0.3847116564158823,
-        "final_weight": 0.3847116564158823,
-        "dropped_reason": null
-      },
-      {
         "ticker": "TSLA",
         "realized_vol_20d": 0.9125427506904504,
         "raw_weight": 0.16437586062297532,
         "final_weight": 0.16437586062297532,
+        "dropped_reason": null
+      },
+      {
+        "ticker": "NVDA",
+        "realized_vol_20d": 0.3899024048230202,
+        "raw_weight": 0.3847116564158823,
+        "final_weight": 0.3847116564158823,
         "dropped_reason": null
       }
     ]
@@ -6897,7 +6975,7 @@
     "vix": 15.199999809265137,
     "vix_pct_rank": 0.4365079365079365,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.5239668840559785,
+    "gross_weight": 0.4545231788020564,
     "picks": [
       {
         "ticker": "TSLA",
@@ -6907,10 +6985,10 @@
         "dropped_reason": null
       },
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.3961165087665301,
-        "raw_weight": 0.37867646684831696,
-        "final_weight": 0.37867646684831696,
+        "ticker": "JPM",
+        "realized_vol_20d": 0.4850715015660193,
+        "raw_weight": 0.3092327615943949,
+        "final_weight": 0.3092327615943949,
         "dropped_reason": null
       }
     ]
@@ -6949,20 +7027,20 @@
     "vix": 16.8700008392334,
     "vix_pct_rank": 0.5714285714285714,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.5848224397209912,
+    "gross_weight": 0.5833545203152165,
     "picks": [
-      {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.3730741234538211,
-        "raw_weight": 0.4,
-        "final_weight": 0.4,
-        "dropped_reason": null
-      },
       {
         "ticker": "TSLA",
         "realized_vol_20d": 0.8115897627281657,
         "raw_weight": 0.18482243972099124,
         "final_weight": 0.18482243972099124,
+        "dropped_reason": null
+      },
+      {
+        "ticker": "AMZN",
+        "realized_vol_20d": 0.37638124332762557,
+        "raw_weight": 0.3985320805942253,
+        "final_weight": 0.3985320805942253,
         "dropped_reason": null
       }
     ]
@@ -6975,20 +7053,20 @@
     "vix": 13.510000228881836,
     "vix_pct_rank": 0.22817460317460317,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.7143103197484324,
+    "gross_weight": 0.5712121442280187,
     "picks": [
+      {
+        "ticker": "TSLA",
+        "realized_vol_20d": 0.8110279085715826,
+        "raw_weight": 0.18495047878708204,
+        "final_weight": 0.18495047878708204,
+        "dropped_reason": null
+      },
       {
         "ticker": "NVDA",
         "realized_vol_20d": 0.38833778606729624,
         "raw_weight": 0.3862616654409366,
         "final_weight": 0.3862616654409366,
-        "dropped_reason": null
-      },
-      {
-        "ticker": "JPM",
-        "realized_vol_20d": 0.45724924650779925,
-        "raw_weight": 0.32804865430749586,
-        "final_weight": 0.32804865430749586,
         "dropped_reason": null
       }
     ]
@@ -7011,8 +7089,8 @@
         "dropped_reason": null
       },
       {
-        "ticker": "UNH",
-        "realized_vol_20d": 0.35293238916319264,
+        "ticker": "NVDA",
+        "realized_vol_20d": 0.358594600065857,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
@@ -7053,7 +7131,7 @@
     "vix": 18.360000610351562,
     "vix_pct_rank": 0.7281746031746031,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.6489555205569499,
+    "gross_weight": 0.5967218819973494,
     "picks": [
       {
         "ticker": "TSLA",
@@ -7063,10 +7141,10 @@
         "dropped_reason": null
       },
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.35575245242024794,
-        "raw_weight": 0.4,
-        "final_weight": 0.4,
+        "ticker": "UNH",
+        "realized_vol_20d": 0.4313240630253053,
+        "raw_weight": 0.3477663614403996,
+        "final_weight": 0.3477663614403996,
         "dropped_reason": null
       }
     ]
@@ -7105,20 +7183,20 @@
     "vix": 17.81999969482422,
     "vix_pct_rank": 0.7063492063492064,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.5353477368144344,
+    "gross_weight": 0.7357311389941681,
     "picks": [
-      {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.7514405196659008,
-        "raw_weight": 0.19961659782026628,
-        "final_weight": 0.19961659782026628,
-        "dropped_reason": null
-      },
       {
         "ticker": "NVDA",
         "realized_vol_20d": 0.446786081414407,
         "raw_weight": 0.3357311389941681,
         "final_weight": 0.3357311389941681,
+        "dropped_reason": null
+      },
+      {
+        "ticker": "AMZN",
+        "realized_vol_20d": 0.27127607433413387,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       }
     ]
@@ -7131,13 +7209,13 @@
     "vix": 16.1200008392334,
     "vix_pct_rank": 0.5654761904761905,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.539434286259148,
+    "gross_weight": 0.7417101263968803,
     "picks": [
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.7586326329796428,
-        "raw_weight": 0.19772415986226777,
-        "final_weight": 0.19772415986226777,
+        "ticker": "META",
+        "realized_vol_20d": 0.3269659511062145,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       },
       {
@@ -7157,13 +7235,13 @@
     "vix": 15.020000457763672,
     "vix_pct_rank": 0.47023809523809523,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.5510910122750183,
+    "gross_weight": 0.6275826168961063,
     "picks": [
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.4636664832895949,
-        "raw_weight": 0.3235083953789121,
-        "final_weight": 0.3235083953789121,
+        "ticker": "UNH",
+        "realized_vol_20d": 0.31401708270023354,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       },
       {
@@ -7186,17 +7264,17 @@
     "gross_weight": 0.4375244223273208,
     "picks": [
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.5759760666491833,
-        "raw_weight": 0.260427487677821,
-        "final_weight": 0.260427487677821,
-        "dropped_reason": null
-      },
-      {
         "ticker": "NVDA",
         "realized_vol_20d": 0.8469937681127654,
         "raw_weight": 0.1770969346494998,
         "final_weight": 0.1770969346494998,
+        "dropped_reason": null
+      },
+      {
+        "ticker": "TSLA",
+        "realized_vol_20d": 0.5759760666491833,
+        "raw_weight": 0.260427487677821,
+        "final_weight": 0.260427487677821,
         "dropped_reason": null
       }
     ]
@@ -7209,20 +7287,20 @@
     "vix": 15.5,
     "vix_pct_rank": 0.5158730158730159,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.5018585431850753,
+    "gross_weight": 0.8,
     "picks": [
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.4674268560353371,
-        "raw_weight": 0.3209058231533451,
-        "final_weight": 0.3209058231533451,
+        "ticker": "UNH",
+        "realized_vol_20d": 0.331698329984526,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       },
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.8289458150930109,
-        "raw_weight": 0.1809527200317302,
-        "final_weight": 0.1809527200317302,
+        "ticker": "AMZN",
+        "realized_vol_20d": 0.22026697728477093,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       }
     ]
@@ -7235,7 +7313,7 @@
     "vix": 15.100000381469727,
     "vix_pct_rank": 0.48412698412698413,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.4901552809865988,
+    "gross_weight": 0.7086376428671548,
     "picks": [
       {
         "ticker": "TSLA",
@@ -7245,10 +7323,10 @@
         "dropped_reason": null
       },
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.8263659749764679,
-        "raw_weight": 0.18151763811944396,
-        "final_weight": 0.18151763811944396,
+        "ticker": "JPM",
+        "realized_vol_20d": 0.1501158406023957,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       }
     ]
@@ -7264,17 +7342,17 @@
     "gross_weight": 0.7087607574508001,
     "picks": [
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.48581303284275673,
-        "raw_weight": 0.3087607574508001,
-        "final_weight": 0.3087607574508001,
-        "dropped_reason": null
-      },
-      {
         "ticker": "UNH",
         "realized_vol_20d": 0.3434030912426378,
         "raw_weight": 0.4,
         "final_weight": 0.4,
+        "dropped_reason": null
+      },
+      {
+        "ticker": "TSLA",
+        "realized_vol_20d": 0.48581303284275673,
+        "raw_weight": 0.3087607574508001,
+        "final_weight": 0.3087607574508001,
         "dropped_reason": null
       }
     ]
@@ -7287,7 +7365,7 @@
     "vix": 19.6299991607666,
     "vix_pct_rank": 0.8888888888888888,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.5373878301529477,
+    "gross_weight": 0.6624564456114459,
     "picks": [
       {
         "ticker": "TSLA",
@@ -7297,10 +7375,10 @@
         "dropped_reason": null
       },
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.5455906761978171,
-        "raw_weight": 0.27493138454150173,
-        "final_weight": 0.27493138454150173,
+        "ticker": "UNH",
+        "realized_vol_20d": 0.34592198989627276,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       }
     ]
@@ -7339,7 +7417,7 @@
     "vix": 21.770000457763672,
     "vix_pct_rank": 0.9424603174603174,
     "regime_multiplier": 0.5,
-    "gross_weight": 0.20264978131451689,
+    "gross_weight": 0.28575070977417577,
     "picks": [
       {
         "ticker": "TSLA",
@@ -7349,10 +7427,10 @@
         "dropped_reason": null
       },
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.6836913768685421,
-        "raw_weight": 0.21939723839582884,
-        "final_weight": 0.10969861919791442,
+        "ticker": "META",
+        "realized_vol_20d": 0.38900506205131624,
+        "raw_weight": 0.3855990953151466,
+        "final_weight": 0.1927995476575733,
         "dropped_reason": null
       }
     ]
@@ -7365,7 +7443,7 @@
     "vix": 19.280000686645508,
     "vix_pct_rank": 0.8670634920634921,
     "regime_multiplier": 0.5,
-    "gross_weight": 0.1964538196327919,
+    "gross_weight": 0.27199208227520044,
     "picks": [
       {
         "ticker": "TSLA",
@@ -7375,10 +7453,10 @@
         "dropped_reason": null
       },
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.6765720575579247,
-        "raw_weight": 0.22170587496832553,
-        "final_weight": 0.11085293748416276,
+        "ticker": "META",
+        "realized_vol_20d": 0.4023795112058418,
+        "raw_weight": 0.3727824002531426,
+        "final_weight": 0.1863912001265713,
         "dropped_reason": null
       }
     ]
@@ -7391,7 +7469,7 @@
     "vix": 21.649999618530273,
     "vix_pct_rank": 0.9523809523809523,
     "regime_multiplier": 0.5,
-    "gross_weight": 0.2018695364616258,
+    "gross_weight": 0.25105145277644914,
     "picks": [
       {
         "ticker": "TSLA",
@@ -7401,10 +7479,10 @@
         "dropped_reason": null
       },
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.6055516957648935,
-        "raw_weight": 0.24770800090078146,
-        "final_weight": 0.12385400045039073,
+        "ticker": "META",
+        "realized_vol_20d": 0.43343602531816955,
+        "raw_weight": 0.3460718335304281,
+        "final_weight": 0.17303591676521404,
         "dropped_reason": null
       }
     ]
@@ -7443,20 +7521,20 @@
     "vix": 37.560001373291016,
     "vix_pct_rank": 0.9900793650793651,
     "regime_multiplier": 0.5,
-    "gross_weight": 0.1470602606156003,
+    "gross_weight": 0.20115186207953117,
     "picks": [
-      {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.8891377584906505,
-        "raw_weight": 0.1687027668857877,
-        "final_weight": 0.08435138344289385,
-        "dropped_reason": null
-      },
       {
         "ticker": "TSLA",
         "realized_vol_20d": 1.1960029166754587,
         "raw_weight": 0.12541775434541289,
         "final_weight": 0.06270887717270644,
+        "dropped_reason": null
+      },
+      {
+        "ticker": "JPM",
+        "realized_vol_20d": 0.5417392585870401,
+        "raw_weight": 0.27688596981364944,
+        "final_weight": 0.13844298490682472,
         "dropped_reason": null
       }
     ]
@@ -7469,13 +7547,13 @@
     "vix": 33.81999969482422,
     "vix_pct_rank": 0.9880952380952381,
     "regime_multiplier": 0.5,
-    "gross_weight": 0.14705567242913192,
+    "gross_weight": 0.16428749726709274,
     "picks": [
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 1.1723765677075064,
-        "raw_weight": 0.12794523886920875,
-        "final_weight": 0.06397261943460437,
+        "ticker": "NVDA",
+        "realized_vol_20d": 0.9235947696195078,
+        "raw_weight": 0.16240888854513036,
+        "final_weight": 0.08120444427256518,
         "dropped_reason": null
       },
       {
@@ -7521,7 +7599,7 @@
     "vix": 23.639999389648438,
     "vix_pct_rank": 0.9384920634920635,
     "regime_multiplier": 0.5,
-    "gross_weight": 0.15603595529370884,
+    "gross_weight": 0.19823309156948732,
     "picks": [
       {
         "ticker": "TSLA",
@@ -7531,10 +7609,10 @@
         "dropped_reason": null
       },
       {
-        "ticker": "UNH",
-        "realized_vol_20d": 0.8900290676971268,
-        "raw_weight": 0.16853382147182228,
-        "final_weight": 0.08426691073591114,
+        "ticker": "AMZN",
+        "realized_vol_20d": 0.5930539293358801,
+        "raw_weight": 0.25292809402337924,
+        "final_weight": 0.12646404701168962,
         "dropped_reason": null
       }
     ]
@@ -7576,17 +7654,17 @@
     "gross_weight": 0.44916533504025713,
     "picks": [
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.5519187561512888,
-        "raw_weight": 0.2717791311279207,
-        "final_weight": 0.2717791311279207,
-        "dropped_reason": null
-      },
-      {
         "ticker": "UNH",
         "realized_vol_20d": 0.8456125487308439,
         "raw_weight": 0.17738620391233642,
         "final_weight": 0.17738620391233642,
+        "dropped_reason": null
+      },
+      {
+        "ticker": "TSLA",
+        "realized_vol_20d": 0.5519187561512888,
+        "raw_weight": 0.2717791311279207,
+        "final_weight": 0.2717791311279207,
         "dropped_reason": null
       }
     ]
@@ -7602,17 +7680,17 @@
     "gross_weight": 0.4731462794653873,
     "picks": [
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.5010606389566015,
-        "raw_weight": 0.2993649637144857,
-        "final_weight": 0.2993649637144857,
-        "dropped_reason": null
-      },
-      {
         "ticker": "UNH",
         "realized_vol_20d": 0.8631537823951696,
         "raw_weight": 0.1737813157509016,
         "final_weight": 0.1737813157509016,
+        "dropped_reason": null
+      },
+      {
+        "ticker": "TSLA",
+        "realized_vol_20d": 0.5010606389566015,
+        "raw_weight": 0.2993649637144857,
+        "final_weight": 0.2993649637144857,
         "dropped_reason": null
       }
     ]
@@ -7628,17 +7706,17 @@
     "gross_weight": 0.47596526006239015,
     "picks": [
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.4948032862968949,
-        "raw_weight": 0.30315077557911785,
-        "final_weight": 0.30315077557911785,
-        "dropped_reason": null
-      },
-      {
         "ticker": "UNH",
         "realized_vol_20d": 0.8679827992920313,
         "raw_weight": 0.1728144844832723,
         "final_weight": 0.1728144844832723,
+        "dropped_reason": null
+      },
+      {
+        "ticker": "TSLA",
+        "realized_vol_20d": 0.4948032862968949,
+        "raw_weight": 0.30315077557911785,
+        "final_weight": 0.30315077557911785,
         "dropped_reason": null
       }
     ]
@@ -7680,8 +7758,8 @@
     "gross_weight": 0.6110468635742213,
     "picks": [
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.2833719995451901,
+        "ticker": "UNH",
+        "realized_vol_20d": 0.30493964212096564,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
@@ -7703,13 +7781,13 @@
     "vix": 16.760000228881836,
     "vix_pct_rank": 0.6111111111111112,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.6032283197279559,
+    "gross_weight": 0.8,
     "picks": [
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.7380861102468003,
-        "raw_weight": 0.20322831972795585,
-        "final_weight": 0.20322831972795585,
+        "ticker": "NVDA",
+        "realized_vol_20d": 0.2928346049194055,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       },
       {
@@ -7729,18 +7807,18 @@
     "vix": 16.639999389648438,
     "vix_pct_rank": 0.6011904761904762,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.5933361831167906,
+    "gross_weight": 0.8,
     "picks": [
-      {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.7758506327260426,
-        "raw_weight": 0.19333618311679057,
-        "final_weight": 0.19333618311679057,
-        "dropped_reason": null
-      },
       {
         "ticker": "UNH",
         "realized_vol_20d": 0.3446928556053209,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
+        "dropped_reason": null
+      },
+      {
+        "ticker": "NVDA",
+        "realized_vol_20d": 0.27337136144067686,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
@@ -7755,7 +7833,7 @@
     "vix": 15.779999732971191,
     "vix_pct_rank": 0.498015873015873,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.6640177337092912,
+    "gross_weight": 0.8,
     "picks": [
       {
         "ticker": "UNH",
@@ -7765,10 +7843,10 @@
         "dropped_reason": null
       },
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.5681436541878826,
-        "raw_weight": 0.26401773370929116,
-        "final_weight": 0.26401773370929116,
+        "ticker": "NVDA",
+        "realized_vol_20d": 0.27214308452039376,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       }
     ]
@@ -7781,20 +7859,20 @@
     "vix": 16.520000457763672,
     "vix_pct_rank": 0.5773809523809523,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.6671619452595818,
+    "gross_weight": 0.8,
     "picks": [
       {
-        "ticker": "UNH",
-        "realized_vol_20d": 0.33891855436636065,
+        "ticker": "NVDA",
+        "realized_vol_20d": 0.2683997543905217,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
       },
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.5614572084892401,
-        "raw_weight": 0.26716194525958187,
-        "final_weight": 0.26716194525958187,
+        "ticker": "UNH",
+        "realized_vol_20d": 0.33891855436636065,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       }
     ]
@@ -7807,7 +7885,7 @@
     "vix": 15.390000343322754,
     "vix_pct_rank": 0.45436507936507936,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.6633664434784603,
+    "gross_weight": 0.7881983536091219,
     "picks": [
       {
         "ticker": "UNH",
@@ -7817,10 +7895,10 @@
         "dropped_reason": null
       },
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.5451213477232277,
-        "raw_weight": 0.2751680898693384,
-        "final_weight": 0.2751680898693384,
+        "ticker": "META",
+        "realized_vol_20d": 0.19461448474826018,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       }
     ]
@@ -7833,7 +7911,7 @@
     "vix": 16.719999313354492,
     "vix_pct_rank": 0.5932539682539683,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.6428723639033274,
+    "gross_weight": 0.6976285780108887,
     "picks": [
       {
         "ticker": "UNH",
@@ -7843,10 +7921,10 @@
         "dropped_reason": null
       },
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.5196278807595393,
-        "raw_weight": 0.28866811338287934,
-        "final_weight": 0.28866811338287934,
+        "ticker": "META",
+        "realized_vol_20d": 0.4367774440911594,
+        "raw_weight": 0.3434243274904408,
+        "final_weight": 0.3434243274904408,
         "dropped_reason": null
       }
     ]
@@ -7859,20 +7937,20 @@
     "vix": 16.56999969482422,
     "vix_pct_rank": 0.5714285714285714,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.6279248518544442,
+    "gross_weight": 0.7114368123854058,
     "picks": [
-      {
-        "ticker": "META",
-        "realized_vol_20d": 0.4739515599125011,
-        "raw_weight": 0.3164880394690385,
-        "final_weight": 0.3164880394690385,
-        "dropped_reason": null
-      },
       {
         "ticker": "UNH",
         "realized_vol_20d": 0.4816386311274393,
         "raw_weight": 0.3114368123854058,
         "final_weight": 0.3114368123854058,
+        "dropped_reason": null
+      },
+      {
+        "ticker": "NVDA",
+        "realized_vol_20d": 0.2762429749587385,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       }
     ]
@@ -7885,20 +7963,20 @@
     "vix": 14.829999923706055,
     "vix_pct_rank": 0.38095238095238093,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.651696358452541,
+    "gross_weight": 0.795794915642334,
     "picks": [
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.44499056355938676,
-        "raw_weight": 0.3370857997531032,
-        "final_weight": 0.3370857997531032,
+        "ticker": "AMZN",
+        "realized_vol_20d": 0.37898415081094616,
+        "raw_weight": 0.39579491564233393,
+        "final_weight": 0.39579491564233393,
         "dropped_reason": null
       },
       {
-        "ticker": "META",
-        "realized_vol_20d": 0.4767799295105731,
-        "raw_weight": 0.3146105586994379,
-        "final_weight": 0.3146105586994379,
+        "ticker": "NVDA",
+        "realized_vol_20d": 0.24598430231645727,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       }
     ]
@@ -7911,20 +7989,20 @@
     "vix": 16.600000381469727,
     "vix_pct_rank": 0.5833333333333334,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.7036311335255662,
+    "gross_weight": 0.8,
     "picks": [
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.32991335987832304,
+        "ticker": "NVDA",
+        "realized_vol_20d": 0.2465886543023508,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
       },
       {
-        "ticker": "META",
-        "realized_vol_20d": 0.4940204855091706,
-        "raw_weight": 0.30363113352556614,
-        "final_weight": 0.30363113352556614,
+        "ticker": "TSLA",
+        "realized_vol_20d": 0.32991335987832304,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       }
     ]
@@ -7937,7 +8015,7 @@
     "vix": 14.430000305175781,
     "vix_pct_rank": 0.32936507936507936,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.8,
+    "gross_weight": 0.6789639038548615,
     "picks": [
       {
         "ticker": "TSLA",
@@ -7947,10 +8025,10 @@
         "dropped_reason": null
       },
       {
-        "ticker": "META",
-        "realized_vol_20d": 0.27363664098906576,
-        "raw_weight": 0.4,
-        "final_weight": 0.4,
+        "ticker": "UNH",
+        "realized_vol_20d": 0.5377039750563627,
+        "raw_weight": 0.2789639038548615,
+        "final_weight": 0.2789639038548615,
         "dropped_reason": null
       }
     ]
@@ -8070,17 +8148,17 @@
     "gross_weight": 0.6922824694898626,
     "picks": [
       {
-        "ticker": "UNH",
-        "realized_vol_20d": 0.36036243441151367,
-        "raw_weight": 0.4,
-        "final_weight": 0.4,
-        "dropped_reason": null
-      },
-      {
         "ticker": "TSLA",
         "realized_vol_20d": 0.513202178227807,
         "raw_weight": 0.29228246948986253,
         "final_weight": 0.29228246948986253,
+        "dropped_reason": null
+      },
+      {
+        "ticker": "UNH",
+        "realized_vol_20d": 0.36036243441151367,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       }
     ]
@@ -8103,8 +8181,8 @@
         "dropped_reason": null
       },
       {
-        "ticker": "UNH",
-        "realized_vol_20d": 0.24519684868397312,
+        "ticker": "NVDA",
+        "realized_vol_20d": 0.3477716099159542,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
@@ -8119,18 +8197,18 @@
     "vix": 20.780000686645508,
     "vix_pct_rank": 0.8650793650793651,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.6800114474354074,
+    "gross_weight": 0.8,
     "picks": [
-      {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.535692384628674,
-        "raw_weight": 0.2800114474354074,
-        "final_weight": 0.2800114474354074,
-        "dropped_reason": null
-      },
       {
         "ticker": "UNH",
         "realized_vol_20d": 0.21961457961144853,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
+        "dropped_reason": null
+      },
+      {
+        "ticker": "AAPL",
+        "realized_vol_20d": 0.24263776161368564,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
@@ -8145,18 +8223,18 @@
     "vix": 16.3700008392334,
     "vix_pct_rank": 0.5654761904761905,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.7064066602483915,
+    "gross_weight": 0.8,
     "picks": [
-      {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.4895454944693469,
-        "raw_weight": 0.30640666024839147,
-        "final_weight": 0.30640666024839147,
-        "dropped_reason": null
-      },
       {
         "ticker": "UNH",
         "realized_vol_20d": 0.2092972986973328,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
+        "dropped_reason": null
+      },
+      {
+        "ticker": "AAPL",
+        "realized_vol_20d": 0.23363857821965758,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
@@ -8171,20 +8249,20 @@
     "vix": 17.440000534057617,
     "vix_pct_rank": 0.6865079365079365,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.6941717575687617,
+    "gross_weight": 0.6544295603699868,
     "picks": [
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.509906189634598,
-        "raw_weight": 0.2941717575687617,
-        "final_weight": 0.2941717575687617,
+        "ticker": "META",
+        "realized_vol_20d": 0.47012203598158375,
+        "raw_weight": 0.31906609033292793,
+        "final_weight": 0.31906609033292793,
         "dropped_reason": null
       },
       {
-        "ticker": "UNH",
-        "realized_vol_20d": 0.25505625545817295,
-        "raw_weight": 0.4,
-        "final_weight": 0.4,
+        "ticker": "AMZN",
+        "realized_vol_20d": 0.4472759062977983,
+        "raw_weight": 0.3353634700370588,
+        "final_weight": 0.3353634700370588,
         "dropped_reason": null
       }
     ]
@@ -8197,7 +8275,7 @@
     "vix": 19.079999923706055,
     "vix_pct_rank": 0.7916666666666666,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.6948996955050486,
+    "gross_weight": 0.6736945845492704,
     "picks": [
       {
         "ticker": "TSLA",
@@ -8207,10 +8285,10 @@
         "dropped_reason": null
       },
       {
-        "ticker": "UNH",
-        "realized_vol_20d": 0.22856871310111293,
-        "raw_weight": 0.4,
-        "final_weight": 0.4,
+        "ticker": "NVDA",
+        "realized_vol_20d": 0.3959926713332409,
+        "raw_weight": 0.37879488904422187,
+        "final_weight": 0.37879488904422187,
         "dropped_reason": null
       }
     ]
@@ -8249,7 +8327,7 @@
     "vix": 23.43000030517578,
     "vix_pct_rank": 0.9226190476190477,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.6044367974710836,
+    "gross_weight": 0.689238887834132,
     "picks": [
       {
         "ticker": "TSLA",
@@ -8259,10 +8337,10 @@
         "dropped_reason": null
       },
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.4758914809199453,
-        "raw_weight": 0.3151979096369516,
-        "final_weight": 0.3151979096369516,
+        "ticker": "UNH",
+        "realized_vol_20d": 0.3083232068674339,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       }
     ]
@@ -8275,20 +8353,20 @@
     "vix": 17.239999771118164,
     "vix_pct_rank": 0.6448412698412699,
     "regime_multiplier": 1.0,
-    "gross_weight": 0.6424224870703213,
+    "gross_weight": 0.7503507735021482,
     "picks": [
-      {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.5135724996011576,
-        "raw_weight": 0.29207171356817313,
-        "final_weight": 0.29207171356817313,
-        "dropped_reason": null
-      },
       {
         "ticker": "NVDA",
         "realized_vol_20d": 0.42814234003419505,
         "raw_weight": 0.3503507735021482,
         "final_weight": 0.3503507735021482,
+        "dropped_reason": null
+      },
+      {
+        "ticker": "AMZN",
+        "realized_vol_20d": 0.3333898698460203,
+        "raw_weight": 0.4,
+        "final_weight": 0.4,
         "dropped_reason": null
       }
     ]
@@ -8337,8 +8415,8 @@
         "dropped_reason": null
       },
       {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.30518167691368814,
+        "ticker": "PFE",
+        "realized_vol_20d": 0.2335737987170474,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
@@ -8356,459 +8434,17 @@
     "gross_weight": 0.7685268452143315,
     "picks": [
       {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.40702597910543403,
-        "raw_weight": 0.36852684521433143,
-        "final_weight": 0.36852684521433143,
-        "dropped_reason": null
-      },
-      {
         "ticker": "NVDA",
         "realized_vol_20d": 0.3224130826990409,
         "raw_weight": 0.4,
         "final_weight": 0.4,
         "dropped_reason": null
-      }
-    ]
-  },
-  {
-    "date": "2025-12-30",
-    "regime": "risk_on",
-    "spy_close": 685.138916015625,
-    "spy_ma200": 621.2157322692871,
-    "vix": 14.329999923706055,
-    "vix_pct_rank": 0.24603174603174602,
-    "regime_multiplier": 1.0,
-    "gross_weight": 0.7823201098791441,
-    "picks": [
-      {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.3923413812771103,
-        "raw_weight": 0.3823201098791441,
-        "final_weight": 0.3823201098791441,
-        "dropped_reason": null
-      },
-      {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.30642130339062545,
-        "raw_weight": 0.4,
-        "final_weight": 0.4,
-        "dropped_reason": null
-      }
-    ]
-  },
-  {
-    "date": "2026-01-07",
-    "regime": "risk_on",
-    "spy_close": 687.701904296875,
-    "spy_ma200": 624.4097087097168,
-    "vix": 14.329999923706055,
-    "vix_pct_rank": 0.24603174603174602,
-    "regime_multiplier": 1.0,
-    "gross_weight": 0.7739126043623079,
-    "picks": [
-      {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.29431216300409624,
-        "raw_weight": 0.4,
-        "final_weight": 0.4,
-        "dropped_reason": null
       },
       {
         "ticker": "TSLA",
-        "realized_vol_20d": 0.40116326181573536,
-        "raw_weight": 0.3739126043623079,
-        "final_weight": 0.3739126043623079,
-        "dropped_reason": null
-      }
-    ]
-  },
-  {
-    "date": "2026-01-14",
-    "regime": "risk_on",
-    "spy_close": 688.479736328125,
-    "spy_ma200": 627.6335392761231,
-    "vix": 14.329999923706055,
-    "vix_pct_rank": 0.24603174603174602,
-    "regime_multiplier": 1.0,
-    "gross_weight": 0.8,
-    "picks": [
-      {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.2762337590171832,
-        "raw_weight": 0.4,
-        "final_weight": 0.4,
-        "dropped_reason": null
-      },
-      {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.37092780857550695,
-        "raw_weight": 0.4,
-        "final_weight": 0.4,
-        "dropped_reason": null
-      }
-    ]
-  },
-  {
-    "date": "2026-01-22",
-    "regime": "risk_on",
-    "spy_close": 687.103515625,
-    "spy_ma200": 631.2862753295899,
-    "vix": 14.329999923706055,
-    "vix_pct_rank": 0.24603174603174602,
-    "regime_multiplier": 1.0,
-    "gross_weight": 0.8,
-    "picks": [
-      {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.3665105278342257,
-        "raw_weight": 0.4,
-        "final_weight": 0.4,
-        "dropped_reason": null
-      },
-      {
-        "ticker": "META",
-        "realized_vol_20d": 0.2938657188497815,
-        "raw_weight": 0.4,
-        "final_weight": 0.4,
-        "dropped_reason": null
-      }
-    ]
-  },
-  {
-    "date": "2026-01-29",
-    "regime": "risk_on",
-    "spy_close": 692.1497192382812,
-    "spy_ma200": 635.6814027404785,
-    "vix": 14.329999923706055,
-    "vix_pct_rank": 0.24603174603174602,
-    "regime_multiplier": 1.0,
-    "gross_weight": 0.5943133526657834,
-    "picks": [
-      {
-        "ticker": "UNH",
-        "realized_vol_20d": 0.7671700716565535,
-        "raw_weight": 0.19552379001973366,
-        "final_weight": 0.19552379001973366,
-        "dropped_reason": null
-      },
-      {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.3761382294078097,
-        "raw_weight": 0.3987895626460498,
-        "final_weight": 0.3987895626460498,
-        "dropped_reason": null
-      }
-    ]
-  },
-  {
-    "date": "2026-02-05",
-    "regime": "risk_on",
-    "spy_close": 675.7744750976562,
-    "spy_ma200": 639.7745037841797,
-    "vix": 14.329999923706055,
-    "vix_pct_rank": 0.24603174603174602,
-    "regime_multiplier": 1.0,
-    "gross_weight": 0.49307668686630424,
-    "picks": [
-      {
-        "ticker": "UNH",
-        "realized_vol_20d": 0.7551575642697931,
-        "raw_weight": 0.19863404287692457,
-        "final_weight": 0.19863404287692457,
-        "dropped_reason": null
-      },
-      {
-        "ticker": "META",
-        "realized_vol_20d": 0.5094370773460735,
-        "raw_weight": 0.2944426439893797,
-        "final_weight": 0.2944426439893797,
-        "dropped_reason": null
-      }
-    ]
-  },
-  {
-    "date": "2026-02-12",
-    "regime": "risk_on",
-    "spy_close": 679.41455078125,
-    "spy_ma200": 643.5764916992188,
-    "vix": 14.329999923706055,
-    "vix_pct_rank": 0.24603174603174602,
-    "regime_multiplier": 1.0,
-    "gross_weight": 0.4862159240402933,
-    "picks": [
-      {
-        "ticker": "UNH",
-        "realized_vol_20d": 0.7760295359403271,
-        "raw_weight": 0.1932916120495886,
-        "final_weight": 0.1932916120495886,
-        "dropped_reason": null
-      },
-      {
-        "ticker": "META",
-        "realized_vol_20d": 0.5120776728316082,
-        "raw_weight": 0.2929243119907047,
-        "final_weight": 0.2929243119907047,
-        "dropped_reason": null
-      }
-    ]
-  },
-  {
-    "date": "2026-02-20",
-    "regime": "risk_on",
-    "spy_close": 687.5523071289062,
-    "spy_ma200": 646.8243875122071,
-    "vix": 14.329999923706055,
-    "vix_pct_rank": 0.24603174603174602,
-    "regime_multiplier": 1.0,
-    "gross_weight": 0.5190712899746298,
-    "picks": [
-      {
-        "ticker": "UNH",
-        "realized_vol_20d": 0.7612871949141439,
-        "raw_weight": 0.19703470779764873,
-        "final_weight": 0.19703470779764873,
-        "dropped_reason": null
-      },
-      {
-        "ticker": "META",
-        "realized_vol_20d": 0.4657855917672258,
-        "raw_weight": 0.3220365821769811,
-        "final_weight": 0.3220365821769811,
-        "dropped_reason": null
-      }
-    ]
-  },
-  {
-    "date": "2026-02-27",
-    "regime": "risk_on",
-    "spy_close": 684.1216430664062,
-    "spy_ma200": 649.9672695922851,
-    "vix": 14.329999923706055,
-    "vix_pct_rank": 0.24603174603174602,
-    "regime_multiplier": 1.0,
-    "gross_weight": 0.8,
-    "picks": [
-      {
-        "ticker": "UNH",
-        "realized_vol_20d": 0.3367027549328805,
-        "raw_weight": 0.4,
-        "final_weight": 0.4,
-        "dropped_reason": null
-      },
-      {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.3386024061500691,
-        "raw_weight": 0.4,
-        "final_weight": 0.4,
-        "dropped_reason": null
-      }
-    ]
-  },
-  {
-    "date": "2026-03-06",
-    "regime": "risk_on",
-    "spy_close": 670.5487060546875,
-    "spy_ma200": 652.3462380981446,
-    "vix": 14.329999923706055,
-    "vix_pct_rank": 0.24603174603174602,
-    "regime_multiplier": 1.0,
-    "gross_weight": 0.7317259837116288,
-    "picks": [
-      {
-        "ticker": "UNH",
-        "realized_vol_20d": 0.30595388504947313,
-        "raw_weight": 0.4,
-        "final_weight": 0.4,
-        "dropped_reason": null
-      },
-      {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.45218043615900705,
-        "raw_weight": 0.3317259837116288,
-        "final_weight": 0.3317259837116288,
-        "dropped_reason": null
-      }
-    ]
-  },
-  {
-    "date": "2026-03-13",
-    "regime": "risk_on",
-    "spy_close": 660.4862060546875,
-    "spy_ma200": 654.6218145751953,
-    "vix": 14.329999923706055,
-    "vix_pct_rank": 0.24603174603174602,
-    "regime_multiplier": 1.0,
-    "gross_weight": 0.8,
-    "picks": [
-      {
-        "ticker": "UNH",
-        "realized_vol_20d": 0.3012595391950081,
-        "raw_weight": 0.4,
-        "final_weight": 0.4,
-        "dropped_reason": null
-      },
-      {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.35774212867176197,
-        "raw_weight": 0.4,
-        "final_weight": 0.4,
-        "dropped_reason": null
-      }
-    ]
-  },
-  {
-    "date": "2026-03-20",
-    "regime": "risk_on",
-    "spy_close": 648.5700073242188,
-    "spy_ma200": 656.5213360595703,
-    "vix": 14.329999923706055,
-    "vix_pct_rank": 0.24603174603174602,
-    "regime_multiplier": 1.0,
-    "gross_weight": 0.8,
-    "picks": [
-      {
-        "ticker": "UNH",
-        "realized_vol_20d": 0.2907060596792183,
-        "raw_weight": 0.4,
-        "final_weight": 0.4,
-        "dropped_reason": null
-      },
-      {
-        "ticker": "META",
-        "realized_vol_20d": 0.27801542665585954,
-        "raw_weight": 0.4,
-        "final_weight": 0.4,
-        "dropped_reason": null
-      }
-    ]
-  },
-  {
-    "date": "2026-03-27",
-    "regime": "risk_on",
-    "spy_close": 634.0900268554688,
-    "spy_ma200": 657.959224243164,
-    "vix": 14.329999923706055,
-    "vix_pct_rank": 0.24603174603174602,
-    "regime_multiplier": 1.0,
-    "gross_weight": 0.7871452094429496,
-    "picks": [
-      {
-        "ticker": "UNH",
-        "realized_vol_20d": 0.23204880434999173,
-        "raw_weight": 0.4,
-        "final_weight": 0.4,
-        "dropped_reason": null
-      },
-      {
-        "ticker": "META",
-        "realized_vol_20d": 0.3874515203631992,
-        "raw_weight": 0.38714520944294956,
-        "final_weight": 0.38714520944294956,
-        "dropped_reason": null
-      }
-    ]
-  },
-  {
-    "date": "2026-04-06",
-    "regime": "risk_on",
-    "spy_close": 658.9299926757812,
-    "spy_ma200": 659.3793103027343,
-    "vix": 14.329999923706055,
-    "vix_pct_rank": 0.24603174603174602,
-    "regime_multiplier": 1.0,
-    "gross_weight": 0.7557960340412153,
-    "picks": [
-      {
-        "ticker": "UNH",
-        "realized_vol_20d": 0.2771175759784643,
-        "raw_weight": 0.4,
-        "final_weight": 0.4,
-        "dropped_reason": null
-      },
-      {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.421589859494117,
-        "raw_weight": 0.35579603404121524,
-        "final_weight": 0.35579603404121524,
-        "dropped_reason": null
-      }
-    ]
-  },
-  {
-    "date": "2026-04-13",
-    "regime": "risk_on",
-    "spy_close": 686.0999755859375,
-    "spy_ma200": 661.3890963745117,
-    "vix": 14.329999923706055,
-    "vix_pct_rank": 0.24603174603174602,
-    "regime_multiplier": 1.0,
-    "gross_weight": 0.6459615279079602,
-    "picks": [
-      {
-        "ticker": "UNH",
-        "realized_vol_20d": 0.4233815245290518,
-        "raw_weight": 0.35429037714116696,
-        "final_weight": 0.35429037714116696,
-        "dropped_reason": null
-      },
-      {
-        "ticker": "META",
-        "realized_vol_20d": 0.5142778077490874,
-        "raw_weight": 0.2916711507667933,
-        "final_weight": 0.2916711507667933,
-        "dropped_reason": null
-      }
-    ]
-  },
-  {
-    "date": "2026-04-20",
-    "regime": "risk_on",
-    "spy_close": 708.719970703125,
-    "spy_ma200": 663.6796881103515,
-    "vix": 14.329999923706055,
-    "vix_pct_rank": 0.24603174603174602,
-    "regime_multiplier": 1.0,
-    "gross_weight": 0.6506486916062801,
-    "picks": [
-      {
-        "ticker": "UNH",
-        "realized_vol_20d": 0.4101347247367628,
-        "raw_weight": 0.3657334796420241,
-        "final_weight": 0.3657334796420241,
-        "dropped_reason": null
-      },
-      {
-        "ticker": "META",
-        "realized_vol_20d": 0.526472416007111,
-        "raw_weight": 0.284915211964256,
-        "final_weight": 0.284915211964256,
-        "dropped_reason": null
-      }
-    ]
-  },
-  {
-    "date": "2026-04-27",
-    "regime": "risk_on",
-    "spy_close": 715.1699829101562,
-    "spy_ma200": 665.9937893676757,
-    "vix": 14.329999923706055,
-    "vix_pct_rank": 0.24603174603174602,
-    "regime_multiplier": 1.0,
-    "gross_weight": 0.7165021397285055,
-    "picks": [
-      {
-        "ticker": "TSLA",
-        "realized_vol_20d": 0.47393044523701955,
-        "raw_weight": 0.3165021397285055,
-        "final_weight": 0.3165021397285055,
-        "dropped_reason": null
-      },
-      {
-        "ticker": "NVDA",
-        "realized_vol_20d": 0.3080286188628258,
-        "raw_weight": 0.4,
-        "final_weight": 0.4,
+        "realized_vol_20d": 0.40702597910543403,
+        "raw_weight": 0.36852684521433143,
+        "final_weight": 0.36852684521433143,
         "dropped_reason": null
       }
     ]
