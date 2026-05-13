@@ -5,6 +5,7 @@ import HeatmapStrip from "./components/HeatmapStrip";
 import DecisionCard from "./components/DecisionCard";
 import TopNav from "./components/TopNav";
 import CalibrationRibbon from "./components/CalibrationRibbon";
+import PlannedTrades from "./components/PlannedTrades";
 import {
   ComposedChart,
   Brush,
@@ -81,7 +82,7 @@ type IntelligenceResponse = {
 
 type FlashState = "up" | "dn" | null;
 type Toast = { type: "success" | "error" | "info"; message: string };
-type OrderModalState = { ticker: string; side: "buy" | "sell" } | null;
+type OrderModalState = { ticker: string; side: "buy" | "sell"; initialQty?: number } | null;
 type ChartType = "candle" | "area";
 type RangeOption = "1D" | "5D" | "1M" | "3M" | "6M" | "1Y";
 type GranularityOption = "auto" | "1Min" | "5Min" | "15Min" | "30Min" | "1H" | "1D" | "1W";
@@ -606,7 +607,7 @@ export default function DashboardPage() {
       </aside>
 
       <main className="main">
-        <DecisionCard />
+        <DecisionCard onTrade={(ticker, shares) => setOrderModal({ ticker, side: "buy", initialQty: shares })} />
         <div className="stat-bar">
           <StatCell label="Total Return" value={fmtPct(s.total_return)} sub={fmtCIPct(summary.strategy_ci?.total_return) ?? `+${((s.total_return - summary.spy.total_return) * 100).toFixed(0)}pp vs SPY`} accent="up" />
           <StatCell label="Annualized" value={fmtPct(s.annualized_return)} sub={fmtCIPct(summary.strategy_ci?.annualized_return) ?? `+${((s.annualized_return - ew.annualized_return) * 100).toFixed(2)}pp vs EW`} accent="up" />
@@ -778,6 +779,7 @@ export default function DashboardPage() {
         <div className="detail-body">
           {detailTab === "overview" && (
             <>
+              <PlannedTrades onTrade={(ticker, shares) => setOrderModal({ ticker, side: "buy", initialQty: shares })} />
               <div className="detail-section">
                 <div className="quote-stats">
                   <QSCell label="Bid" value={fmtPrice(selectedQuote?.bid_price)} />
@@ -868,7 +870,7 @@ export default function DashboardPage() {
       </footer>
 
       {orderModal && (
-        <OrderModal ticker={orderModal.ticker} side={orderModal.side} quote={livePrices?.quotes[orderModal.ticker]} buyingPower={account?.buying_power} onClose={() => setOrderModal(null)} onSubmit={(qty) => handlePlaceOrder(orderModal.ticker, orderModal.side, qty)} />
+        <OrderModal ticker={orderModal.ticker} side={orderModal.side} quote={livePrices?.quotes[orderModal.ticker]} buyingPower={account?.buying_power} initialQty={orderModal.initialQty} onClose={() => setOrderModal(null)} onSubmit={(qty) => handlePlaceOrder(orderModal.ticker, orderModal.side, qty)} />
       )}
 
       {toast && (
@@ -1477,8 +1479,11 @@ function IntelligencePanel({ ticker, intelligence, loading, onRefresh }: { ticke
   );
 }
 
-function OrderModal({ ticker, side, quote, buyingPower, onClose, onSubmit }: { ticker: string; side: "buy" | "sell"; quote?: Quote; buyingPower?: number; onClose: () => void; onSubmit: (qty: number) => void }) {
-  const [qty, setQty] = useState(1);
+function OrderModal({ ticker, side, quote, buyingPower, initialQty, onClose, onSubmit }: { ticker: string; side: "buy" | "sell"; quote?: Quote; buyingPower?: number; initialQty?: number; onClose: () => void; onSubmit: (qty: number) => void }) {
+  const [qty, setQty] = useState(() => {
+    const start = initialQty ?? 1;
+    return Math.max(1, Math.min(MAX_QTY_PER_ORDER, start));
+  });
   const refPrice = side === "buy" ? quote?.ask_price ?? quote?.mid_price : quote?.bid_price ?? quote?.mid_price;
   const estimatedNotional = (refPrice ?? 0) * qty;
   const exceedsQty = qty > MAX_QTY_PER_ORDER;

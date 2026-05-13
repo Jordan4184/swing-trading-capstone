@@ -53,7 +53,11 @@ const fmtSignedPct = (n: number | null | undefined, digits = 2) =>
 const fmtMoney0 = (n: number | null | undefined) =>
   n == null || isNaN(n) ? "—" : `$${Math.round(n).toLocaleString()}`;
 
-export default function DecisionCard() {
+interface DecisionCardProps {
+  onTrade?: (ticker: string, shares: number) => void;
+}
+
+export default function DecisionCard({ onTrade }: DecisionCardProps = {}) {
   const [risk, setRisk] = useState<RiskToday | null>(null);
   const [thesis, setThesis] = useState<string | null>(null);
   const [sentiment, setSentiment] = useState<{ label: string; confidence: number } | null>(null);
@@ -171,7 +175,7 @@ export default function DecisionCard() {
         </div>
 
         {/* Recommended size */}
-        <div style={{ padding: "12px 16px", borderRight: "1px solid var(--border-soft)" }}>
+        <div style={{ padding: "12px 16px", borderRight: "1px solid var(--border-soft)", display: "flex", flexDirection: "column" }}>
           <div style={labelStyle}>Recommended Size</div>
           <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.01em", marginTop: 6, color: "var(--text-primary)" }}>
             {fmtMoney0(top.rec_notional)}
@@ -179,9 +183,19 @@ export default function DecisionCard() {
           <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>
             {top.rec_shares ?? "—"} shares · {fmtPct(top.weight_pct, 1)} of BP
           </div>
-          <div style={{ fontSize: 9, color: "var(--text-faint)", marginTop: 6 }}>
-            vol-target 15% · 20d realized {fmtPct(top.realized_vol_20d, 0)}
-          </div>
+          {onTrade && top.rec_shares && top.rec_shares > 0 ? (
+            <button
+              onClick={() => onTrade(top.ticker, top.rec_shares!)}
+              style={buyButtonStyle}
+              title={`Open order ticket pre-filled with ${top.rec_shares} shares of ${top.ticker}`}
+            >
+              ▸ BUY {top.rec_shares} {top.ticker}
+            </button>
+          ) : (
+            <div style={{ fontSize: 9, color: "var(--text-faint)", marginTop: 6 }}>
+              vol-target 15% · 20d realized {fmtPct(top.realized_vol_20d, 0)}
+            </div>
+          )}
         </div>
 
         {/* Regime */}
@@ -248,6 +262,15 @@ export default function DecisionCard() {
                   dropped: {p.dropped_reason}
                 </span>
               )}
+              {onTrade && p.rec_shares && p.rec_shares > 0 && !p.dropped_reason ? (
+                <button
+                  onClick={() => onTrade(p.ticker, p.rec_shares!)}
+                  style={miniBuyButtonStyle}
+                  title={`Buy ${p.rec_shares} ${p.ticker} (recommended size)`}
+                >
+                  BUY {p.rec_shares}
+                </button>
+              ) : null}
             </span>
           ))}
           <span style={{ marginLeft: "auto", fontSize: 9, color: "var(--text-faint)" }}>
@@ -281,6 +304,35 @@ const labelStyle: React.CSSProperties = {
   textTransform: "uppercase",
   letterSpacing: "0.06em",
   fontWeight: 700,
+};
+
+const buyButtonStyle: React.CSSProperties = {
+  marginTop: 10,
+  alignSelf: "flex-start",
+  background: "var(--green)",
+  color: "var(--bg-base)",
+  border: "none",
+  borderRadius: 4,
+  padding: "7px 14px",
+  fontSize: 11,
+  fontWeight: 700,
+  cursor: "pointer",
+  fontFamily: "inherit",
+  letterSpacing: "0.02em",
+};
+
+const miniBuyButtonStyle: React.CSSProperties = {
+  background: "var(--green-bg)",
+  color: "var(--green)",
+  border: "1px solid rgba(74, 222, 128, 0.4)",
+  borderRadius: 3,
+  padding: "1px 8px",
+  fontSize: 9,
+  fontWeight: 700,
+  cursor: "pointer",
+  fontFamily: "inherit",
+  letterSpacing: "0.04em",
+  marginLeft: 4,
 };
 
 const btn: React.CSSProperties = {
