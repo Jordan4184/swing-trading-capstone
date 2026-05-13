@@ -234,6 +234,15 @@ def _load_null_test() -> dict | None:
         return json.load(f)
 
 
+def _load_universe_robustness() -> dict | None:
+    """Universe survivorship robustness test."""
+    path = RESULTS_DIR / "universe_robustness.json"
+    if not path.exists():
+        return None
+    with open(path) as f:
+        return json.load(f)
+
+
 # Calibration buckets — match src/evaluate.py so the ribbon agrees with the
 # existing calibration bar chart on the evaluation page.
 CALIBRATION_BINS = [0.0, 0.45, 0.50, 0.55, 0.60, 1.01]  # 1.01 so exactly-1.0 lands in last bucket
@@ -293,6 +302,7 @@ SHAP_VALUES = _load_shap_values()
 FAILURE_MODES = _load_failure_modes()
 SHAP_SURFACE = _load_shap_surface()
 NULL_TEST = _load_null_test()
+UNIVERSE_ROBUSTNESS = _load_universe_robustness()
 FEATURE_COLUMNS_FOR_SHAP = (
     [c for c in SHAP_VALUES.columns if c not in ("date", "ticker", "base_value")]
     if SHAP_VALUES is not None else []
@@ -349,6 +359,7 @@ def root():
             "/api/failure-modes",
             "/api/shap-surface",
             "/api/null-test",
+            "/api/universe-robustness",
             "/api/calibration/buckets",
             "/api/honesty-footer",
             "/api/risk/today",
@@ -514,6 +525,20 @@ def get_explain(ticker: str, date: str, top_n: int = 5):
         "top_contributors": top,
         "all_contributors": contribs,
     }
+
+
+@app.get("/api/universe-robustness")
+def get_universe_robustness():
+    """
+    Universe survivorship robustness test. Re-runs the walk-forward CV +
+    top-2 backtest on 2 alternative 11-name universes constructed away
+    from the headline selection (one sector-rotated, one drawn from a
+    different S&P 100 neighborhood). Honest finding: headline edge is
+    substantially concentrated in the megacap-tech-heavy universe.
+    """
+    if UNIVERSE_ROBUSTNESS is None:
+        raise HTTPException(status_code=404, detail="Universe robustness artifact not yet generated. Run `python -m src.universe_robustness`.")
+    return UNIVERSE_ROBUSTNESS
 
 
 @app.get("/api/null-test")

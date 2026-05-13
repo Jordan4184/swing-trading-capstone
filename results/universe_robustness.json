@@ -1,0 +1,232 @@
+{
+  "generated_at": "2026-05-12T23:25:34.068692",
+  "limitations": "Alternative universes are CURATED-as-of-build (not a strict point-in-time reconstruction). The diversified set rotates away from megacap-tech concentration; the random_late set draws from a different S&P 100-ish neighborhood. A full PIT test would require historical index constituents (CRSP / Sharadar / S&P Dow Jones data) which this project does not have. This is a robustness check, not a survivorship audit.",
+  "universes": [
+    {
+      "name": "headline",
+      "tickers": [
+        "AAPL",
+        "AMZN",
+        "JNJ",
+        "JPM",
+        "MCD",
+        "META",
+        "NVDA",
+        "PFE",
+        "SPY",
+        "TSLA",
+        "UNH"
+      ],
+      "fold_aucs": [
+        0.5545951131646958,
+        0.5666175024582104,
+        0.6145946635804886,
+        0.6396089487561021,
+        0.592989604452914
+      ],
+      "mean_auc": 0.5936811664824823,
+      "std_auc": 0.031007661239963267,
+      "metrics": {
+        "total_return": 7.483526260901163,
+        "annualized_return": 0.3741662852726928,
+        "sharpe_ratio": 0.9968467767849924,
+        "max_drawdown": -0.580583337007024,
+        "hit_rate": 0.5575221238938053,
+        "n_periods": 339.0,
+        "n_years": 6.73
+      },
+      "ci": {
+        "n_resamples": 1000,
+        "alpha": 0.05,
+        "ci_level": 0.95,
+        "n_trades": 339,
+        "n_years": 6.73,
+        "sharpe_ratio": {
+          "point": 0.9968467767849924,
+          "ci_low": 0.22334398734054597,
+          "ci_high": 1.8218936631342753,
+          "ci_alpha": 0.05
+        },
+        "annualized_return": {
+          "point": 0.3741662852726928,
+          "ci_low": 0.010004657670409374,
+          "ci_high": 0.878965896117,
+          "ci_alpha": 0.05
+        },
+        "max_drawdown": {
+          "point": -0.580583337007024,
+          "ci_low": -0.7302118279095638,
+          "ci_high": -0.2808102760337993,
+          "ci_alpha": 0.05
+        },
+        "hit_rate": {
+          "point": 0.5575221238938053,
+          "ci_low": 0.504424778761062,
+          "ci_high": 0.6135693215339233,
+          "ci_alpha": 0.05
+        },
+        "total_return": {
+          "point": 7.483526260901163,
+          "ci_low": 0.06930554804320195,
+          "ci_high": 68.73875360732633,
+          "ci_alpha": 0.05
+        }
+      },
+      "n_trades": 339
+    },
+    {
+      "name": "diversified",
+      "tickers": [
+        "AAPL",
+        "BAC",
+        "CVX",
+        "HD",
+        "JNJ",
+        "KO",
+        "PEP",
+        "PG",
+        "SPY",
+        "WMT",
+        "XOM"
+      ],
+      "fold_aucs": [
+        0.5295501055734091,
+        0.5567911046652163,
+        0.5259057287889776,
+        0.5574550771212206,
+        0.5295788917866342
+      ],
+      "mean_auc": 0.5398561815870916,
+      "std_auc": 0.014163091226127016,
+      "metrics": {
+        "total_return": 0.38423281574813384,
+        "annualized_return": 0.049092584070213885,
+        "sharpe_ratio": 0.3317184246497133,
+        "max_drawdown": -0.42094200193128695,
+        "hit_rate": 0.5263157894736842,
+        "n_periods": 342.0,
+        "n_years": 6.78
+      },
+      "ci": {
+        "n_resamples": 1000,
+        "alpha": 0.05,
+        "ci_level": 0.95,
+        "n_trades": 342,
+        "n_years": 6.78,
+        "sharpe_ratio": {
+          "point": 0.3317184246497133,
+          "ci_low": -0.38686718788468677,
+          "ci_high": 1.126142989391514,
+          "ci_alpha": 0.05
+        },
+        "annualized_return": {
+          "point": 0.049092584070213885,
+          "ci_low": -0.11873618788289582,
+          "ci_high": 0.2648705433097385,
+          "ci_alpha": 0.05
+        },
+        "max_drawdown": {
+          "point": -0.42094200193128695,
+          "ci_low": -0.7097226643868063,
+          "ci_high": -0.22447137804487122,
+          "ci_alpha": 0.05
+        },
+        "hit_rate": {
+          "point": 0.5263157894736842,
+          "ci_low": 0.4736111111111111,
+          "ci_high": 0.5789473684210527,
+          "ci_alpha": 0.05
+        },
+        "total_return": {
+          "point": 0.38423281574813384,
+          "ci_low": -0.5755579624505319,
+          "ci_high": 3.918955067020345,
+          "ci_alpha": 0.05
+        }
+      },
+      "n_trades": 342
+    },
+    {
+      "name": "random_late",
+      "tickers": [
+        "ADBE",
+        "CRM",
+        "CSCO",
+        "DIS",
+        "GE",
+        "GS",
+        "IBM",
+        "INTC",
+        "SPY",
+        "T",
+        "VZ"
+      ],
+      "fold_aucs": [
+        0.5323087957325046,
+        0.5344223321566998,
+        0.544567744475614,
+        0.5620754995763838,
+        0.4997232737734706
+      ],
+      "mean_auc": 0.5346195291429345,
+      "std_auc": 0.02037608556668379,
+      "metrics": {
+        "total_return": -0.1121156634739825,
+        "annualized_return": -0.01737483410301166,
+        "sharpe_ratio": 0.08212749514737451,
+        "max_drawdown": -0.6899517373433036,
+        "hit_rate": 0.5029239766081871,
+        "n_periods": 342.0,
+        "n_years": 6.78
+      },
+      "ci": {
+        "n_resamples": 1000,
+        "alpha": 0.05,
+        "ci_level": 0.95,
+        "n_trades": 342,
+        "n_years": 6.78,
+        "sharpe_ratio": {
+          "point": 0.08212749514737451,
+          "ci_low": -0.6887195268164921,
+          "ci_high": 0.8924049500429767,
+          "ci_alpha": 0.05
+        },
+        "annualized_return": {
+          "point": -0.01737483410301166,
+          "ci_low": -0.21733883636186005,
+          "ci_high": 0.2355220517654071,
+          "ci_alpha": 0.05
+        },
+        "max_drawdown": {
+          "point": -0.6899517373433036,
+          "ci_low": -0.8673001371580611,
+          "ci_high": -0.305807740046363,
+          "ci_alpha": 0.05
+        },
+        "hit_rate": {
+          "point": 0.5029239766081871,
+          "ci_low": 0.4502923976608187,
+          "ci_high": 0.5614035087719298,
+          "ci_alpha": 0.05
+        },
+        "total_return": {
+          "point": -0.1121156634739825,
+          "ci_low": -0.8101413710389559,
+          "ci_high": 3.1951435478142862,
+          "ci_alpha": 0.05
+        }
+      },
+      "n_trades": 342
+    }
+  ],
+  "summary": {
+    "headline_sharpe": 0.9968467767849924,
+    "median_alt_sharpe": 0.2069229598985439,
+    "alt_sharpe_range": [
+      0.08212749514737451,
+      0.3317184246497133
+    ],
+    "verdict_passes": false,
+    "verdict_caption": "Strategy's edge IS concentrated in the headline 11-name universe. Median alt-universe Sharpe is 0.2069229598985439, range (0.08212749514737451, 0.3317184246497133). Acknowledge openly: the headline numbers are tied to one universe draw of large-cap US survivors. The ranker is doing real work on those names; whether the same procedure generalizes is genuinely uncertain on this sample."
+  }
+}

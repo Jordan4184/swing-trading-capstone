@@ -152,6 +152,31 @@ type FailureModes = {
 
 type EquityPt = { date: string; equity: number; return: number };
 type MetricCI = { point: number; ci_low: number; ci_high: number };
+type UniverseEntry = {
+  name: string;
+  tickers: string[];
+  fold_aucs?: number[];
+  mean_auc?: number;
+  std_auc?: number;
+  metrics?: { sharpe_ratio: number; annualized_return: number; max_drawdown: number; total_return: number; hit_rate: number };
+  ci?: { sharpe_ratio: MetricCI; annualized_return: MetricCI; max_drawdown: MetricCI };
+  n_trades?: number;
+  error?: string;
+};
+
+type UniverseRobustness = {
+  generated_at: string;
+  limitations: string;
+  universes: UniverseEntry[];
+  summary: {
+    headline_sharpe: number | null;
+    median_alt_sharpe: number | null;
+    alt_sharpe_range: [number, number] | null;
+    verdict_passes: boolean;
+    verdict_caption: string;
+  };
+};
+
 type NullTest = {
   generated_at: string;
   n_paired_rebalances: number;
@@ -182,6 +207,7 @@ export default function EvaluationPanel() {
   const [exitPolicy, setExitPolicy] = useState<ExitPolicy | null>(null);
   const [failureModes, setFailureModes] = useState<FailureModes | null>(null);
   const [nullTest, setNullTest] = useState<NullTest | null>(null);
+  const [universeRobustness, setUniverseRobustness] = useState<UniverseRobustness | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -189,13 +215,14 @@ export default function EvaluationPanel() {
     setLoading(true);
     setError(null);
     try {
-      const [reportRes, ablRes, featAblRes, exitRes, failRes, nullRes] = await Promise.all([
+      const [reportRes, ablRes, featAblRes, exitRes, failRes, nullRes, univRes] = await Promise.all([
         fetch(`${API_BASE}/api/evaluation/report`),
         fetch(`${API_BASE}/api/ablation`),
         fetch(`${API_BASE}/api/feature-ablation`),
         fetch(`${API_BASE}/api/exit-policy`),
         fetch(`${API_BASE}/api/failure-modes`),
         fetch(`${API_BASE}/api/null-test`),
+        fetch(`${API_BASE}/api/universe-robustness`),
       ]);
       if (!reportRes.ok) {
         throw new Error(`HTTP ${reportRes.status}`);
@@ -220,6 +247,9 @@ export default function EvaluationPanel() {
       }
       if (nullRes.ok) {
         setNullTest(await nullRes.json());
+      }
+      if (univRes.ok) {
+        setUniverseRobustness(await univRes.json());
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to fetch");
@@ -266,6 +296,17 @@ export default function EvaluationPanel() {
           </button>
         </div>
       </div>
+
+      {/* === Universe Survivorship Robustness === */}
+      <Section title="Universe Robustness — does the edge survive a different 11-name draw?">
+        {!universeRobustness ? (
+          <div style={{ color: "var(--text-muted)", fontSize: 12, padding: "8px 0" }}>
+            No universe-robustness artifact found. Run <code style={{ background: "var(--bg-row)", padding: "1px 4px", borderRadius: 2 }}>python -m src.universe_robustness</code>.
+          </div>
+        ) : (
+          <UniverseRobustnessPanel data={universeRobustness} />
+        )}
+      </Section>
 
       {/* === Null Test: strategy vs vol-targeted SPY === */}
       <Section title="Null Test — strategy vs vol-targeted SPY (paired bootstrap)">
@@ -715,6 +756,118 @@ const FEATURE_LABELS: Record<string, string> = {
   spy_return_1d: "SPY 1d",
   excess_return_1d: "excess 1d",
 };
+
+function UniverseRobustnessPanel({ data }: { data: UniverseRobustness }) {
+  const passColor = data.summary.verdict_passes ? "var(--green)" : "var(--amber)";
+  const cols = "120px 1fr 80px 80px 80px 80px 80px";
+  const header: React.CSSProperties = {
+    display: "grid",
+    gridTemplateColumns: cols,
+    gap: 8,
+    padding: "6px 0",
+    fontSize: 10,
+    color: "var(--text-muted)",
+    textTransform: "uppercase",
+    letterSpacing: "0.04em",
+    fontWeight: 700,
+    borderBottom: "1px solid var(--border-soft)",
+  };
+  const row: React.CSSProperties = {
+    display: "grid",
+    gridTemplateColumns: cols,
+    gap: 8,
+    padding: "8px 0",
+    fontSize: 11,
+    borderBottom: "1px solid var(--border-soft)",
+    alignItems: "center",
+  };
+
+  return (
+    <div>
+      <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 12, lineHeight: 1.55 }}>
+        Tests the quant&apos;s kill question: <em style={{ color: "var(--text-secondary)" }}>&quot;how were these 11 names chosen, and when?&quot;</em>
+        Re-runs the walk-forward CV + top-2 backtest on two alternative 11-name universes constructed away from the
+        headline draw. The diversified set rotates out of megacap-tech concentration into healthcare / staples /
+        energy; the random_late set draws from a different S&P 100 neighbourhood.
+      </div>
+
+      <div style={{
+        padding: "12px 14px",
+        background: "var(--bg-elevated)",
+        border: `1px solid ${data.summary.verdict_passes ? "rgba(74, 222, 128, 0.35)" : "rgba(251, 191, 36, 0.4)"}`,
+        borderRadius: 4,
+        marginBottom: 12,
+      }}>
+        <div style={{ display: "flex", gap: 10, alignItems: "baseline", marginBottom: 6 }}>
+          <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: passColor }}>
+            {data.summary.verdict_passes ? "PASS" : "INVESTIGATE"}
+          </span>
+          <span style={{ fontSize: 11, color: "var(--text-secondary)" }}>
+            n = {data.universes.length} universes evaluated
+          </span>
+        </div>
+        <div style={{ fontSize: 12, color: "var(--text-primary)", lineHeight: 1.55 }}>
+          {data.summary.verdict_caption}
+        </div>
+      </div>
+
+      <div style={header}>
+        <span>Universe</span>
+        <span>Tickers</span>
+        <span>Mean AUC</span>
+        <span>Sharpe</span>
+        <span>CAGR</span>
+        <span>MaxDD</span>
+        <span>Trades</span>
+      </div>
+      {data.universes.map((u, idx) => {
+        if (u.error || !u.metrics) {
+          return (
+            <div key={u.name} style={{ ...row, gridTemplateColumns: "120px 1fr 1fr" }}>
+              <span style={{ fontWeight: 600 }}>{u.name}</span>
+              <span style={{ color: "var(--text-faint)", fontSize: 10 }}>{u.tickers.join(" ")}</span>
+              <span style={{ color: "var(--red)" }}>error: {u.error}</span>
+            </div>
+          );
+        }
+        const isHeadline = u.name === "headline";
+        return (
+          <div key={u.name} style={{
+            ...row,
+            background: isHeadline ? "rgba(74, 222, 128, 0.04)" : "transparent",
+          }}>
+            <span style={{ fontWeight: 700, color: isHeadline ? "var(--green)" : "var(--text-primary)" }}>
+              {u.name}{isHeadline ? " (prod)" : ""}
+            </span>
+            <span style={{ fontSize: 10, color: "var(--text-muted)", fontFamily: "var(--font-geist-mono), monospace", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              {u.tickers.filter((t) => t !== "SPY").join(", ")}
+            </span>
+            <span style={{ fontFeatureSettings: "'tnum'", fontWeight: 600 }}>{u.mean_auc?.toFixed(4)}</span>
+            <span style={{ fontFeatureSettings: "'tnum'", fontWeight: 600, color: u.metrics.sharpe_ratio > 0.5 ? "var(--green)" : u.metrics.sharpe_ratio > 0 ? "var(--text-primary)" : "var(--red)" }}>
+              {u.metrics.sharpe_ratio.toFixed(3)}
+            </span>
+            <span style={{ fontFeatureSettings: "'tnum'", color: u.metrics.annualized_return > 0 ? "var(--text-primary)" : "var(--red)" }}>
+              {(u.metrics.annualized_return * 100).toFixed(1)}%
+            </span>
+            <span style={{ fontFeatureSettings: "'tnum'", color: "var(--red)" }}>
+              {(u.metrics.max_drawdown * 100).toFixed(1)}%
+            </span>
+            <span style={{ fontFeatureSettings: "'tnum'", color: "var(--text-muted)" }}>{u.n_trades}</span>
+          </div>
+        );
+      })}
+
+      <div style={{ marginTop: 10, padding: "8px 10px", background: "rgba(251, 191, 36, 0.05)", border: "1px dashed rgba(251, 191, 36, 0.3)", borderRadius: 3 }}>
+        <div style={{ fontSize: 9, color: "var(--amber)", textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 700, marginBottom: 4 }}>
+          Limitations
+        </div>
+        <div style={{ fontSize: 10, color: "var(--text-muted)", lineHeight: 1.55 }}>
+          {data.limitations}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function NullTestPanel({ data }: { data: NullTest }) {
   const merged = useMemo(() => {
