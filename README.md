@@ -1,5 +1,7 @@
 # Swing Trading Capstone — ML-Based Cross-Sectional Equity Strategy
 
+> **TL;DR** — ML swing strategy on 11 US large-caps, 2019-07 → 2025-12 walk-forward backtest. **v2 Sharpe 1.09** with vol-targeting + regime gate, **statistically distinguishable** from a vol-targeted SPY null at paired-bootstrap *p* = 0.029. Edge **does not generalise** across two alternative 11-name universes (Sharpe collapses to 0.33 / 0.08) — documented, not hidden. Stack: Random Forest, Python pipeline + FastAPI + Next.js, paper-trading via Alpaca.
+
 A machine-learning swing trading system built as a capstone project for the Institute of Data — Data Science & AI program. Trains classifiers to predict which stocks in a small US large-cap universe will rank in the top quintile of 5-day forward returns, then backtests the resulting strategy with realistic transaction costs against multiple benchmarks.
 
 **Why this project, why now:** FINRA's removal of the Pattern Day Trader rule on June 4, 2026 eliminates the $25,000 minimum equity requirement that has historically gated retail algorithmic trading. Small-account algo strategies are about to become viable for a much larger audience. This project explores whether retail-grade ML — with cheap data and standard tools — can produce a genuine, defensible edge over passive benchmarks.
@@ -27,6 +29,24 @@ Out-of-sample backtest, 2019-07 to 2025-12 (6.4 years), 20bps round-trip transac
 **Two flavours of the strategy.** v1 is the original ML ranker: top-2 picks per day, equal-weighted, non-overlapping 5-day holds. v2 layers vol-targeted position sizing (15% annualized per pick, 0.40 max weight), a regime gate (half-size when SPY < 200dMA AND VIX > 75th percentile of trailing 2y), and a 60-day correlation filter on the 2nd pick. v2 trades headline return for risk-adjusted return: roughly +0.14 Sharpe and -20pp on max drawdown, at the cost of ~9pp of annualized return.
 
 Random Forest selected as best model by AUC (0.594) across walk-forward folds; LightGBM and Logistic Regression performed similarly, suggesting the predictive signal is captured by feature engineering rather than complex non-linear interactions.
+
+### Does the edge survive stress tests?
+
+The headline numbers above sit on one universe draw and one set of rebalance dates. Two stress tests stress them:
+
+| Test | Result | Verdict |
+| ---- | ------ | ------- |
+| **Null test** — strategy vs vol-targeted SPY (same regime gate, same rebalance dates, same cost model — but no model) | Strategy 1.09 Sharpe vs null 0.33 Sharpe, Δ +0.76 [+0.11, +1.40], paired bootstrap *p* = 0.029 | **PASS** at 5% — alpha is distinguishable from vol-targeting alone |
+| **Universe robustness** — re-run walk-forward CV + top-2 backtest on a sector-rotated 11-name set | Sharpe 1.00 → **0.33** | FAIL |
+| **Universe robustness** — re-run on a different S&P 100 draw (mid-cap-skew, less megacap-tech) | Sharpe 1.00 → **0.08** | FAIL |
+
+The null test rules out "you just took more risk with vol-targeting." The universe tests show the edge is **concentrated in the headline 11-name universe over 2018-2025** — a regime that favoured exactly those names. Both findings are persisted (`results/null_test.json`, `results/universe_robustness.json`) and visible on the dashboard's Evaluation page.
+
+### Honest limits — what this project does and doesn't show
+
+**The edge is real vs a fair benchmark.** A vol-targeted long-only SPY position over the same dates, with the same regime gate and cost model, delivers 0.33 Sharpe vs the strategy's 1.09. The Δ Sharpe CI is entirely above zero. Vol-targeting is not the whole story — the ranker is contributing measurable signal on this universe.
+
+**The edge is universe-dependent.** When the same procedure is fit on two alternative 11-name universes — one a sector rotation away from megacap-tech, one a different draw from the S&P 100 neighbourhood — Sharpe collapses to 0.33 and 0.08 respectively. The honest interpretation is that the ML ranker is exploiting structure specific to AAPL/AMZN/META/NVDA/TSLA et al. across the 2018-2025 regime. Whether the *procedure* generalises to other universes, on out-of-sample windows, is genuinely uncertain on this sample. The fix is either re-fitting per universe or building features that abstract away from individual-name idiosyncrasy (implied vol regimes, earnings-proximity flags) — both are on the "what next" list above, neither is shipped.
 
 ### Feature engineering — what we tested but didn't ship
 
