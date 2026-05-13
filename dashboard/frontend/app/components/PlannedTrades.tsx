@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { cappedTradableShares, MAX_NOTIONAL_PER_ORDER } from "../constants";
 
 const API_BASE = "http://localhost:8000";
 const REFRESH_MS = 30_000;
@@ -105,16 +106,21 @@ export default function PlannedTrades({ onTrade }: Props) {
         </div>
       )}
 
-      <div style={{ padding: "6px 12px 10px", fontSize: 9, color: "var(--text-faint)", lineHeight: 1.5 }}>
-        BP {data.buying_power != null ? `$${Math.round(data.buying_power).toLocaleString()}` : "—"} · gross commitment {Math.round(data.gross_weight * 100)}%
+      <div style={{ padding: "6px 12px 10px", fontSize: 9, color: "var(--text-faint)", lineHeight: 1.55 }}>
+        BP {data.buying_power != null ? `$${Math.round(data.buying_power).toLocaleString()}` : "—"} · gross commitment {Math.round(data.gross_weight * 100)}%<br />
+        BUY * = qty capped by per-order safety limit (${MAX_NOTIONAL_PER_ORDER.toLocaleString()} notional max).
       </div>
     </div>
   );
 }
 
 function PlannedRow({ pick, onTrade }: { pick: Pick; onTrade?: (ticker: string, shares: number) => void }) {
-  const shares = pick.rec_shares ?? 0;
-  const notional = pick.rec_notional ?? 0;
+  const recShares = pick.rec_shares ?? 0;
+  const recNotional = pick.rec_notional ?? 0;
+  const { shares: buyableShares, isCapped, reason } = cappedTradableShares(recShares, pick.last_close);
+  const buyableNotional = (pick.last_close ?? 0) * buyableShares;
+  const canBuy = !!onTrade && buyableShares >= 1;
+
   return (
     <div style={{
       display: "grid",
@@ -133,31 +139,43 @@ function PlannedRow({ pick, onTrade }: { pick: Pick; onTrade?: (ticker: string, 
       </div>
       <div style={{ fontSize: 10, color: "var(--text-muted)", lineHeight: 1.4 }}>
         <div style={{ color: "var(--text-secondary)", fontWeight: 600, fontSize: 11 }}>
-          ${Math.round(notional).toLocaleString()}
+          ${Math.round(recNotional).toLocaleString()}
         </div>
         <div>
-          {shares} sh · {(pick.weight_pct * 100).toFixed(0)}% BP
+          rec {recShares} sh · {(pick.weight_pct * 100).toFixed(0)}% BP
         </div>
+        {isCapped && (
+          <div style={{ color: "var(--amber)", fontSize: 9, marginTop: 1 }}>
+            order capped → {buyableShares} sh / ${Math.round(buyableNotional).toLocaleString()}
+          </div>
+        )}
       </div>
       <button
-        onClick={() => onTrade?.(pick.ticker, shares)}
-        disabled={!onTrade || shares < 1}
+        onClick={() => canBuy && onTrade?.(pick.ticker, buyableShares)}
+        disabled={!canBuy}
         style={{
-          background: "var(--green)",
-          color: "var(--bg-base)",
+          background: canBuy ? "var(--green)" : "var(--bg-row)",
+          color: canBuy ? "var(--bg-base)" : "var(--text-faint)",
           border: "none",
           borderRadius: 4,
-          padding: "6px 12px",
+          padding: "6px 10px",
           fontSize: 10,
           fontWeight: 700,
-          cursor: onTrade && shares >= 1 ? "pointer" : "not-allowed",
+          cursor: canBuy ? "pointer" : "not-allowed",
           fontFamily: "inherit",
           letterSpacing: "0.04em",
-          opacity: onTrade && shares >= 1 ? 1 : 0.4,
+          opacity: canBuy ? 1 : 0.5,
+          minWidth: 58,
         }}
-        title={`Open order ticket pre-filled with ${shares} shares of ${pick.ticker}`}
+        title={
+          !canBuy
+            ? `Cannot fit a single share of ${pick.ticker} under $${MAX_NOTIONAL_PER_ORDER.toLocaleString()}`
+            : isCapped
+              ? `Buy ${buyableShares} ${pick.ticker} — capped by ${reason}, full rec is ${recShares}`
+              : `Buy ${buyableShares} ${pick.ticker} (full recommendation)`
+        }
       >
-        BUY
+        BUY {buyableShares}{isCapped ? "*" : ""}
       </button>
     </div>
   );

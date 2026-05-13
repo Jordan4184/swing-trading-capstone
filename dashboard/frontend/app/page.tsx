@@ -6,6 +6,7 @@ import DecisionCard from "./components/DecisionCard";
 import TopNav from "./components/TopNav";
 import CalibrationRibbon from "./components/CalibrationRibbon";
 import PlannedTrades from "./components/PlannedTrades";
+import { MAX_QTY_PER_ORDER, MAX_NOTIONAL_PER_ORDER } from "./constants";
 import {
   ComposedChart,
   Brush,
@@ -108,8 +109,8 @@ const POLL_INTERVAL_MS = 5_000;
 const PREV_CLOSE_REFRESH_MS = 60_000;
 const ORDERS_REFRESH_MS = 10_000;
 const NEWS_REFRESH_MS = 60_000;
-const MAX_QTY_PER_ORDER = 100;
-const MAX_NOTIONAL_PER_ORDER = 10_000;
+// Order safety caps moved to ./constants — re-exported below for any
+// inline references; primary source of truth is `app/constants.ts`.
 
 // ---------------------------------------------------------------------------
 // Helpers

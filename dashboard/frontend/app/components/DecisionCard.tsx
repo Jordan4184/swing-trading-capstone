@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import CalibrationRibbon from "./CalibrationRibbon";
 import ConvictionLedger from "./ConvictionLedger";
+import { cappedTradableShares, MAX_NOTIONAL_PER_ORDER } from "../constants";
 
 const API_BASE = "http://localhost:8000";
 
@@ -183,19 +184,42 @@ export default function DecisionCard({ onTrade }: DecisionCardProps = {}) {
           <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>
             {top.rec_shares ?? "—"} shares · {fmtPct(top.weight_pct, 1)} of BP
           </div>
-          {onTrade && top.rec_shares && top.rec_shares > 0 ? (
-            <button
-              onClick={() => onTrade(top.ticker, top.rec_shares!)}
-              style={buyButtonStyle}
-              title={`Open order ticket pre-filled with ${top.rec_shares} shares of ${top.ticker}`}
-            >
-              ▸ BUY {top.rec_shares} {top.ticker}
-            </button>
-          ) : (
-            <div style={{ fontSize: 9, color: "var(--text-faint)", marginTop: 6 }}>
-              vol-target 15% · 20d realized {fmtPct(top.realized_vol_20d, 0)}
-            </div>
-          )}
+          {(() => {
+            if (!onTrade || !top.rec_shares || top.rec_shares <= 0) {
+              return (
+                <div style={{ fontSize: 9, color: "var(--text-faint)", marginTop: 6 }}>
+                  vol-target 15% · 20d realized {fmtPct(top.realized_vol_20d, 0)}
+                </div>
+              );
+            }
+            const { shares: buyableShares, isCapped, reason } = cappedTradableShares(top.rec_shares, top.last_close);
+            if (buyableShares < 1) {
+              return (
+                <div style={{ fontSize: 9, color: "var(--amber)", marginTop: 6 }}>
+                  Cannot fit ${top.last_close?.toFixed(0)} share under ${MAX_NOTIONAL_PER_ORDER.toLocaleString()} cap
+                </div>
+              );
+            }
+            const buyableNotional = (top.last_close ?? 0) * buyableShares;
+            return (
+              <>
+                <button
+                  onClick={() => onTrade(top.ticker, buyableShares)}
+                  style={buyButtonStyle}
+                  title={isCapped
+                    ? `Pre-filled with ${buyableShares} shares of ${top.ticker} (capped by ${reason}; full recommendation is ${top.rec_shares})`
+                    : `Open order ticket pre-filled with ${buyableShares} shares of ${top.ticker}`}
+                >
+                  ▸ BUY {buyableShares} {top.ticker}
+                </button>
+                {isCapped && (
+                  <div style={{ fontSize: 9, color: "var(--amber)", marginTop: 4 }}>
+                    capped at {buyableShares} sh / ${Math.round(buyableNotional).toLocaleString()} (rec {top.rec_shares} sh)
+                  </div>
+                )}
+              </>
+            );
+          })()}
         </div>
 
         {/* Regime */}
@@ -262,15 +286,22 @@ export default function DecisionCard({ onTrade }: DecisionCardProps = {}) {
                   dropped: {p.dropped_reason}
                 </span>
               )}
-              {onTrade && p.rec_shares && p.rec_shares > 0 && !p.dropped_reason ? (
-                <button
-                  onClick={() => onTrade(p.ticker, p.rec_shares!)}
-                  style={miniBuyButtonStyle}
-                  title={`Buy ${p.rec_shares} ${p.ticker} (recommended size)`}
-                >
-                  BUY {p.rec_shares}
-                </button>
-              ) : null}
+              {(() => {
+                if (!onTrade || !p.rec_shares || p.rec_shares <= 0 || p.dropped_reason) return null;
+                const { shares: buyable, isCapped, reason } = cappedTradableShares(p.rec_shares, p.last_close);
+                if (buyable < 1) return null;
+                return (
+                  <button
+                    onClick={() => onTrade(p.ticker, buyable)}
+                    style={miniBuyButtonStyle}
+                    title={isCapped
+                      ? `Buy ${buyable} ${p.ticker} (capped by ${reason}; full rec ${p.rec_shares})`
+                      : `Buy ${buyable} ${p.ticker} (recommended size)`}
+                  >
+                    BUY {buyable}{isCapped ? "*" : ""}
+                  </button>
+                );
+              })()}
             </span>
           ))}
           <span style={{ marginLeft: "auto", fontSize: 9, color: "var(--text-faint)" }}>
