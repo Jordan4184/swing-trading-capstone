@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import AutotraderHealth from "./AutotraderHealth";
 
 const API_BASE = "http://localhost:8000";
 
@@ -242,6 +243,7 @@ export default function AutoTraderPanel() {
 
       {tab === "overview" && (
         <>
+          <AutotraderHealth />
           <Section title="Capacity">
             <div style={{ fontSize: 11, lineHeight: 1.7 }}>
               <Row label="Open positions" value={`${p.capacity.open_count} (${p.capacity.open_tickers.join(", ") || "none"})`} />

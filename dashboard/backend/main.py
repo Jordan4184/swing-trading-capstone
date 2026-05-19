@@ -340,6 +340,7 @@ def root():
             "/api/news/{ticker}",
             "/api/intelligence/{ticker}",
             "/api/intelligence/stats",
+            "/api/autotrader/health",
             "/api/autotrader/status",
             "/api/autotrader/trades",
             "/api/autotrader/runs",
@@ -1041,6 +1042,126 @@ def get_ticker_intelligence(ticker: str, force_refresh: bool = False):
 # ---------------------------------------------------------------------------
 # Endpoints — Autonomous Trader
 # ---------------------------------------------------------------------------
+
+@app.get("/api/autotrader/health")
+def autotrader_health():
+    """
+    One-shot diagnostic for the autonomous trader. Surfaces every reason the
+    next entry cycle might silently produce zero trades — scheduler state,
+    env flag, signal freshness, capacity, per-pick filter outcomes.
+
+    Built after we caught an 11-day silent no-op: AUTO_TRADER_ENABLED was
+    true, scheduler was running, but predictions.parquet had gone stale and
+    every signal was being rejected by the MAX_SIGNAL_AGE_DAYS filter. This
+    endpoint makes that exact failure mode glanceable.
+    """
+    today = pd.Timestamp.now().normalize()
+    latest_date = PREDICTIONS["date"].max() if not PREDICTIONS.empty else None
+    days_since = int((today - latest_date).days) if latest_date is not None else None
+    signals_fresh = days_since is not None and days_since <= position_manager.MAX_SIGNAL_AGE_DAYS
+
+    # Top-N picks on the latest date with per-pick filter rationale
+    latest_picks: list[dict] = []
+    if latest_date is not None:
+        latest = (
+            PREDICTIONS[PREDICTIONS["date"] == latest_date]
+            .sort_values("y_proba", ascending=False)
+            .head(10)
+        )
+        open_tickers = {p["ticker"] for p in auto_trader_db.get_open_positions()}
+        pending_tickers = {p["ticker"] for p in auto_trader_db.get_pending_orders()}
+        for rank, (_, row) in enumerate(latest.iterrows(), start=1):
+            ticker = row["ticker"]
+            proba = float(row["y_proba"])
+            reasons: list[str] = []
+            tradable = True
+            if not signals_fresh:
+                reasons.append(f"signal age {days_since}d > {position_manager.MAX_SIGNAL_AGE_DAYS}d cap")
+                tradable = False
+            if proba < position_manager.MIN_SIGNAL_PROBA:
+                reasons.append(f"proba {proba:.3f} < {position_manager.MIN_SIGNAL_PROBA}")
+                tradable = False
+            if ticker in open_tickers:
+                reasons.append("already open")
+                tradable = False
+            if ticker in pending_tickers:
+                reasons.append("already pending")
+                tradable = False
+            latest_picks.append({
+                "rank": rank,
+                "ticker": ticker,
+                "y_proba": proba,
+                "tradable": tradable,
+                "reasons": reasons if not tradable else ["passes all filters"],
+            })
+
+    # Scheduler state + most recent run
+    scheduler_info = auto_scheduler.get_scheduler_status()
+    recent_runs = auto_trader_db.get_recent_runs(limit=5)
+    last_entry = next((r for r in recent_runs if r["run_type"] == "entry"), None)
+
+    capacity = position_manager.get_capacity()
+
+    # Overall green-amber-red verdict
+    def status(ok: bool) -> str:
+        return "green" if ok else "red"
+
+    checks = [
+        {
+            "label": "Scheduler running",
+            "status": status(bool(scheduler_info.get("running"))),
+            "value": "active" if scheduler_info.get("running") else "stopped",
+        },
+        {
+            "label": "AUTO_TRADER_ENABLED",
+            "status": status(bool(scheduler_info.get("enabled_via_env"))),
+            "value": "true" if scheduler_info.get("enabled_via_env") else "false",
+        },
+        {
+            "label": "Signal freshness",
+            "status": "green" if signals_fresh else "red",
+            "value": (
+                f"{days_since}d old (cap {position_manager.MAX_SIGNAL_AGE_DAYS}d)"
+                if days_since is not None else "no predictions"
+            ),
+        },
+        {
+            "label": "Capacity available",
+            "status": "green" if capacity["available_slots"] > 0 else "amber",
+            "value": f"{capacity['available_slots']} / {capacity['max_positions']} slots",
+        },
+        {
+            "label": "Tradable picks today",
+            "status": "green" if any(p["tradable"] for p in latest_picks) else "red",
+            "value": f"{sum(1 for p in latest_picks if p['tradable'])} of {len(latest_picks)}",
+        },
+    ]
+
+    overall = "green" if all(c["status"] == "green" for c in checks) else (
+        "amber" if any(c["status"] == "green" for c in checks) else "red"
+    )
+
+    return {
+        "overall_status": overall,
+        "checks": checks,
+        "latest_prediction_date": latest_date.strftime("%Y-%m-%d") if latest_date is not None else None,
+        "days_since_predictions": days_since,
+        "config": {
+            "min_signal_proba": position_manager.MIN_SIGNAL_PROBA,
+            "max_signal_age_days": position_manager.MAX_SIGNAL_AGE_DAYS,
+            "max_concurrent_positions": position_manager.MAX_CONCURRENT_POSITIONS,
+            "default_holding_days": position_manager.DEFAULT_HOLDING_DAYS,
+        },
+        "capacity": capacity,
+        "latest_picks": latest_picks,
+        "scheduler": scheduler_info,
+        "last_entry_run": last_entry,
+        "next_entry_run_eta": next(
+            (j["next_run_time"] for j in scheduler_info.get("jobs", []) if j["id"] == "entry_cycle"),
+            None,
+        ),
+    }
+
 
 @app.get("/api/autotrader/status")
 def autotrader_status():
