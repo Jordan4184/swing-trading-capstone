@@ -453,6 +453,24 @@ def get_honesty_footer():
     except Exception as e:
         print(f"[honesty_footer] model metadata load failed: {e}")
 
+    # Predictions freshness — surfaces the exact failure mode that caused
+    # the autotrader to silently no-op for 11 days (predictions.parquet
+    # had gone stale while MAX_SIGNAL_AGE_DAYS=3 quietly rejected every
+    # signal). Showing this in the footer means the same thing can't
+    # happen unnoticed again.
+    predictions_days_old: Optional[float] = None
+    predictions_latest_date: Optional[str] = None
+    if not PREDICTIONS.empty:
+        latest = PREDICTIONS["date"].max()
+        if pd.notna(latest):
+            age = pd.Timestamp.now().normalize() - latest.normalize()
+            predictions_days_old = round(age.total_seconds() / 86400, 1)
+            predictions_latest_date = latest.strftime("%Y-%m-%d")
+    predictions_stale = (
+        predictions_days_old is not None
+        and predictions_days_old > position_manager.MAX_SIGNAL_AGE_DAYS
+    )
+
     return {
         "mode": "PAPER",
         "trading_mode_safe": True,
@@ -469,6 +487,12 @@ def get_honesty_footer():
             "version": model_version,
             "trained_at": trained_at,
             "days_since_train": days_since_train,
+        },
+        "predictions": {
+            "latest_date": predictions_latest_date,
+            "days_old": predictions_days_old,
+            "stale_threshold_days": position_manager.MAX_SIGNAL_AGE_DAYS,
+            "is_stale": predictions_stale,
         },
         "universe_size": len(UNIVERSE),
     }

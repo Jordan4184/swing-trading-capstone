@@ -11,6 +11,12 @@ type HonestyData = {
   positions: { pending: number; open: number; closed: number };
   backtest: { v1_sharpe: number | null; v2_sharpe: number | null };
   model: { version: string | null; trained_at: string | null; days_since_train: number | null };
+  predictions?: {
+    latest_date: string | null;
+    days_old: number | null;
+    stale_threshold_days: number;
+    is_stale: boolean;
+  };
   universe_size: number;
 };
 
@@ -73,6 +79,16 @@ export default function HonestyFooter() {
         value={data?.model.days_since_train != null ? `${data.model.days_since_train.toFixed(1)}d ago` : "—"}
         accent={(data?.model.days_since_train ?? 0) > 30 ? "warn" : undefined}
       />
+      <Item
+        label="Preds"
+        value={data?.predictions?.days_old != null ? `${data.predictions.days_old.toFixed(1)}d ago` : "—"}
+        accent={data?.predictions?.is_stale ? "warn" : undefined}
+        title={
+          data?.predictions
+            ? `Latest prediction: ${data.predictions.latest_date ?? "—"} · autotrader rejects signals older than ${data.predictions.stale_threshold_days}d`
+            : undefined
+        }
+      />
       <Dot />
       <Item label="Universe" value={data ? `${data.universe_size} tickers` : "—"} />
       <span style={{ marginLeft: "auto", color: "var(--text-faint)", fontSize: 9 }}>
@@ -101,11 +117,11 @@ function ModeBadge({ mode, safe }: { mode: string; safe: boolean }) {
   );
 }
 
-function Item({ label, value, accent }: { label: string; value: string; accent?: "up" | "warn" }) {
+function Item({ label, value, accent, title }: { label: string; value: string; accent?: "up" | "warn"; title?: string }) {
   const valueColor =
     accent === "up" ? "var(--green)" : accent === "warn" ? "var(--amber)" : "var(--text-secondary)";
   return (
-    <span style={{ display: "flex", gap: 4, alignItems: "baseline" }}>
+    <span style={{ display: "flex", gap: 4, alignItems: "baseline" }} title={title}>
       <span style={{ color: "var(--text-faint)", fontSize: 9, textTransform: "uppercase", letterSpacing: "0.04em", fontWeight: 700 }}>{label}</span>
       <span style={{ color: valueColor, fontWeight: 600 }}>{value}</span>
     </span>
